@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RunGard — Calendrier des courses du Gard</title>
+<style>
+  :root {
+    --stone: #f2ede2;
+    --stone-dark: #e4dcc9;
+    --ink: #2b2a24;
+    --pine: #33503f;
+    --clay: #b5502e;
+    --line: #d8cfb8;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--stone);
+    color: var(--ink);
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.4;
+  }
+
+  header {
+    padding: 3rem 1.5rem 2rem;
+    border-bottom: 3px solid var(--ink);
+    background: var(--stone-dark);
+  }
+
+  header .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.75rem;
+    color: var(--pine);
+    font-weight: 700;
+  }
+
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: clamp(2.2rem, 6vw, 3.6rem);
+    margin: 0.3rem 0 0.6rem;
+    letter-spacing: -0.02em;
+  }
+
+  header p {
+    max-width: 42em;
+    color: #5b594f;
+    margin: 0;
+  }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .month-heading {
+    font-family: Georgia, serif;
+    font-size: 1.4rem;
+    margin: 2.5rem 0 0.8rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--pine);
+  }
+
+  .month-heading:first-of-type { margin-top: 0; }
+
+  .course-card {
+    display: grid;
+    grid-template-columns: 90px 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .course-date {
+    font-size: 0.8rem;
+    color: #6b6a5f;
+    text-transform: capitalize;
+  }
+
+  .course-name {
+    font-weight: 700;
+    font-size: 1.02rem;
+  }
+
+  .course-meta {
+    font-size: 0.85rem;
+    color: #5b594f;
+    margin-top: 0.15rem;
+  }
+
+  .course-type {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    color: #fff;
+    background: var(--clay);
+    padding: 0.3rem 0.6rem;
+    border-radius: 2px;
+    white-space: nowrap;
+    justify-self: end;
+  }
+
+  .type-Trail, .type-UrbanTrail { background: var(--pine); }
+  .type-Route { background: var(--clay); }
+  .type-Nature { background: #8a7a4a; }
+  .type-Triathlon, .type-Vétathlon { background: #3a5a7a; }
+
+  .state-message {
+    padding: 3rem 0;
+    text-align: center;
+    color: #6b6a5f;
+  }
+
+  @media (max-width: 560px) {
+    .course-card { grid-template-columns: 1fr; gap: 0.3rem; }
+    .course-type { justify-self: start; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Département du Gard (30)</div>
+  <h1>RunGard</h1>
+  <p>Le calendrier des courses à pied, trails et épreuves nature du Gard — routes, sentiers et garrigue, mis à jour au fil des recherches.</p>
+</header>
+
+<main id="app">
+  <div class="state-message">Chargement des courses…</div>
+</main>
+
+<script>
+  const MONTHS_FR = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+  function formatMonthLabel(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "Date à confirmer";
+    return `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  function formatDayLabel(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr || "—";
+    return d.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" });
+  }
+
+  function typeClass(type) {
+    return "type-" + (type || "").replace(/\s+/g, "");
+  }
+
+  async function loadCourses() {
+    const app = document.getElementById("app");
+    try {
+      const res = await fetch("/api/courses");
+      const data = await res.json();
+
+      if (!res.ok) {
+        app.innerHTML = `<div class="state-message">Impossible de charger le calendrier pour le moment.<br>${data.error || ""}</div>`;
+        return;
+      }
+
+      if (!data.courses || data.courses.length === 0) {
+        app.innerHTML = `<div class="state-message">Aucune course enregistrée pour l'instant.</div>`;
+        return;
+      }
+
+      let html = "";
+      let currentMonth = "";
+
+      for (const course of data.courses) {
+        const monthLabel = formatMonthLabel(course.date);
+        if (monthLabel !== currentMonth) {
+          html += `<h2 class="month-heading">${monthLabel}</h2>`;
+          currentMonth = monthLabel;
+        }
+
+        const nameHtml = course.site
+          ? `<a href="${course.site}" target="_blank" rel="noopener">${course.nom}</a>`
+          : course.nom;
+
+        html += `
+          <div class="course-card">
+            <div class="course-date">${formatDayLabel(course.date)}</div>
+            <div>
+              <div class="course-name">${nameHtml}</div>
+              <div class="course-meta">${course.commune || ""} ${course.distances ? "· " + course.distances : ""}</div>
+            </div>
+            <div class="course-type ${typeClass(course.type)}">${course.type || "—"}</div>
+          </div>
+        `;
+      }
+
+      app.innerHTML = html;
+    } catch (err) {
+      app.innerHTML = `<div class="state-message">Erreur de chargement : ${err.message}</div>`;
+    }
+  }
+
+  loadCourses();
+</script>
+
+</body>
+</html>
