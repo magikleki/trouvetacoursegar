@@ -1,10 +1,11 @@
-// Cette fonction s'exécute côté serveur (jamais dans le navigateur du visiteur).
-// La clé Airtable reste donc secrète : elle n'est jamais visible par les visiteurs du site.
+// Fonction serveur sécurisée pour récupérer les courses depuis Airtable.
+// Supporte le filtre ?departement=Gard (ou Vaucluse, Hérault, Bouches-du-Rhône).
 
 export default async function handler(request, response) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   const baseId = process.env.AIRTABLE_BASE_ID;
   const tableName = process.env.AIRTABLE_TABLE_NAME || "Courses";
+  const departement = request.query.departement;
 
   if (!apiKey || !baseId) {
     return response.status(500).json({
@@ -13,12 +14,14 @@ export default async function handler(request, response) {
   }
 
   try {
-    const airtableUrl = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`;
+    let airtableUrl = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`;
+    if (departement) {
+      const formula = `{Département}="${departement}"`;
+      airtableUrl += `&filterByFormula=${encodeURIComponent(formula)}`;
+    }
 
     const airtableResponse = await fetch(airtableUrl, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: { Authorization: `Bearer ${apiKey}` },
     });
 
     if (!airtableResponse.ok) {
@@ -31,7 +34,6 @@ export default async function handler(request, response) {
 
     const data = await airtableResponse.json();
 
-    // On ne renvoie que les champs utiles, dans un format simple pour le site.
     const courses = data.records.map((record) => ({
       id: record.id,
       nom: record.fields["Nom de la course"] || "",
@@ -39,10 +41,12 @@ export default async function handler(request, response) {
       distances: record.fields["Distances"] || "",
       type: record.fields["Type"] || "",
       commune: record.fields["Commune"] || "",
-      site: record.fields["Site source"] || "",
+      departement: record.fields["Département"] || "",
+      site: record.fields["Site d'inscription"] || "",
+      contact: record.fields["Contact"] || "",
+      reseaux: record.fields["Réseaux sociaux"] || "",
     }));
 
-    // Tri par date, du plus proche au plus lointain
     courses.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     response.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate");

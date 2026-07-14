@@ -3,171 +3,253 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RunGard — Calendrier des courses du Gard</title>
+<title>Trouve ta Course — Calendrier running du Sud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --stone: #f2ede2;
-    --stone-dark: #e4dcc9;
-    --ink: #2b2a24;
-    --pine: #33503f;
-    --clay: #b5502e;
-    --line: #d8cfb8;
+    --bg: #f7f4ee;
+    --ink: #1a1915;
+    --muted: #6b6a63;
+    --line: #e2ddd0;
+    --card: #ffffff;
+
+    --gard: #FF6A1A; --gard-deep: #B34600;
+    --vaucluse: #FF3131; --vaucluse-deep: #A30000;
+    --herault: #D66FE0; --herault-deep: #8E2E9E;
+    --bdr: #2AA8E8; --bdr-deep: #12628F;
+
+    --accent: var(--gard);
+    --accent-deep: var(--gard-deep);
   }
 
   * { box-sizing: border-box; }
-
   body {
     margin: 0;
-    background: var(--stone);
+    background: var(--bg);
+    background-image: radial-gradient(circle, #e7e2d3 1px, transparent 1px);
+    background-size: 22px 22px;
     color: var(--ink);
-    font-family: "Helvetica Neue", Arial, sans-serif;
-    line-height: 1.4;
+    font-family: 'Inter', Arial, sans-serif;
   }
+  .display { font-family: 'Archivo Black', Georgia, serif; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 2px; }
 
-  header {
-    padding: 3rem 1.5rem 2rem;
-    border-bottom: 3px solid var(--ink);
-    background: var(--stone-dark);
-  }
-
-  header .eyebrow {
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 0.75rem;
-    color: var(--pine);
-    font-weight: 700;
-  }
-
-  h1 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-weight: 700;
-    font-size: clamp(2.2rem, 6vw, 3.6rem);
-    margin: 0.3rem 0 0.6rem;
-    letter-spacing: -0.02em;
-  }
-
-  header p {
-    max-width: 42em;
-    color: #5b594f;
-    margin: 0;
-  }
-
-  main {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-  }
-
-  .month-heading {
-    font-family: Georgia, serif;
-    font-size: 1.4rem;
-    margin: 2.5rem 0 0.8rem;
-    padding-bottom: 0.4rem;
-    border-bottom: 1px solid var(--line);
-    color: var(--pine);
-  }
-
-  .month-heading:first-of-type { margin-top: 0; }
-
-  .course-card {
-    display: grid;
-    grid-template-columns: 90px 1fr auto;
-    gap: 1rem;
-    align-items: center;
-    padding: 0.9rem 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .course-date {
-    font-size: 0.8rem;
-    color: #6b6a5f;
-    text-transform: capitalize;
-  }
-
-  .course-name {
-    font-weight: 700;
-    font-size: 1.02rem;
-  }
-
-  .course-meta {
-    font-size: 0.85rem;
-    color: #5b594f;
-    margin-top: 0.15rem;
-  }
-
-  .course-type {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 700;
+  /* ---------- TOP BAR ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    background: rgba(26,25,21,0.96);
+    backdrop-filter: blur(6px);
     color: #fff;
-    background: var(--clay);
-    padding: 0.3rem 0.6rem;
-    border-radius: 2px;
-    white-space: nowrap;
-    justify-self: end;
+    padding: 0.65rem 1rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
   }
+  .topbar .brand { font-family: 'Archivo Black'; font-size: 0.95rem; text-transform: uppercase; white-space: nowrap; cursor: pointer; }
+  .topbar .brand span { color: var(--gard); }
+  .topbar .dept-mini { display: flex; gap: 0.35rem; flex-shrink: 0; }
+  .topbar .dept-mini button {
+    width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25);
+    cursor: pointer; padding: 0; background: var(--gard);
+    color: #fff; font-family: 'Inter'; font-weight: 800; font-size: 0.62rem;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .topbar .dept-mini button.vaucluse { background: var(--vaucluse); }
+  .topbar .dept-mini button.herault { background: var(--herault); }
+  .topbar .dept-mini button.bdr { background: var(--bdr); }
+  .topbar .dept-mini button.active { border-color: #fff; }
 
-  .type-Trail, .type-UrbanTrail { background: var(--pine); }
-  .type-Route { background: var(--clay); }
-  .type-Nature { background: #8a7a4a; }
-  .type-Triathlon, .type-Vétathlon { background: #3a5a7a; }
+  /* ---------- HERO / PICKER (landing state) ---------- */
+  .landing { display: block; }
+  .hero { position: relative; overflow: hidden; background: linear-gradient(160deg, #24231d 0%, #1a1915 60%); padding: 2.6rem 1.4rem 2rem; text-align: center; color: #fff; }
+  .hero .eyebrow { text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.7rem; font-weight: 700; color: #d8d4c4; margin-bottom: 0.5rem; }
+  .hero h1 { font-size: clamp(2.1rem, 8vw, 3rem); line-height: 0.95; margin: 0 0 0.6rem; text-transform: uppercase; }
+  .hero h1 span { color: var(--gard); }
+  .hero p.tag { max-width: 30em; margin: 0 auto; color: #cfccc0; font-size: 0.95rem; line-height: 1.5; }
 
-  .state-message {
-    padding: 3rem 0;
-    text-align: center;
-    color: #6b6a5f;
-  }
+  .picker-section { padding: 1.6rem 1.2rem 3rem; max-width: 720px; margin: 0 auto; }
+  .picker-section h2 { font-family: 'Archivo Black'; font-size: 0.95rem; text-transform: uppercase; text-align: center; margin: 0 0 0.9rem; letter-spacing: 0.03em; color: var(--muted); }
+  .dept-row { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+  .dept-chip { display: flex; align-items: center; gap: 0.55rem; border-radius: 999px; padding: 0.5rem 1rem 0.5rem 0.5rem; background: var(--card); border: 1.5px solid var(--line); cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+  .dept-chip:hover { transform: translateY(-2px); box-shadow: 0 6px 14px -6px rgba(0,0,0,0.25); }
+  .dept-chip .dot { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Archivo Black'; font-size: 0.75rem; }
+  .dept-chip .txt { text-align: left; line-height: 1.1; }
+  .dept-chip .txt .name { font-weight: 800; font-size: 0.85rem; }
+  .dept-chip .txt .meta { font-size: 0.68rem; color: var(--muted); }
+  .dept-chip.gard .dot { background: var(--gard); }
+  .dept-chip.vaucluse .dot { background: var(--vaucluse); }
+  .dept-chip.herault .dot { background: var(--herault); }
+  .dept-chip.bdr .dot { background: var(--bdr); }
 
-  nav.site-nav {
-    display: flex;
-    gap: 1.5rem;
-    margin-top: 1.2rem;
-  }
-  nav.site-nav a {
-    font-size: 0.85rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #6b6a5f;
-    text-decoration: none;
-    padding-bottom: 0.3rem;
-    border-bottom: 2px solid transparent;
-  }
-  nav.site-nav a.active {
-    color: var(--ink);
-    border-bottom-color: var(--clay);
-  }
+  /* ---------- APP SHELL (department view) ---------- */
+  .app-shell { display: none; }
+  .dept-header { padding: 1.3rem 1.2rem 1rem; color: #fff; }
+  .dept-header .row { display: flex; align-items: center; justify-content: space-between; }
+  .dept-header .name { font-family: 'Archivo Black'; font-size: 1.4rem; text-transform: uppercase; }
+  .dept-header button.back { background: rgba(255,255,255,0.22); border: none; color: #fff; padding: 0.4rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+  .dept-header .sub { font-size: 0.8rem; color: rgba(255,255,255,0.85); margin-top: 0.25rem; }
 
-  @media (max-width: 560px) {
-    .course-card { grid-template-columns: 1fr; gap: 0.3rem; }
-    .course-type { justify-self: start; }
+  nav.tabs { display: flex; overflow-x: auto; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 46px; z-index: 20; }
+  nav.tabs button { flex: 1 0 auto; background: none; border: none; padding: 0.85rem 1rem; font-weight: 700; font-size: 0.82rem; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+  nav.tabs button.active { color: var(--ink); border-bottom-color: var(--accent); }
+
+  .content { max-width: 720px; margin: 0 auto; padding: 1.1rem 1.1rem 3rem; }
+
+  /* filters */
+  .filters { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
+  .filters .row1 { display: flex; gap: 0.5rem; }
+  .filters select {
+    border: 1.5px solid var(--line); border-radius: 8px; padding: 0.5rem 0.7rem;
+    font-size: 0.82rem; background: #fff; font-family: 'Inter'; color: var(--ink); flex: 1;
   }
+  .type-chips { display: flex; gap: 0.45rem; overflow-x: auto; padding-bottom: 0.2rem; }
+  .filter-chip { flex-shrink: 0; border: 1.5px solid var(--line); background: #fff; border-radius: 999px; padding: 0.4rem 0.85rem; font-size: 0.75rem; font-weight: 700; color: var(--muted); cursor: pointer; }
+  .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .result-count { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.6rem; }
+
+  /* course cards */
+  .month-heading { font-family: 'Archivo Black'; font-size: 1rem; text-transform: uppercase; color: var(--accent-deep); margin: 1.6rem 0 0.6rem; }
+  .month-heading:first-of-type { margin-top: 0; }
+  .race-card { display: flex; justify-content: space-between; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0.8rem 0.95rem; margin-bottom: 0.55rem; box-shadow: 0 2px 6px -3px rgba(0,0,0,0.1); }
+  .race-card .left { flex: 1; min-width: 0; }
+  .race-card .left strong { font-size: 0.92rem; display: block; }
+  .race-card .left a { text-decoration: none; }
+  .race-card .left a:hover { text-decoration: underline; }
+  .race-card .left .meta { font-size: 0.76rem; color: var(--muted); display: block; margin-top: 0.15rem; }
+  .race-card .tag { font-size: 0.63rem; font-weight: 800; text-transform: uppercase; color: #fff; background: var(--accent); padding: 0.25rem 0.5rem; border-radius: 6px; white-space: nowrap; margin-left: 0.6rem; flex-shrink: 0; }
+
+  /* clubs */
+  .club-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.9rem; }
+  .club-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .club-card .top { display: flex; align-items: center; gap: 0.65rem; }
+  .club-logo { width: 44px; height: 44px; border-radius: 8px; object-fit: contain; background: var(--bg); border: 1px solid var(--line); flex-shrink: 0; }
+  .club-logo.placeholder { display: flex; align-items: center; justify-content: center; font-family: 'Archivo Black'; color: var(--accent-deep); font-size: 1rem; }
+  .club-name { font-weight: 800; font-size: 0.88rem; line-height: 1.2; }
+  .club-meta { font-size: 0.76rem; color: var(--muted); }
+  .club-links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.2rem; }
+  .club-links a, .club-links span { font-size: 0.7rem; padding: 0.22rem 0.5rem; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); text-decoration: none; white-space: nowrap; }
+  .club-links a:hover { border-color: var(--accent); }
+
+  .empty-state { text-align: center; color: var(--muted); padding: 3rem 1rem; }
+  .empty-state .big { font-family: 'Archivo Black'; font-size: 1.05rem; color: var(--ink); margin-bottom: 0.4rem; text-transform: uppercase; }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="eyebrow">Département du Gard (30)</div>
-  <h1>RunGard</h1>
-  <p>Le calendrier des courses à pied, trails et épreuves nature du Gard — routes, sentiers et garrigue, mis à jour au fil des recherches.</p>
-  <nav class="site-nav">
-    <a href="/" class="active">Calendrier</a>
-    <a href="/clubs.html">Clubs</a>
-  </nav>
-</header>
+<div class="topbar">
+  <div class="brand display" id="brandHome">Trouve ta <span>Course</span></div>
+  <div class="dept-mini" id="deptMini">
+    <button class="gard active" data-dept="Gard" aria-label="Gard">30</button>
+    <button class="vaucluse" data-dept="Vaucluse" aria-label="Vaucluse">84</button>
+    <button class="herault" data-dept="Hérault" aria-label="Hérault">34</button>
+    <button class="bdr" data-dept="Bouches-du-Rhône" aria-label="Bouches-du-Rhône">13</button>
+  </div>
+</div>
 
-<main id="app">
-  <div class="state-message">Chargement des courses…</div>
-</main>
+<div class="landing" id="landing">
+  <header class="hero">
+    <div class="eyebrow">Occitanie · Provence</div>
+    <h1 class="display">Trouve ta<br><span>Course</span></h1>
+    <p class="tag">Le calendrier running de 4 départements du Sud — routes, trails et sentiers de garrigue, mis à jour au fil des recherches.</p>
+  </header>
+  <section class="picker-section">
+    <h2>Choisis ton département</h2>
+    <div class="dept-row" id="picker">
+      <button class="dept-chip gard" data-dept="Gard"><span class="dot">30</span><span class="txt"><span class="name">Gard</span><span class="meta">Pont du Gard</span></span></button>
+      <button class="dept-chip vaucluse" data-dept="Vaucluse"><span class="dot">84</span><span class="txt"><span class="name">Vaucluse</span><span class="meta">Ventoux</span></span></button>
+      <button class="dept-chip herault" data-dept="Hérault"><span class="dot">34</span><span class="txt"><span class="name">Hérault</span><span class="meta">Thau</span></span></button>
+      <button class="dept-chip bdr" data-dept="Bouches-du-Rhône"><span class="dot">13</span><span class="txt"><span class="name">Bouches-du-Rhône</span><span class="meta">Calanques</span></span></button>
+    </div>
+  </section>
+</div>
+
+<div class="app-shell" id="appShell">
+  <div class="dept-header" id="deptHeader">
+    <div class="row"><span class="name" id="deptName">Gard</span><button class="back" id="backBtn">← Départements</button></div>
+    <div class="sub" id="deptSub">Pont du Gard · Cévennes</div>
+  </div>
+  <nav class="tabs">
+    <button class="tab active" data-tab="calendrier">Calendrier</button>
+    <button class="tab" data-tab="resultats">Résultats</button>
+    <button class="tab" data-tab="classement">Classement</button>
+    <button class="tab" data-tab="clubs">Clubs</button>
+  </nav>
+  <div class="content" id="content"></div>
+</div>
 
 <script>
+  const depts = {
+    Gard: { color: '#FF6A1A', deep: '#B34600', sub: 'Pont du Gard · Cévennes' },
+    Vaucluse: { color: '#FF3131', deep: '#A30000', sub: 'Mont Ventoux · Luberon' },
+    'Hérault': { color: '#D66FE0', deep: '#8E2E9E', sub: 'Étang de Thau · Vignes' },
+    'Bouches-du-Rhône': { color: '#2AA8E8', deep: '#12628F', sub: 'Calanques · Camargue' },
+  };
   const MONTHS_FR = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
-  function formatMonthLabel(dateStr) {
-    const d = new Date(dateStr);
-    if (isNaN(d)) return "Date à confirmer";
-    return `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
+  const landing = document.getElementById('landing');
+  const appShell = document.getElementById('appShell');
+  const deptHeader = document.getElementById('deptHeader');
+  const deptName = document.getElementById('deptName');
+  const deptSub = document.getElementById('deptSub');
+  const content = document.getElementById('content');
+
+  let currentDept = null;
+  let currentTab = 'calendrier';
+  let coursesCache = {};
+  let clubsCache = {};
+  let activeType = 'Tous';
+  let activeMonth = 'Tous';
+
+  function setDept(dept) {
+    currentDept = dept;
+    const d = depts[dept];
+    document.documentElement.style.setProperty('--accent', d.color);
+    document.documentElement.style.setProperty('--accent-deep', d.deep);
+    deptName.textContent = dept;
+    deptSub.textContent = d.sub;
+    deptHeader.style.background = d.deep;
+    document.querySelectorAll('.dept-mini button').forEach(b => b.classList.toggle('active', b.dataset.dept === dept));
+    landing.style.display = 'none';
+    appShell.style.display = 'block';
+    activeType = 'Tous';
+    activeMonth = 'Tous';
+    currentTab = 'calendrier';
+    document.querySelectorAll('nav.tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'calendrier'));
+    renderTab();
+  }
+
+  document.getElementById('picker').querySelectorAll('.dept-chip').forEach(btn => btn.addEventListener('click', () => setDept(btn.dataset.dept)));
+  document.getElementById('deptMini').querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => setDept(btn.dataset.dept)));
+  document.getElementById('brandHome').addEventListener('click', () => { appShell.style.display = 'none'; landing.style.display = 'block'; });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    appShell.style.display = 'none';
+    landing.style.display = 'block';
+  });
+
+  document.querySelectorAll('nav.tabs .tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('nav.tabs .tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentTab = tab.dataset.tab;
+      renderTab();
+    });
+  });
+
+  async function fetchCourses(dept) {
+    if (coursesCache[dept]) return coursesCache[dept];
+    const res = await fetch(`/api/courses?departement=${encodeURIComponent(dept)}`);
+    const data = await res.json();
+    coursesCache[dept] = res.ok ? (data.courses || []) : [];
+    return coursesCache[dept];
+  }
+
+  async function fetchClubs(dept) {
+    if (clubsCache[dept]) return clubsCache[dept];
+    const res = await fetch(`/api/clubs?departement=${encodeURIComponent(dept)}`);
+    const data = await res.json();
+    clubsCache[dept] = res.ok ? (data.clubs || []) : [];
+    return clubsCache[dept];
   }
 
   function formatDayLabel(dateStr) {
@@ -176,59 +258,101 @@
     return d.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" });
   }
 
-  function typeClass(type) {
-    return "type-" + (type || "").replace(/\s+/g, "");
+  function monthKey(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return null;
+    return `${d.getFullYear()}-${d.getMonth()}`;
   }
 
-  async function loadCourses() {
-    const app = document.getElementById("app");
-    try {
-      const res = await fetch("/api/courses");
-      const data = await res.json();
+  function monthLabel(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "Date à confirmer";
+    return `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
+  }
 
-      if (!res.ok) {
-        app.innerHTML = `<div class="state-message">Impossible de charger le calendrier pour le moment.<br>${data.error || ""}</div>`;
-        return;
-      }
+  function initials(name) {
+    return (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  }
 
-      if (!data.courses || data.courses.length === 0) {
-        app.innerHTML = `<div class="state-message">Aucune course enregistrée pour l'instant.</div>`;
-        return;
-      }
+  async function renderTab() {
+    if (currentTab === 'calendrier') {
+      content.innerHTML = `<div class="empty-state">Chargement…</div>`;
+      const courses = await fetchCourses(currentDept);
+      if (!courses.length) { content.innerHTML = `<div class="empty-state"><div class="big">Calendrier à venir</div>La recherche pour ${currentDept} n'a pas encore été lancée.</div>`; return; }
 
-      let html = "";
-      let currentMonth = "";
+      const types = ['Tous', ...new Set(courses.map(c => c.type).filter(Boolean))];
+      const months = ['Tous', ...new Set(courses.map(c => monthKey(c.date)).filter(Boolean))];
+      const monthOptions = months.map(m => {
+        if (m === 'Tous') return `<option value="Tous">Tous les mois</option>`;
+        const sample = courses.find(c => monthKey(c.date) === m);
+        return `<option value="${m}">${monthLabel(sample.date)}</option>`;
+      }).join('');
 
-      for (const course of data.courses) {
-        const monthLabel = formatMonthLabel(course.date);
-        if (monthLabel !== currentMonth) {
-          html += `<h2 class="month-heading">${monthLabel}</h2>`;
-          currentMonth = monthLabel;
-        }
+      let filtered = courses;
+      if (activeType !== 'Tous') filtered = filtered.filter(c => c.type === activeType);
+      if (activeMonth !== 'Tous') filtered = filtered.filter(c => monthKey(c.date) === activeMonth);
 
-        const nameHtml = course.site
-          ? `<a href="${course.site}" target="_blank" rel="noopener">${course.nom}</a>`
-          : course.nom;
-
-        html += `
-          <div class="course-card">
-            <div class="course-date">${formatDayLabel(course.date)}</div>
-            <div>
-              <div class="course-name">${nameHtml}</div>
-              <div class="course-meta">${course.commune || ""} ${course.distances ? "· " + course.distances : ""}</div>
+      let listHtml = "";
+      let curMonth = "";
+      for (const c of filtered) {
+        const ml = monthLabel(c.date);
+        if (ml !== curMonth) { listHtml += `<h3 class="month-heading">${ml}</h3>`; curMonth = ml; }
+        const nameHtml = c.site ? `<a href="${c.site}" target="_blank" rel="noopener">${c.nom}</a>` : c.nom;
+        listHtml += `
+          <div class="race-card">
+            <div class="left">
+              <strong>${nameHtml}</strong>
+              <span class="meta">${formatDayLabel(c.date)} · ${c.commune || ''}${c.distances ? ' · ' + c.distances : ''}</span>
             </div>
-            <div class="course-type ${typeClass(course.type)}">${course.type || "—"}</div>
-          </div>
-        `;
+            <span class="tag">${c.type || '—'}</span>
+          </div>`;
       }
+      if (!filtered.length) listHtml = `<div class="empty-state">Aucune course ne correspond à ces filtres.</div>`;
 
-      app.innerHTML = html;
-    } catch (err) {
-      app.innerHTML = `<div class="state-message">Erreur de chargement : ${err.message}</div>`;
+      content.innerHTML = `
+        <div class="filters">
+          <div class="row1">
+            <select id="monthSelect">${monthOptions}</select>
+          </div>
+          <div class="type-chips">${types.map(t => `<button class="filter-chip ${t === activeType ? 'active' : ''}" data-type="${t}">${t}</button>`).join('')}</div>
+        </div>
+        <div class="result-count">${filtered.length} course${filtered.length > 1 ? 's' : ''}</div>
+        ${listHtml}
+      `;
+
+      content.querySelector('#monthSelect').value = activeMonth;
+      content.querySelector('#monthSelect').addEventListener('change', (e) => { activeMonth = e.target.value; renderTab(); });
+      content.querySelectorAll('.filter-chip').forEach(chip => chip.addEventListener('click', () => { activeType = chip.dataset.type; renderTab(); }));
+
+    } else if (currentTab === 'clubs') {
+      content.innerHTML = `<div class="empty-state">Chargement…</div>`;
+      const clubs = await fetchClubs(currentDept);
+      if (!clubs.length) { content.innerHTML = `<div class="empty-state"><div class="big">Clubs à venir</div>Aucun club enregistré pour ${currentDept} pour l'instant.</div>`; return; }
+
+      content.innerHTML = `<div class="club-grid">${clubs.map(club => {
+        const logoHtml = club.logo
+          ? `<img class="club-logo" src="${club.logo}" alt="Logo ${club.nom}" />`
+          : `<div class="club-logo placeholder">${initials(club.nom)}</div>`;
+        const links = [];
+        if (club.site) links.push(`<a href="${club.site}" target="_blank" rel="noopener">Site</a>`);
+        if (club.reseaux) links.push(`<a href="${club.reseaux}" target="_blank" rel="noopener">Réseaux</a>`);
+        if (club.contact) links.push(`<span>${club.contact}</span>`);
+        return `
+          <div class="club-card">
+            <div class="top">
+              ${logoHtml}
+              <div><div class="club-name">${club.nom}</div><div class="club-meta">${club.commune || ''}${club.discipline ? ' · ' + club.discipline : ''}</div></div>
+            </div>
+            ${links.length ? `<div class="club-links">${links.join('')}</div>` : ''}
+          </div>`;
+      }).join('')}</div>`;
+
+    } else if (currentTab === 'resultats') {
+      content.innerHTML = `<div class="empty-state"><div class="big">Résultats bientôt disponibles</div>Cette section affichera les classements de chaque course.</div>`;
+    } else if (currentTab === 'classement') {
+      content.innerHTML = `<div class="empty-state"><div class="big">Classement des coureurs</div>Le classement général arrivera une fois les résultats connectés.</div>`;
     }
   }
-
-  loadCourses();
 </script>
 
 </body>

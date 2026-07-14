@@ -5,6 +5,7 @@ export default async function handler(request, response) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   const baseId = process.env.AIRTABLE_BASE_ID;
   const tableName = "Clubs";
+  const departement = request.query.departement;
 
   if (!apiKey || !baseId) {
     return response.status(500).json({
@@ -13,7 +14,11 @@ export default async function handler(request, response) {
   }
 
   try {
-    const airtableUrl = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`;
+    let airtableUrl = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`;
+    if (departement) {
+      const formula = `{Département}="${departement}"`;
+      airtableUrl += `&filterByFormula=${encodeURIComponent(formula)}`;
+    }
 
     const airtableResponse = await fetch(airtableUrl, {
       headers: { Authorization: `Bearer ${apiKey}` },
