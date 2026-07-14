@@ -119,6 +119,26 @@
     color: #6b6a5f;
   }
 
+  nav.site-nav {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1.2rem;
+  }
+  nav.site-nav a {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b6a5f;
+    text-decoration: none;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid transparent;
+  }
+  nav.site-nav a.active {
+    color: var(--ink);
+    border-bottom-color: var(--clay);
+  }
+
   @media (max-width: 560px) {
     .course-card { grid-template-columns: 1fr; gap: 0.3rem; }
     .course-type { justify-self: start; }
@@ -131,6 +151,10 @@
   <div class="eyebrow">Département du Gard (30)</div>
   <h1>RunGard</h1>
   <p>Le calendrier des courses à pied, trails et épreuves nature du Gard — routes, sentiers et garrigue, mis à jour au fil des recherches.</p>
+  <nav class="site-nav">
+    <a href="/" class="active">Calendrier</a>
+    <a href="/clubs.html">Clubs</a>
+  </nav>
 </header>
 
 <main id="app">

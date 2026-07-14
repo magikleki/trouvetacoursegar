@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RunGard — Clubs du Gard</title>
+<style>
+  :root {
+    --stone: #f2ede2;
+    --stone-dark: #e4dcc9;
+    --ink: #2b2a24;
+    --pine: #33503f;
+    --clay: #b5502e;
+    --line: #d8cfb8;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--stone);
+    color: var(--ink);
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.4;
+  }
+
+  header {
+    padding: 3rem 1.5rem 2rem;
+    border-bottom: 3px solid var(--ink);
+    background: var(--stone-dark);
+  }
+
+  header .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.75rem;
+    color: var(--pine);
+    font-weight: 700;
+  }
+
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: clamp(2.2rem, 6vw, 3.6rem);
+    margin: 0.3rem 0 0.6rem;
+    letter-spacing: -0.02em;
+  }
+
+  header p {
+    max-width: 42em;
+    color: #5b594f;
+    margin: 0;
+  }
+
+  nav.site-nav {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1.2rem;
+  }
+  nav.site-nav a {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b6a5f;
+    text-decoration: none;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid transparent;
+  }
+  nav.site-nav a.active {
+    color: var(--ink);
+    border-bottom-color: var(--clay);
+  }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .club-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .club-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .club-card .top {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .club-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: contain;
+    background: var(--stone);
+    border: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  .club-logo.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Georgia, serif;
+    font-weight: 700;
+    color: var(--pine);
+    font-size: 1.1rem;
+  }
+
+  .club-name {
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .club-meta {
+    font-size: 0.82rem;
+    color: #6b6a5f;
+  }
+
+  .club-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.3rem;
+  }
+
+  .club-links a, .club-links span {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    background: var(--stone);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .club-links a:hover {
+    border-color: var(--clay);
+  }
+
+  .state-message {
+    padding: 3rem 0;
+    text-align: center;
+    color: #6b6a5f;
+    grid-column: 1 / -1;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Département du Gard (30)</div>
+  <h1>Clubs</h1>
+  <p>Les clubs d'athlétisme, de trail et de running loisir du Gard — site, réseaux sociaux et contact.</p>
+  <nav class="site-nav">
+    <a href="/">Calendrier</a>
+    <a href="/clubs.html" class="active">Clubs</a>
+  </nav>
+</header>
+
+<main>
+  <div class="club-grid" id="app">
+    <div class="state-message">Chargement des clubs…</div>
+  </div>
+</main>
+
+<script>
+  function initials(name) {
+    return (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  }
+
+  async function loadClubs() {
+    const app = document.getElementById("app");
+    try {
+      const res = await fetch("/api/clubs");
+      const data = await res.json();
+
+      if (!res.ok) {
+        app.innerHTML = `<div class="state-message">Impossible de charger les clubs pour le moment.<br>${data.error || ""}</div>`;
+        return;
+      }
+
+      if (!data.clubs || data.clubs.length === 0) {
+        app.innerHTML = `<div class="state-message">Aucun club enregistré pour l'instant.</div>`;
+        return;
+      }
+
+      app.innerHTML = data.clubs.map(club => {
+        const logoHtml = club.logo
+          ? `<img class="club-logo" src="${club.logo}" alt="Logo ${club.nom}" />`
+          : `<div class="club-logo placeholder">${initials(club.nom)}</div>`;
+
+        const links = [];
+        if (club.site) links.push(`<a href="${club.site}" target="_blank" rel="noopener">Site</a>`);
+        if (club.reseaux) links.push(`<a href="${club.reseaux}" target="_blank" rel="noopener">Facebook/Instagram</a>`);
+        if (club.contact) links.push(`<span>${club.contact}</span>`);
+
+        return `
+          <div class="club-card">
+            <div class="top">
+              ${logoHtml}
+              <div>
+                <div class="club-name">${club.nom}</div>
+                <div class="club-meta">${club.commune || ""}${club.discipline ? " · " + club.discipline : ""}</div>
+              </div>
+            </div>
+            ${links.length ? `<div class="club-links">${links.join("")}</div>` : ""}
+          </div>
+        `;
+      }).join("");
+    } catch (err) {
+      app.innerHTML = `<div class="state-message">Erreur de chargement : ${err.message}</div>`;
+    }
+  }
+
+  loadClubs();
+</script>
+
+</body>
+</html>
