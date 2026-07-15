@@ -48,7 +48,6 @@ export default async function handler(request, response) {
         date: record.fields["Date de la course"] || "",
         heure: record.fields["Heure de départ"] || "",
         distances: record.fields["Distances"] || "",
-        denivele: record.fields["Denivelé"] || "",
         type: record.fields["Type"] || "",
         commune: record.fields["Commune"] || "",
         departement: record.fields["Département"] || "",
