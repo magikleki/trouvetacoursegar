@@ -1,5 +1,6 @@
 // Fonction serveur sécurisée pour récupérer les courses depuis Airtable.
-// Supporte le filtre ?departement=Gard (ou Vaucluse, Hérault, Bouches-du-Rhône).
+// Supporte le filtre optionnel ?departement=Gard (ou Vaucluse, Hérault, Bouches-du-Rhône).
+// Sans ce paramètre, retourne les courses de tous les départements.
 
 export default async function handler(request, response) {
   const apiKey = process.env.AIRTABLE_API_KEY;
@@ -15,7 +16,7 @@ export default async function handler(request, response) {
 
   try {
     let airtableUrl = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`;
-    if (departement) {
+    if (departement && departement !== "Tous") {
       const formula = `{Département}="${departement}"`;
       airtableUrl += `&filterByFormula=${encodeURIComponent(formula)}`;
     }
@@ -34,18 +35,30 @@ export default async function handler(request, response) {
 
     const data = await airtableResponse.json();
 
-    const courses = data.records.map((record) => ({
-      id: record.id,
-      nom: record.fields["Nom de la course"] || "",
-      date: record.fields["Date de la course"] || "",
-      distances: record.fields["Distances"] || "",
-      type: record.fields["Type"] || "",
-      commune: record.fields["Commune"] || "",
-      departement: record.fields["Département"] || "",
-      site: record.fields["Site d'inscription"] || "",
-      contact: record.fields["Contact"] || "",
-      reseaux: record.fields["Réseaux sociaux"] || "",
-    }));
+    const courses = data.records.map((record) => {
+      const posterAttachment = record.fields["Affiche"];
+      const posterUrl =
+        Array.isArray(posterAttachment) && posterAttachment.length > 0
+          ? posterAttachment[0].url
+          : null;
+
+      return {
+        id: record.id,
+        nom: record.fields["Nom de la course"] || "",
+        date: record.fields["Date de la course"] || "",
+        heure: record.fields["Heure de départ"] || "",
+        distances: record.fields["Distances"] || "",
+        denivele: record.fields["Denivelé"] || "",
+        type: record.fields["Type"] || "",
+        commune: record.fields["Commune"] || "",
+        departement: record.fields["Département"] || "",
+        challenge: record.fields["Challenge/Label"] || "",
+        site: record.fields["Site d'inscription"] || "",
+        contact: record.fields["Contact"] || "",
+        reseaux: record.fields["Réseaux sociaux"] || "",
+        affiche: posterUrl,
+      };
+    });
 
     courses.sort((a, b) => new Date(a.date) - new Date(b.date));
 

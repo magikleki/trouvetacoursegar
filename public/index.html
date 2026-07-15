@@ -4,355 +4,483 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Trouve ta Course — Calendrier running du Sud</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f7f4ee;
+    --surface-2: #ffffff;
+    --surface-1: #f4f3f0;
     --ink: #1a1915;
     --muted: #6b6a63;
-    --line: #e2ddd0;
-    --card: #ffffff;
+    --mutedlight: #9c9a92;
+    --border: #e5e3dd;
+    --border-strong: #d3d0c7;
 
-    --gard: #FF6A1A; --gard-deep: #B34600;
-    --vaucluse: #FF3131; --vaucluse-deep: #A30000;
-    --herault: #D66FE0; --herault-deep: #8E2E9E;
-    --bdr: #2AA8E8; --bdr-deep: #12628F;
+    --gard: #FF6A1A;
+    --vaucluse: #FF3131;
+    --herault: #D66FE0;
+    --bdr: #2AA8E8;
 
-    --accent: var(--gard);
-    --accent-deep: var(--gard-deep);
+    --accent: #0A6E64;
+    --accent-deep: #074F48;
   }
-
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    background-image: radial-gradient(circle, #e7e2d3 1px, transparent 1px);
-    background-size: 22px 22px;
-    color: var(--ink);
-    font-family: 'Inter', Arial, sans-serif;
-  }
-  .display { font-family: 'Archivo Black', Georgia, serif; }
+  body { margin: 0; background: var(--surface-1); color: var(--ink); font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  .page { max-width: 640px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
   a { color: inherit; }
-  :focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 2px; }
 
-  /* ---------- TOP BAR ---------- */
-  .topbar {
-    position: sticky; top: 0; z-index: 30;
-    background: rgba(26,25,21,0.96);
-    backdrop-filter: blur(6px);
-    color: #fff;
-    padding: 0.65rem 1rem;
-    display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
-  }
-  .topbar .brand { font-family: 'Archivo Black'; font-size: 0.95rem; text-transform: uppercase; white-space: nowrap; cursor: pointer; }
-  .topbar .brand span { color: var(--gard); }
-  .topbar .dept-mini { display: flex; gap: 0.35rem; flex-shrink: 0; }
-  .topbar .dept-mini button {
-    width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25);
-    cursor: pointer; padding: 0; background: var(--gard);
-    color: #fff; font-family: 'Inter'; font-weight: 800; font-size: 0.62rem;
-    display: flex; align-items: center; justify-content: center; line-height: 1;
-  }
-  .topbar .dept-mini button.vaucluse { background: var(--vaucluse); }
-  .topbar .dept-mini button.herault { background: var(--herault); }
-  .topbar .dept-mini button.bdr { background: var(--bdr); }
-  .topbar .dept-mini button.active { border-color: #fff; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.15rem 1rem; border-bottom: 0.5px solid var(--border); margin-bottom: 1.4rem; }
+  .brand { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+  .brand .word { line-height: 1; }
+  .brand .word div:first-child { font-weight: 700; font-size: 12px; }
+  .brand .word div:last-child { font-weight: 700; font-size: 12px; color: var(--accent); }
 
-  /* ---------- HERO / PICKER (landing state) ---------- */
-  .landing { display: block; }
-  .hero { position: relative; overflow: hidden; background: linear-gradient(160deg, #24231d 0%, #1a1915 60%); padding: 2.6rem 1.4rem 2rem; text-align: center; color: #fff; }
-  .hero .eyebrow { text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.7rem; font-weight: 700; color: #d8d4c4; margin-bottom: 0.5rem; }
-  .hero h1 { font-size: clamp(2.1rem, 8vw, 3rem); line-height: 0.95; margin: 0 0 0.6rem; text-transform: uppercase; }
-  .hero h1 span { color: var(--gard); }
-  .hero p.tag { max-width: 30em; margin: 0 auto; color: #cfccc0; font-size: 0.95rem; line-height: 1.5; }
+  .site-nav { display: flex; gap: 4px; background: var(--surface-2); border-radius: 12px; padding: 4px; margin-bottom: 1.3rem; }
+  .site-nav button { flex: 1; background: transparent; border: none; border-radius: 9px; padding: 9px 6px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; }
+  .site-nav button.active { background: var(--ink); color: #fff; }
 
-  .picker-section { padding: 1.6rem 1.2rem 3rem; max-width: 720px; margin: 0 auto; }
-  .picker-section h2 { font-family: 'Archivo Black'; font-size: 0.95rem; text-transform: uppercase; text-align: center; margin: 0 0 0.9rem; letter-spacing: 0.03em; color: var(--muted); }
-  .dept-row { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
-  .dept-chip { display: flex; align-items: center; gap: 0.55rem; border-radius: 999px; padding: 0.5rem 1rem 0.5rem 0.5rem; background: var(--card); border: 1.5px solid var(--line); cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
-  .dept-chip:hover { transform: translateY(-2px); box-shadow: 0 6px 14px -6px rgba(0,0,0,0.25); }
-  .dept-chip .dot { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Archivo Black'; font-size: 0.75rem; }
-  .dept-chip .txt { text-align: left; line-height: 1.1; }
-  .dept-chip .txt .name { font-weight: 800; font-size: 0.85rem; }
-  .dept-chip .txt .meta { font-size: 0.68rem; color: var(--muted); }
-  .dept-chip.gard .dot { background: var(--gard); }
-  .dept-chip.vaucluse .dot { background: var(--vaucluse); }
-  .dept-chip.herault .dot { background: var(--herault); }
-  .dept-chip.bdr .dot { background: var(--bdr); }
+  .sub-nav { display: flex; gap: 18px; margin-bottom: 1.2rem; border-bottom: 0.5px solid var(--border); }
+  .sub-tab { background: none; border: none; padding: 0 0 9px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+  .sub-tab.active { color: var(--ink); border-bottom-color: var(--accent); }
 
-  /* ---------- APP SHELL (department view) ---------- */
-  .app-shell { display: none; }
-  .dept-header { padding: 1.3rem 1.2rem 1rem; color: #fff; }
-  .dept-header .row { display: flex; align-items: center; justify-content: space-between; }
-  .dept-header .name { font-family: 'Archivo Black'; font-size: 1.4rem; text-transform: uppercase; }
-  .dept-header button.back { background: rgba(255,255,255,0.22); border: none; color: #fff; padding: 0.4rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
-  .dept-header .sub { font-size: 0.8rem; color: rgba(255,255,255,0.85); margin-top: 0.25rem; }
+  input, select { font: inherit; font-size: 13px; border: 0.5px solid var(--border-strong); border-radius: 8px; padding: 0.5rem 0.7rem; background: #fff; color: var(--ink); width: 100%; }
 
-  nav.tabs { display: flex; overflow-x: auto; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 46px; z-index: 20; }
-  nav.tabs button { flex: 1 0 auto; background: none; border: none; padding: 0.85rem 1rem; font-weight: 700; font-size: 0.82rem; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
-  nav.tabs button.active { color: var(--ink); border-bottom-color: var(--accent); }
+  .filter-toggle { display: flex; align-items: center; gap: 6px; background: var(--surface-2); border: 0.5px solid var(--border-strong); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700; color: var(--ink); cursor: pointer; margin-bottom: 1.2rem; }
+  .filters-panel { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px; padding: 0.9rem; margin-bottom: 1.4rem; display: none; }
+  .filters-panel.open { display: block; }
+  .filters-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 
-  .content { max-width: 720px; margin: 0 auto; padding: 1.1rem 1.1rem 3rem; }
+  .next-race { border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 10px 10px 0; padding: 10px 14px; margin-bottom: 1.5rem; cursor: pointer; }
+  .next-race .eyebrow { font-size: 11px; font-weight: 700; color: var(--accent-deep); text-transform: uppercase; letter-spacing: 0.04em; }
+  .next-race .title { font-weight: 700; font-size: 15px; margin-top: 2px; }
+  .next-race .meta { font-size: 13px; color: var(--muted); }
 
-  /* filters */
-  .filters { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
-  .filters .row1 { display: flex; gap: 0.5rem; }
-  .filters select {
-    border: 1.5px solid var(--line); border-radius: 8px; padding: 0.5rem 0.7rem;
-    font-size: 0.82rem; background: #fff; font-family: 'Inter'; color: var(--ink); flex: 1;
-  }
-  .type-chips { display: flex; gap: 0.45rem; overflow-x: auto; padding-bottom: 0.2rem; }
-  .filter-chip { flex-shrink: 0; border: 1.5px solid var(--line); background: #fff; border-radius: 999px; padding: 0.4rem 0.85rem; font-size: 0.75rem; font-weight: 700; color: var(--muted); cursor: pointer; }
-  .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .result-count { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.6rem; }
-
-  /* course cards */
-  .month-heading { font-family: 'Archivo Black'; font-size: 1rem; text-transform: uppercase; color: var(--accent-deep); margin: 1.6rem 0 0.6rem; }
+  .result-count { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .month-heading { font-size: 15px; font-weight: 700; margin: 1.6rem 0 0.7rem; }
   .month-heading:first-of-type { margin-top: 0; }
-  .race-card { display: flex; justify-content: space-between; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0.8rem 0.95rem; margin-bottom: 0.55rem; box-shadow: 0 2px 6px -3px rgba(0,0,0,0.1); }
-  .race-card .left { flex: 1; min-width: 0; }
-  .race-card .left strong { font-size: 0.92rem; display: block; }
-  .race-card .left a { text-decoration: none; }
-  .race-card .left a:hover { text-decoration: underline; }
-  .race-card .left .meta { font-size: 0.76rem; color: var(--muted); display: block; margin-top: 0.15rem; }
-  .race-card .tag { font-size: 0.63rem; font-weight: 800; text-transform: uppercase; color: #fff; background: var(--accent); padding: 0.25rem 0.5rem; border-radius: 6px; white-space: nowrap; margin-left: 0.6rem; flex-shrink: 0; }
 
-  /* clubs */
-  .club-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.9rem; }
-  .club-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.5rem; }
-  .club-card .top { display: flex; align-items: center; gap: 0.65rem; }
-  .club-logo { width: 44px; height: 44px; border-radius: 8px; object-fit: contain; background: var(--bg); border: 1px solid var(--line); flex-shrink: 0; }
-  .club-logo.placeholder { display: flex; align-items: center; justify-content: center; font-family: 'Archivo Black'; color: var(--accent-deep); font-size: 1rem; }
-  .club-name { font-weight: 800; font-size: 0.88rem; line-height: 1.2; }
-  .club-meta { font-size: 0.76rem; color: var(--muted); }
-  .club-links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.2rem; }
-  .club-links a, .club-links span { font-size: 0.7rem; padding: 0.22rem 0.5rem; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); text-decoration: none; white-space: nowrap; }
-  .club-links a:hover { border-color: var(--accent); }
+  .race-card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px; padding: 0.95rem 1.05rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; cursor: pointer; transition: border-color 0.15s ease; }
+  .race-card:hover { border-color: var(--accent); }
+  .race-card .name { font-size: 14.5px; font-weight: 700; margin-bottom: 3px; }
+  .race-card .meta { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .race-right { display: flex; align-items: center; gap: 9px; }
+  .type-tag { font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+  .btn-ghost { border: 0.5px solid var(--border-strong); background: transparent; height: 29px; padding: 0 11px; font-size: 11.5px; font-weight: 700; border-radius: 7px; color: var(--ink); cursor: pointer; }
+  .dept-tag { font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; color: #fff; white-space: nowrap; }
 
-  .empty-state { text-align: center; color: var(--muted); padding: 3rem 1rem; }
-  .empty-state .big { font-family: 'Archivo Black'; font-size: 1.05rem; color: var(--ink); margin-bottom: 0.4rem; text-transform: uppercase; }
+  .type-Trail { background: #EAF3DE; color: #27500A; }
+  .type-Route { background: #E6F1FB; color: #0C447C; }
+  .type-Nature { background: #FAEEDA; color: #633806; }
+  .type-UrbanTrail { background: #EEEDFE; color: #3C3489; }
+  .type-Triathlon { background: #E1F5EE; color: #085041; }
+  .type-Vétathlon { background: #FAECE7; color: #712B13; }
+  .type-Piste { background: #FCEBEB; color: #791F1F; }
+
+  .back-link { font-size: 13px; color: var(--muted); margin-bottom: 12px; cursor: pointer; }
+  .poster-frame { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 16px; aspect-ratio: 1 / 1.4142; max-width: 220px; margin: 0 auto 1.2rem; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .poster-frame img { width: 100%; height: 100%; object-fit: contain; }
+  .poster-frame .ph { text-align: center; color: var(--mutedlight); font-size: 12px; }
+  .badge-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .badge-neutral { font-size: 11px; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); border: 0.5px solid var(--border); color: var(--muted); }
+  h1.course-title { font-size: 23px; margin: 0 0 6px; }
+  .course-sub { font-size: 13.5px; color: var(--muted); margin-bottom: 1.4rem; }
+  .section-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+  .parcours-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 1.4rem; }
+  .parcours-row { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 10px; padding: 0.7rem 0.95rem; display: flex; justify-content: space-between; align-items: center; }
+  .parcours-row .dist { font-size: 15px; font-weight: 700; }
+  .parcours-row .deniv { font-size: 12.5px; color: var(--muted); }
+  .btn-primary { display: block; width: 100%; text-align: center; background: var(--accent); color: #fff; border: none; height: 44px; line-height: 44px; border-radius: 9px; font-size: 14px; font-weight: 700; margin-bottom: 1.4rem; cursor: pointer; text-decoration: none; }
+  .org-card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem; margin-bottom: 1.4rem; }
+  .org-line { font-size: 13px; margin-bottom: 7px; display: flex; align-items: center; gap: 7px; }
+  .org-line:last-child { margin-bottom: 0; }
+  .map-frame { border-radius: 12px; overflow: hidden; border: 0.5px solid var(--border); }
+  .map-frame iframe { width: 100%; height: 220px; border: none; display: block; }
+
+  .club-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  .club-card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px; padding: 0.95rem; display: flex; flex-direction: column; gap: 8px; }
+  .club-top { display: flex; align-items: center; gap: 10px; }
+  .club-logo { width: 42px; height: 42px; border-radius: 8px; background: var(--surface-1); border: 0.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: var(--accent-deep); flex-shrink: 0; overflow: hidden; }
+  .club-logo img { width: 100%; height: 100%; object-fit: contain; }
+  .club-name { font-weight: 700; font-size: 13.5px; line-height: 1.2; }
+  .club-meta { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .club-links { display: flex; flex-wrap: wrap; gap: 5px; }
+  .club-links a, .club-links span { font-size: 10.5px; padding: 3px 8px; border-radius: 999px; background: var(--surface-1); border: 0.5px solid var(--border); color: var(--ink); text-decoration: none; white-space: nowrap; }
+
+  .category-hero { text-align: center; padding: 2.2rem 0.5rem; }
+  .category-hero .icon { font-size: 26px; margin-bottom: 8px; }
+  .category-hero h2 { font-size: 17px; margin: 0 0 4px; }
+  .category-hero p { font-size: 13px; color: var(--muted); max-width: 26em; margin: 0 auto; }
+
+  .state-message { text-align: center; color: var(--muted); padding: 2.5rem 1rem; font-size: 13px; }
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="brand display" id="brandHome">Trouve ta <span>Course</span></div>
-  <div class="dept-mini" id="deptMini">
-    <button class="gard active" data-dept="Gard" aria-label="Gard">30</button>
-    <button class="vaucluse" data-dept="Vaucluse" aria-label="Vaucluse">84</button>
-    <button class="herault" data-dept="Hérault" aria-label="Hérault">34</button>
-    <button class="bdr" data-dept="Bouches-du-Rhône" aria-label="Bouches-du-Rhône">13</button>
-  </div>
-</div>
+<div class="page">
 
-<div class="landing" id="landing">
-  <header class="hero">
-    <div class="eyebrow">Occitanie · Provence</div>
-    <h1 class="display">Trouve ta<br><span>Course</span></h1>
-    <p class="tag">Le calendrier running de 4 départements du Sud — routes, trails et sentiers de garrigue, mis à jour au fil des recherches.</p>
-  </header>
-  <section class="picker-section">
-    <h2>Choisis ton département</h2>
-    <div class="dept-row" id="picker">
-      <button class="dept-chip gard" data-dept="Gard"><span class="dot">30</span><span class="txt"><span class="name">Gard</span><span class="meta">Pont du Gard</span></span></button>
-      <button class="dept-chip vaucluse" data-dept="Vaucluse"><span class="dot">84</span><span class="txt"><span class="name">Vaucluse</span><span class="meta">Ventoux</span></span></button>
-      <button class="dept-chip herault" data-dept="Hérault"><span class="dot">34</span><span class="txt"><span class="name">Hérault</span><span class="meta">Thau</span></span></button>
-      <button class="dept-chip bdr" data-dept="Bouches-du-Rhône"><span class="dot">13</span><span class="txt"><span class="name">Bouches-du-Rhône</span><span class="meta">Calanques</span></span></button>
+  <div class="topbar">
+    <div class="brand" onclick="setCategory('course')">
+      <svg width="26" height="26" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="62" cy="16" r="10" fill="#b0aea6"/>
+        <path d="M18 92 L34 60 L45 71 L60 50 L49 30 L66 14 L82 36 L71 52 L80 90 L66 90 L60 60 L47 78 L36 92 Z" fill="#b0aea6"/>
+      </svg>
+      <div class="word"><div>TROUVE TA</div><div id="logoLine2">COURSE</div></div>
     </div>
-  </section>
-</div>
-
-<div class="app-shell" id="appShell">
-  <div class="dept-header" id="deptHeader">
-    <div class="row"><span class="name" id="deptName">Gard</span><button class="back" id="backBtn">← Départements</button></div>
-    <div class="sub" id="deptSub">Pont du Gard · Cévennes</div>
   </div>
-  <nav class="tabs">
-    <button class="tab active" data-tab="calendrier">Calendrier</button>
-    <button class="tab" data-tab="resultats">Résultats</button>
-    <button class="tab" data-tab="classement">Classement</button>
-    <button class="tab" data-tab="clubs">Clubs</button>
-  </nav>
-  <div class="content" id="content"></div>
+
+  <div class="site-nav">
+    <button class="active" id="navCourse" onclick="setCategory('course')">Trouve ta Course</button>
+    <button id="navClub" onclick="setCategory('club')">Trouve ton Club</button>
+    <button id="navRunclub" onclick="setCategory('runclub')">Trouve ton Run Club</button>
+  </div>
+
+  <div class="sub-nav" id="courseSubNav">
+    <button class="sub-tab active" id="tabCalendrier" onclick="showView('calendrier')">Calendrier</button>
+    <button class="sub-tab" id="tabResultats" onclick="showView('resultats')">Résultats</button>
+  </div>
+
+  <div id="view-calendrier">
+    <button class="filter-toggle" onclick="document.getElementById('filtersPanel').classList.toggle('open')">⚙️ Filtres</button>
+    <div class="filters-panel" id="filtersPanel">
+      <div class="filters-row">
+        <select id="fMonth"><option value="Tous">Tous les mois</option></select>
+        <select id="fDept">
+          <option value="Tous">Tous les départements</option>
+          <option value="Gard">Gard (30)</option>
+          <option value="Vaucluse">Vaucluse (84)</option>
+          <option value="Hérault">Hérault (34)</option>
+          <option value="Bouches-du-Rhône">Bouches-du-Rhône (13)</option>
+        </select>
+      </div>
+      <div class="filters-row" style="margin-bottom: 0;">
+        <select id="fDist">
+          <option value="Tous">Toutes distances</option>
+          <option value="0-10">Moins de 10 km</option>
+          <option value="10-21">10 à 21 km</option>
+          <option value="21-42">21 à 42 km</option>
+          <option value="42-999">Plus de 42 km</option>
+        </select>
+        <select id="fType"><option value="Tous">Tous les types</option></select>
+      </div>
+      <input type="text" id="fSearch" placeholder="Ou chercher une ville, une course..." style="margin-top: 8px;" />
+    </div>
+    <div id="calendrierContent"><div class="state-message">Chargement…</div></div>
+  </div>
+
+  <div id="view-resultats" style="display:none;">
+    <div class="category-hero">
+      <div class="icon">🏁</div>
+      <h2>Résultats bientôt disponibles</h2>
+      <p>Cette section affichera les classements de chaque course dès qu'on aura connecté les chronométreurs.</p>
+    </div>
+  </div>
+
+  <div id="view-fiche" style="display:none;"></div>
+
+  <div id="view-clubs" style="display:none;">
+    <div class="filters-panel open">
+      <div class="filters-row" style="margin-bottom: 0;">
+        <select id="fClubDept">
+          <option value="Tous">Tous les départements</option>
+          <option value="Gard">Gard (30)</option>
+          <option value="Vaucluse">Vaucluse (84)</option>
+          <option value="Hérault">Hérault (34)</option>
+          <option value="Bouches-du-Rhône">Bouches-du-Rhône (13)</option>
+        </select>
+        <input type="text" id="fClubSearch" placeholder="Chercher un club, une ville..." />
+      </div>
+    </div>
+    <div id="clubsContent"><div class="state-message">Chargement…</div></div>
+  </div>
+
+  <div id="view-runclub" style="display:none;">
+    <div class="category-hero">
+      <div class="icon">👟</div>
+      <h2>Trouve ton Run Club</h2>
+      <p>Les rassemblements de coureurs (type "tous les lundis 19h") arrivent bientôt : jour, heure, lieu de rendez-vous et niveau pour chaque run club des 4 départements.</p>
+    </div>
+  </div>
+
 </div>
 
 <script>
-  const depts = {
-    Gard: { color: '#FF6A1A', deep: '#B34600', sub: 'Pont du Gard · Cévennes' },
-    Vaucluse: { color: '#FF3131', deep: '#A30000', sub: 'Mont Ventoux · Luberon' },
-    'Hérault': { color: '#D66FE0', deep: '#8E2E9E', sub: 'Étang de Thau · Vignes' },
-    'Bouches-du-Rhône': { color: '#2AA8E8', deep: '#12628F', sub: 'Calanques · Camargue' },
-  };
+  const DEPT_COLORS = { Gard: '#FF6A1A', Vaucluse: '#FF3131', 'Hérault': '#D66FE0', 'Bouches-du-Rhône': '#2AA8E8' };
+  const DEPT_LABELS = { Gard: 'GARD', Vaucluse: 'VAUCLUSE', 'Hérault': 'HÉRAULT', 'Bouches-du-Rhône': 'BOUCHES-DU-RHÔNE' };
   const MONTHS_FR = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  const logoText = { course: 'COURSE', club: 'CLUB', runclub: 'RUN CLUB' };
 
-  const landing = document.getElementById('landing');
-  const appShell = document.getElementById('appShell');
-  const deptHeader = document.getElementById('deptHeader');
-  const deptName = document.getElementById('deptName');
-  const deptSub = document.getElementById('deptSub');
-  const content = document.getElementById('content');
+  let allCourses = [];
+  let allClubs = [];
+  let coursesLoaded = false;
+  let clubsLoaded = false;
 
-  let currentDept = null;
-  let currentTab = 'calendrier';
-  let coursesCache = {};
-  let clubsCache = {};
-  let activeType = 'Tous';
-  let activeMonth = 'Tous';
+  function typeClass(type) { return "type-" + (type || "").replace(/\s+/g, ""); }
 
-  function setDept(dept) {
-    currentDept = dept;
-    const d = depts[dept];
-    document.documentElement.style.setProperty('--accent', d.color);
-    document.documentElement.style.setProperty('--accent-deep', d.deep);
-    deptName.textContent = dept;
-    deptSub.textContent = d.sub;
-    deptHeader.style.background = d.deep;
-    document.querySelectorAll('.dept-mini button').forEach(b => b.classList.toggle('active', b.dataset.dept === dept));
-    landing.style.display = 'none';
-    appShell.style.display = 'block';
-    activeType = 'Tous';
-    activeMonth = 'Tous';
-    currentTab = 'calendrier';
-    document.querySelectorAll('nav.tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'calendrier'));
-    renderTab();
-  }
-
-  document.getElementById('picker').querySelectorAll('.dept-chip').forEach(btn => btn.addEventListener('click', () => setDept(btn.dataset.dept)));
-  document.getElementById('deptMini').querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => setDept(btn.dataset.dept)));
-  document.getElementById('brandHome').addEventListener('click', () => { appShell.style.display = 'none'; landing.style.display = 'block'; });
-
-  document.getElementById('backBtn').addEventListener('click', () => {
-    appShell.style.display = 'none';
-    landing.style.display = 'block';
-  });
-
-  document.querySelectorAll('nav.tabs .tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('nav.tabs .tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      currentTab = tab.dataset.tab;
-      renderTab();
-    });
-  });
-
-  async function fetchCourses(dept) {
-    if (coursesCache[dept]) return coursesCache[dept];
-    const res = await fetch(`/api/courses?departement=${encodeURIComponent(dept)}`);
-    const data = await res.json();
-    coursesCache[dept] = res.ok ? (data.courses || []) : [];
-    return coursesCache[dept];
-  }
-
-  async function fetchClubs(dept) {
-    if (clubsCache[dept]) return clubsCache[dept];
-    const res = await fetch(`/api/clubs?departement=${encodeURIComponent(dept)}`);
-    const data = await res.json();
-    clubsCache[dept] = res.ok ? (data.clubs || []) : [];
-    return clubsCache[dept];
-  }
-
-  function formatDayLabel(dateStr) {
+  function formatMonthLabel(dateStr) {
     const d = new Date(dateStr);
-    if (isNaN(d)) return dateStr || "—";
-    return d.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" });
+    if (isNaN(d)) return "Date à confirmer";
+    return `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
   }
-
   function monthKey(dateStr) {
     const d = new Date(dateStr);
     if (isNaN(d)) return null;
     return `${d.getFullYear()}-${d.getMonth()}`;
   }
-
-  function monthLabel(dateStr) {
+  function formatDayLabel(dateStr) {
     const d = new Date(dateStr);
-    if (isNaN(d)) return "Date à confirmer";
-    return `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
+    if (isNaN(d)) return dateStr || "—";
+    return d.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" });
   }
-
+  function extractDistances(str) {
+    if (!str) return [];
+    return (str.match(/[\d,.]+(?=\s*km)/g) || []).map(s => parseFloat(s.replace(",", ".")));
+  }
+  function matchesDistanceRange(course, range) {
+    if (range === "Tous") return true;
+    const [min, max] = range.split("-").map(Number);
+    const dists = extractDistances(course.distances);
+    return dists.some(d => d >= min && d < max);
+  }
   function initials(name) {
     return (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   }
 
-  async function renderTab() {
-    if (currentTab === 'calendrier') {
-      content.innerHTML = `<div class="empty-state">Chargement…</div>`;
-      const courses = await fetchCourses(currentDept);
-      if (!courses.length) { content.innerHTML = `<div class="empty-state"><div class="big">Calendrier à venir</div>La recherche pour ${currentDept} n'a pas encore été lancée.</div>`; return; }
+  async function loadCourses() {
+    if (coursesLoaded) return;
+    const res = await fetch("/api/courses");
+    const data = await res.json();
+    allCourses = res.ok ? (data.courses || []) : [];
+    coursesLoaded = true;
 
-      const types = ['Tous', ...new Set(courses.map(c => c.type).filter(Boolean))];
-      const months = ['Tous', ...new Set(courses.map(c => monthKey(c.date)).filter(Boolean))];
-      const monthOptions = months.map(m => {
-        if (m === 'Tous') return `<option value="Tous">Tous les mois</option>`;
-        const sample = courses.find(c => monthKey(c.date) === m);
-        return `<option value="${m}">${monthLabel(sample.date)}</option>`;
-      }).join('');
+    const months = [...new Set(allCourses.map(c => monthKey(c.date)).filter(Boolean))];
+    const monthSelect = document.getElementById("fMonth");
+    months.forEach(m => {
+      const sample = allCourses.find(c => monthKey(c.date) === m);
+      const opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = formatMonthLabel(sample.date);
+      monthSelect.appendChild(opt);
+    });
 
-      let filtered = courses;
-      if (activeType !== 'Tous') filtered = filtered.filter(c => c.type === activeType);
-      if (activeMonth !== 'Tous') filtered = filtered.filter(c => monthKey(c.date) === activeMonth);
+    const types = [...new Set(allCourses.map(c => c.type).filter(Boolean))];
+    const typeSelect = document.getElementById("fType");
+    types.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t; opt.textContent = t;
+      typeSelect.appendChild(opt);
+    });
 
-      let listHtml = "";
-      let curMonth = "";
-      for (const c of filtered) {
-        const ml = monthLabel(c.date);
-        if (ml !== curMonth) { listHtml += `<h3 class="month-heading">${ml}</h3>`; curMonth = ml; }
-        const nameHtml = c.site ? `<a href="${c.site}" target="_blank" rel="noopener">${c.nom}</a>` : c.nom;
-        listHtml += `
-          <div class="race-card">
-            <div class="left">
-              <strong>${nameHtml}</strong>
-              <span class="meta">${formatDayLabel(c.date)} · ${c.commune || ''}${c.distances ? ' · ' + c.distances : ''}</span>
-            </div>
-            <span class="tag">${c.type || '—'}</span>
-          </div>`;
-      }
-      if (!filtered.length) listHtml = `<div class="empty-state">Aucune course ne correspond à ces filtres.</div>`;
-
-      content.innerHTML = `
-        <div class="filters">
-          <div class="row1">
-            <select id="monthSelect">${monthOptions}</select>
-          </div>
-          <div class="type-chips">${types.map(t => `<button class="filter-chip ${t === activeType ? 'active' : ''}" data-type="${t}">${t}</button>`).join('')}</div>
-        </div>
-        <div class="result-count">${filtered.length} course${filtered.length > 1 ? 's' : ''}</div>
-        ${listHtml}
-      `;
-
-      content.querySelector('#monthSelect').value = activeMonth;
-      content.querySelector('#monthSelect').addEventListener('change', (e) => { activeMonth = e.target.value; renderTab(); });
-      content.querySelectorAll('.filter-chip').forEach(chip => chip.addEventListener('click', () => { activeType = chip.dataset.type; renderTab(); }));
-
-    } else if (currentTab === 'clubs') {
-      content.innerHTML = `<div class="empty-state">Chargement…</div>`;
-      const clubs = await fetchClubs(currentDept);
-      if (!clubs.length) { content.innerHTML = `<div class="empty-state"><div class="big">Clubs à venir</div>Aucun club enregistré pour ${currentDept} pour l'instant.</div>`; return; }
-
-      content.innerHTML = `<div class="club-grid">${clubs.map(club => {
-        const logoHtml = club.logo
-          ? `<img class="club-logo" src="${club.logo}" alt="Logo ${club.nom}" />`
-          : `<div class="club-logo placeholder">${initials(club.nom)}</div>`;
-        const links = [];
-        if (club.site) links.push(`<a href="${club.site}" target="_blank" rel="noopener">Site</a>`);
-        if (club.reseaux) links.push(`<a href="${club.reseaux}" target="_blank" rel="noopener">Réseaux</a>`);
-        if (club.contact) links.push(`<span>${club.contact}</span>`);
-        return `
-          <div class="club-card">
-            <div class="top">
-              ${logoHtml}
-              <div><div class="club-name">${club.nom}</div><div class="club-meta">${club.commune || ''}${club.discipline ? ' · ' + club.discipline : ''}</div></div>
-            </div>
-            ${links.length ? `<div class="club-links">${links.join('')}</div>` : ''}
-          </div>`;
-      }).join('')}</div>`;
-
-    } else if (currentTab === 'resultats') {
-      content.innerHTML = `<div class="empty-state"><div class="big">Résultats bientôt disponibles</div>Cette section affichera les classements de chaque course.</div>`;
-    } else if (currentTab === 'classement') {
-      content.innerHTML = `<div class="empty-state"><div class="big">Classement des coureurs</div>Le classement général arrivera une fois les résultats connectés.</div>`;
-    }
+    renderCalendrier();
   }
+
+  async function loadClubs() {
+    if (clubsLoaded) return;
+    const res = await fetch("/api/clubs");
+    const data = await res.json();
+    allClubs = res.ok ? (data.clubs || []) : [];
+    clubsLoaded = true;
+    renderClubs();
+  }
+
+  function renderCalendrier() {
+    const container = document.getElementById("calendrierContent");
+    if (!allCourses.length) {
+      container.innerHTML = `<div class="state-message">Aucune course enregistrée pour l'instant.</div>`;
+      return;
+    }
+
+    const fMonth = document.getElementById("fMonth").value;
+    const fDept = document.getElementById("fDept").value;
+    const fDist = document.getElementById("fDist").value;
+    const fType = document.getElementById("fType").value;
+    const fSearch = document.getElementById("fSearch").value.trim().toLowerCase();
+
+    let filtered = allCourses.filter(c => {
+      if (fMonth !== "Tous" && monthKey(c.date) !== fMonth) return false;
+      if (fDept !== "Tous" && c.departement !== fDept) return false;
+      if (fType !== "Tous" && c.type !== fType) return false;
+      if (!matchesDistanceRange(c, fDist)) return false;
+      if (fSearch && !(c.nom.toLowerCase().includes(fSearch) || c.commune.toLowerCase().includes(fSearch))) return false;
+      return true;
+    });
+
+    const today = new Date();
+    const next = allCourses.filter(c => new Date(c.date) >= today).sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+
+    let html = "";
+    if (next && fMonth === "Tous" && fDept === "Tous" && fType === "Tous" && fDist === "Tous" && !fSearch) {
+      html += `<div class="next-race" onclick="openFiche('${next.id}')">
+        <div class="eyebrow">Ta prochaine course</div>
+        <div class="title">${next.nom}</div>
+        <div class="meta">${formatDayLabel(next.date)}${next.heure ? " · " + next.heure : ""} · ${next.commune}</div>
+      </div>`;
+    }
+
+    html += `<div class="result-count">${filtered.length} course${filtered.length > 1 ? "s" : ""}</div>`;
+
+    let curMonth = "";
+    for (const c of filtered) {
+      const ml = formatMonthLabel(c.date);
+      if (ml !== curMonth) { html += `<div class="month-heading">${ml}</div>`; curMonth = ml; }
+      const deptColor = DEPT_COLORS[c.departement] || "#999";
+      const deptLabel = DEPT_LABELS[c.departement] || c.departement || "";
+      html += `
+        <div class="race-card" onclick="openFiche('${c.id}')">
+          <div>
+            <div class="name">${c.nom}</div>
+            <div class="meta">
+              ${deptLabel ? `<span class="dept-tag" style="background:${deptColor};">${deptLabel}</span>` : ""}
+              ${formatDayLabel(c.date)} · ${c.commune}${c.distances ? " · " + c.distances : ""}
+            </div>
+          </div>
+          <div class="race-right">
+            <span class="type-tag ${typeClass(c.type)}">${c.type || "—"}</span>
+            <button class="btn-ghost" onclick="event.stopPropagation(); openFiche('${c.id}')">Voir la fiche</button>
+          </div>
+        </div>`;
+    }
+    if (!filtered.length) html += `<div class="state-message">Aucune course ne correspond à ces filtres.</div>`;
+
+    container.innerHTML = html;
+  }
+
+  function openFiche(id) {
+    const c = allCourses.find(x => x.id === id);
+    if (!c) return;
+    const ficheEl = document.getElementById("view-fiche");
+
+    const distances = (c.distances || "").split(",").map(s => s.trim()).filter(Boolean);
+    const deniveles = (c.denivele || "").split(",").map(s => s.trim()).filter(Boolean);
+    let parcoursHtml = "";
+    if (distances.length) {
+      parcoursHtml = distances.map((d, i) => `
+        <div class="parcours-row">
+          <span class="dist">${d}</span>
+          <span class="deniv">${deniveles[i] || "Dénivelé non communiqué"}</span>
+        </div>`).join("");
+    } else {
+      parcoursHtml = `<div class="parcours-row"><span class="dist">Distance non communiquée</span></div>`;
+    }
+
+    const posterHtml = c.affiche
+      ? `<img src="${c.affiche}" alt="Affiche ${c.nom}" />`
+      : `<div class="ph">Affiche non disponible</div>`;
+
+    const mapQuery = encodeURIComponent(`${c.commune}, France`);
+
+    ficheEl.innerHTML = `
+      <div class="back-link" onclick="closeFiche()">← Retour</div>
+      <div class="poster-frame">${posterHtml}</div>
+      <div class="badge-row">
+        <span class="type-tag ${typeClass(c.type)}">${c.type || "—"}</span>
+        ${c.challenge ? `<span class="badge-neutral">${c.challenge}</span>` : ""}
+      </div>
+      <h1 class="course-title">${c.nom}</h1>
+      <div class="course-sub">${formatDayLabel(c.date)}${c.heure ? " · " + c.heure : ""} · ${c.commune}</div>
+
+      <div class="section-label">Parcours proposés</div>
+      <div class="parcours-list">${parcoursHtml}</div>
+
+      ${c.site ? `<a class="btn-primary" href="${c.site}" target="_blank" rel="noopener">S'inscrire à cette course ↗</a>` : ""}
+
+      ${(c.contact || c.reseaux) ? `
+        <div class="org-card">
+          <div class="section-label" style="margin-bottom: 9px;">Organisation</div>
+          ${c.contact ? `<div class="org-line">✉️ ${c.contact}</div>` : ""}
+          ${c.reseaux ? `<div class="org-line">📷 <a href="${c.reseaux}" target="_blank" rel="noopener">${c.reseaux}</a></div>` : ""}
+        </div>` : ""}
+
+      <div class="map-frame">
+        <iframe src="https://maps.google.com/maps?q=${mapQuery}&output=embed" loading="lazy"></iframe>
+      </div>
+    `;
+
+    document.querySelectorAll('#view-calendrier, #view-resultats, #courseSubNav').forEach(el => el.style.display = 'none');
+    ficheEl.style.display = 'block';
+    window.scrollTo(0, 0);
+  }
+
+  function closeFiche() {
+    document.getElementById('view-fiche').style.display = 'none';
+    setCategory('course');
+  }
+
+  function renderClubs() {
+    const container = document.getElementById("clubsContent");
+    if (!allClubs.length) {
+      container.innerHTML = `<div class="state-message">Aucun club enregistré pour l'instant.</div>`;
+      return;
+    }
+
+    const fDept = document.getElementById("fClubDept").value;
+    const fSearch = document.getElementById("fClubSearch").value.trim().toLowerCase();
+
+    const filtered = allClubs.filter(club => {
+      if (fDept !== "Tous" && club.departement !== fDept) return false;
+      if (fSearch && !(club.nom.toLowerCase().includes(fSearch) || (club.commune || "").toLowerCase().includes(fSearch))) return false;
+      return true;
+    });
+
+    if (!filtered.length) {
+      container.innerHTML = `<div class="state-message">Aucun club ne correspond à ces filtres.</div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="club-grid">${filtered.map(club => {
+      const logoHtml = club.logo
+        ? `<img src="${club.logo}" alt="Logo ${club.nom}" />`
+        : initials(club.nom);
+      const deptColor = DEPT_COLORS[club.departement] || "#999";
+      const deptLabel = DEPT_LABELS[club.departement] || club.departement || "";
+      const links = [];
+      if (club.site) links.push(`<a href="${club.site}" target="_blank" rel="noopener">Site</a>`);
+      if (club.reseaux) links.push(`<a href="${club.reseaux}" target="_blank" rel="noopener">Réseaux</a>`);
+      if (club.contact) links.push(`<span>${club.contact}</span>`);
+      return `
+        <div class="club-card">
+          <div class="club-top">
+            <div class="club-logo">${logoHtml}</div>
+            <div>
+              <div class="club-name">${club.nom}</div>
+              <div class="club-meta">${deptLabel ? `<span class="dept-tag" style="background:${deptColor};">${deptLabel}</span>` : ""} ${club.commune || ""}${club.discipline ? " · " + club.discipline : ""}</div>
+            </div>
+          </div>
+          ${links.length ? `<div class="club-links">${links.join("")}</div>` : ""}
+        </div>`;
+    }).join("")}</div>`;
+  }
+
+  function setCategory(cat) {
+    document.getElementById('logoLine2').textContent = logoText[cat];
+    document.getElementById('navCourse').classList.toggle('active', cat === 'course');
+    document.getElementById('navClub').classList.toggle('active', cat === 'club');
+    document.getElementById('navRunclub').classList.toggle('active', cat === 'runclub');
+    document.getElementById('courseSubNav').style.display = (cat === 'course') ? 'flex' : 'none';
+
+    document.getElementById('view-fiche').style.display = 'none';
+    document.getElementById('view-calendrier').style.display = (cat === 'course') ? 'block' : 'none';
+    document.getElementById('view-resultats').style.display = 'none';
+    document.getElementById('view-clubs').style.display = (cat === 'club') ? 'block' : 'none';
+    document.getElementById('view-runclub').style.display = (cat === 'runclub') ? 'block' : 'none';
+
+    if (cat === 'course') { showView('calendrier'); loadCourses(); }
+    if (cat === 'club') loadClubs();
+    window.scrollTo(0, 0);
+  }
+
+  function showView(v) {
+    document.getElementById('view-fiche').style.display = 'none';
+    document.getElementById('view-calendrier').style.display = (v === 'calendrier') ? 'block' : 'none';
+    document.getElementById('view-resultats').style.display = (v === 'resultats') ? 'block' : 'none';
+    document.getElementById('tabCalendrier').classList.toggle('active', v === 'calendrier');
+    document.getElementById('tabResultats').classList.toggle('active', v === 'resultats');
+    window.scrollTo(0, 0);
+  }
+
+  ['fMonth','fDept','fDist','fType'].forEach(id => document.getElementById(id).addEventListener('change', renderCalendrier));
+  document.getElementById('fSearch').addEventListener('input', renderCalendrier);
+  document.getElementById('fClubDept').addEventListener('change', renderClubs);
+  document.getElementById('fClubSearch').addEventListener('input', renderClubs);
+
+  loadCourses();
 </script>
 
 </body>
