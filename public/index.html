@@ -41,7 +41,12 @@
     .topbar { padding: 1rem 2.5rem; }
     .left-links { display: flex; }
     .search-wrap { display: block; }
+    .showcase-grid { grid-template-columns: repeat(3, 1fr); }
+    .preview-grid { grid-template-columns: 1fr 1fr; }
   }
+
+  .preview-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .preview-cta { display: block; text-align: center; margin-top: 1.4rem; background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; }
 
   .band { width: 100%; }
   .band-white { background: #fff; }
@@ -606,14 +611,15 @@
     const today = new Date();
     const next = allCourses.filter(c => new Date(c.date) >= today).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5);
     if (!next.length) { container.innerHTML = `<div class="state-message">Calendrier bientôt disponible.</div>`; return; }
-    container.innerHTML = `<div class="content-area" style="grid-template-columns:1fr;">` + next.map(c => `
+    container.innerHTML = `<div class="preview-grid">` + next.map(c => `
       <div class="race-card" onclick="showPage('course'); setTimeout(() => openFiche('${c.id}'), 50);">
         <div>
           <div class="name">${c.nom}</div>
           <div class="meta">${formatDayLabel(c.date)} · ${c.commune || ""}${c.departement ? ", " + c.departement : ""}${c.distances ? " · " + c.distances : ""}</div>
         </div>
         <span class="type-tag ${typeClass(c.type)}">${c.type || "—"}</span>
-      </div>`).join("") + `</div>`;
+      </div>`).join("") + `</div>
+      <button class="preview-cta" onclick="showPage('course')">Voir tout le calendrier →</button>`;
   }
 
   function openFiche(id) {
