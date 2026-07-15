@@ -47,6 +47,9 @@
   .filters-panel { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px; padding: 0.9rem; margin-bottom: 1.4rem; display: none; }
   .filters-panel.open { display: block; }
   .filters-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .month-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .month-chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 0.5px solid var(--border-strong); color: var(--muted); background: transparent; cursor: pointer; font-weight: 600; }
+  .month-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 
   .next-race { border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 10px 10px 0; padding: 10px 14px; margin-bottom: 1.5rem; cursor: pointer; }
   .next-race .eyebrow { font-size: 11px; font-weight: 700; color: var(--accent-deep); text-transform: uppercase; letter-spacing: 0.04em; }
@@ -140,8 +143,9 @@
   <div id="view-calendrier">
     <button class="filter-toggle" onclick="document.getElementById('filtersPanel').classList.toggle('open')">⚙️ Filtres</button>
     <div class="filters-panel" id="filtersPanel">
+      <div class="section-label" style="margin-bottom: 6px;">Mois (plusieurs choix possibles)</div>
+      <div class="month-chips" id="monthChips"></div>
       <div class="filters-row">
-        <select id="fMonth"><option value="Tous">Tous les mois</option></select>
         <select id="fDept">
           <option value="Tous">Tous les départements</option>
           <option value="Gard">Gard (30)</option>
@@ -149,8 +153,6 @@
           <option value="Hérault">Hérault (34)</option>
           <option value="Bouches-du-Rhône">Bouches-du-Rhône (13)</option>
         </select>
-      </div>
-      <div class="filters-row" style="margin-bottom: 0;">
         <select id="fDist">
           <option value="Tous">Toutes distances</option>
           <option value="0-10">Moins de 10 km</option>
@@ -158,9 +160,11 @@
           <option value="21-42">21 à 42 km</option>
           <option value="42-999">Plus de 42 km</option>
         </select>
-        <select id="fType"><option value="Tous">Tous les types</option></select>
       </div>
-      <input type="text" id="fSearch" placeholder="Ou chercher une ville, une course..." style="margin-top: 8px;" />
+      <div class="filters-row" style="margin-bottom: 0;">
+        <select id="fType"><option value="Tous">Tous les types</option></select>
+        <input type="text" id="fSearch" placeholder="Ville, nom de course..." />
+      </div>
     </div>
     <div id="calendrierContent"><div class="state-message">Chargement…</div></div>
   </div>
@@ -216,7 +220,7 @@
 
   function formatMonthLabel(dateStr) {
     const d = new Date(dateStr);
-    if (isNaN(d)) return "Date à confirmer";
+    if (isNaN(d)) return "Date à définir";
     return `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
   }
   function monthKey(dateStr) {
@@ -243,6 +247,8 @@
     return (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   }
 
+  let selectedMonths = new Set();
+
   async function loadCourses() {
     if (coursesLoaded) return;
     const res = await fetch("/api/courses");
@@ -250,14 +256,21 @@
     allCourses = res.ok ? (data.courses || []) : [];
     coursesLoaded = true;
 
-    const months = [...new Set(allCourses.map(c => monthKey(c.date)).filter(Boolean))];
-    const monthSelect = document.getElementById("fMonth");
+    const months = [...new Set(allCourses.map(c => monthKey(c.date)).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b));
+    const chipsContainer = document.getElementById("monthChips");
     months.forEach(m => {
       const sample = allCourses.find(c => monthKey(c.date) === m);
-      const opt = document.createElement("option");
-      opt.value = m;
-      opt.textContent = formatMonthLabel(sample.date);
-      monthSelect.appendChild(opt);
+      const chip = document.createElement("button");
+      chip.className = "month-chip";
+      chip.textContent = formatMonthLabel(sample.date);
+      chip.dataset.month = m;
+      chip.addEventListener("click", () => {
+        if (selectedMonths.has(m)) selectedMonths.delete(m); else selectedMonths.add(m);
+        chip.classList.toggle("active");
+        renderCalendrier();
+      });
+      chipsContainer.appendChild(chip);
     });
 
     const types = [...new Set(allCourses.map(c => c.type).filter(Boolean))];
@@ -287,14 +300,13 @@
       return;
     }
 
-    const fMonth = document.getElementById("fMonth").value;
     const fDept = document.getElementById("fDept").value;
     const fDist = document.getElementById("fDist").value;
     const fType = document.getElementById("fType").value;
     const fSearch = document.getElementById("fSearch").value.trim().toLowerCase();
 
     let filtered = allCourses.filter(c => {
-      if (fMonth !== "Tous" && monthKey(c.date) !== fMonth) return false;
+      if (selectedMonths.size > 0 && !selectedMonths.has(monthKey(c.date))) return false;
       if (fDept !== "Tous" && c.departement !== fDept) return false;
       if (fType !== "Tous" && c.type !== fType) return false;
       if (!matchesDistanceRange(c, fDist)) return false;
@@ -306,7 +318,7 @@
     const next = allCourses.filter(c => new Date(c.date) >= today).sort((a, b) => new Date(a.date) - new Date(b.date))[0];
 
     let html = "";
-    if (next && fMonth === "Tous" && fDept === "Tous" && fType === "Tous" && fDist === "Tous" && !fSearch) {
+    if (next && selectedMonths.size === 0 && fDept === "Tous" && fType === "Tous" && fDist === "Tous" && !fSearch) {
       html += `<div class="next-race" onclick="openFiche('${next.id}')">
         <div class="eyebrow">Ta prochaine course</div>
         <div class="title">${next.nom}</div>
@@ -347,8 +359,8 @@
     if (!c) return;
     const ficheEl = document.getElementById("view-fiche");
 
-    const distances = (c.distances || "").split(",").map(s => s.trim()).filter(Boolean);
-    const deniveles = (c.denivele || "").split(",").map(s => s.trim()).filter(Boolean);
+    const distances = (c.distances || "").split(/,\s+/).map(s => s.trim()).filter(Boolean);
+    const deniveles = (c.denivele || "").split(/,\s+/).map(s => s.trim()).filter(Boolean);
     let parcoursHtml = "";
     if (distances.length) {
       parcoursHtml = distances.map((d, i) => `
@@ -475,7 +487,7 @@
     window.scrollTo(0, 0);
   }
 
-  ['fMonth','fDept','fDist','fType'].forEach(id => document.getElementById(id).addEventListener('change', renderCalendrier));
+  ['fDept','fDist','fType'].forEach(id => document.getElementById(id).addEventListener('change', renderCalendrier));
   document.getElementById('fSearch').addEventListener('input', renderCalendrier);
   document.getElementById('fClubDept').addEventListener('change', renderClubs);
   document.getElementById('fClubSearch').addEventListener('input', renderClubs);

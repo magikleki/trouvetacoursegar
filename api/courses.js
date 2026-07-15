@@ -60,7 +60,19 @@ export default async function handler(request, response) {
       };
     });
 
-    courses.sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Tri par date, du plus proche au plus lointain.
+    // Les courses sans date connue ("À définir") sont envoyées à la fin,
+    // plutôt que de perturber l'ordre à cause d'une comparaison invalide.
+    courses.sort((a, b) => {
+      const dA = new Date(a.date);
+      const dB = new Date(b.date);
+      const validA = !isNaN(dA);
+      const validB = !isNaN(dB);
+      if (validA && validB) return dA - dB;
+      if (validA) return -1;
+      if (validB) return 1;
+      return 0;
+    });
 
     response.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate");
     return response.status(200).json({ courses });
