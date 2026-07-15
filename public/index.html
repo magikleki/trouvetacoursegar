@@ -62,8 +62,12 @@
   h2.page-title { text-align: center; font-size: 21px; margin: 0 0 1.6rem; }
 
   .content-area { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
-  .filters-col { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px; padding: 1rem; height: fit-content; }
-  .section-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+  .filters-col { background: var(--surface-2); border: 0.5px solid var(--border); border-top: 3px solid var(--accent); border-radius: 14px; padding: 1rem; height: fit-content; }
+  .section-label { font-size: 11px; font-weight: 800; color: var(--accent-deep); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+  .month-band { background: var(--accent); border-radius: 14px; padding: 1rem 1.1rem; margin-bottom: 1.5rem; }
+  .month-band .month-chips { margin-bottom: 0; }
+  .month-band .month-chip { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.85); }
+  .month-band .month-chip.active { background: #fff; color: var(--accent-deep); border-color: #fff; }
   .month-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
   .month-chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 0.5px solid var(--border-strong); color: var(--muted); background: transparent; cursor: pointer; font-weight: 600; }
   .month-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
@@ -77,11 +81,11 @@
   .month-heading { font-size: 20px; font-weight: 800; margin: 1.8rem 0 0.9rem; }
   .month-heading:first-of-type { margin-top: 0; }
   .date-heading { display: flex; align-items: baseline; gap: 8px; margin: 1.2rem 0 0.6rem; }
-  .date-heading .day { font-size: 15px; font-weight: 700; text-transform: capitalize; }
+  .date-heading .day { font-size: 15px; font-weight: 700; text-transform: capitalize; color: var(--accent-deep); }
   .date-heading .count { font-size: 11px; color: var(--muted); }
-  .date-heading::after { content: ""; flex: 1; height: 1px; background: var(--border); margin-left: 4px; }
+  .date-heading::after { content: ""; flex: 1; height: 2px; background: var(--border); margin-left: 4px; }
 
-  .result-count { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .result-count { font-size: 12.5px; color: var(--accent-deep); font-weight: 700; margin-bottom: 10px; }
   .race-card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px; padding: 0.9rem 1.05rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; cursor: pointer; transition: border-color 0.15s ease; }
   .race-card:hover { border-color: var(--accent); }
   .race-card .name { font-size: 14.5px; font-weight: 700; margin-bottom: 3px; }
@@ -238,10 +242,14 @@
     <div class="band-inner">
       <div class="back-link" onclick="showPage('accueil')">← Accueil</div>
       <h2 class="page-title">Trouve ta Course</h2>
+
+      <div class="month-band">
+        <div class="section-label" style="color:#fff; opacity:0.85;">Mois (plusieurs choix possibles)</div>
+        <div class="month-chips" id="monthChips"></div>
+      </div>
+
       <div class="content-area">
         <div class="filters-col">
-          <div class="section-label">Mois (plusieurs choix possibles)</div>
-          <div class="month-chips" id="monthChips"></div>
           <div class="section-label">Département</div>
           <select id="fDept">
             <option value="Tous">Tous les départements</option>
