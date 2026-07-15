@@ -59,6 +59,10 @@
   .result-count { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
   .month-heading { font-size: 15px; font-weight: 700; margin: 1.6rem 0 0.7rem; }
   .month-heading:first-of-type { margin-top: 0; }
+  .date-heading { display: flex; align-items: baseline; gap: 8px; margin: 1.3rem 0 0.6rem; }
+  .date-heading .day { font-size: 15px; font-weight: 700; text-transform: capitalize; }
+  .date-heading .count { font-size: 11px; color: var(--muted); }
+  .date-heading::after { content: ""; flex: 1; height: 1px; background: var(--border); margin-left: 4px; }
 
   .race-card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px; padding: 0.95rem 1.05rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; cursor: pointer; transition: border-color 0.15s ease; }
   .race-card:hover { border-color: var(--accent); }
@@ -233,6 +237,16 @@
     if (isNaN(d)) return dateStr || "—";
     return d.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" });
   }
+  function formatFullDateHeading(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "Date à définir";
+    return d.toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "long" });
+  }
+  function dayKey(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "unknown";
+    return d.toISOString().slice(0, 10);
+  }
   function extractDistances(str) {
     if (!str) return [];
     return (str.match(/[\d,.]+(?=\s*km)/g) || []).map(s => parseFloat(s.replace(",", ".")));
@@ -329,18 +343,25 @@
     html += `<div class="result-count">${filtered.length} course${filtered.length > 1 ? "s" : ""}</div>`;
 
     let curMonth = "";
+    let curDay = "";
     for (const c of filtered) {
       const ml = formatMonthLabel(c.date);
-      if (ml !== curMonth) { html += `<div class="month-heading">${ml}</div>`; curMonth = ml; }
-      const deptColor = DEPT_COLORS[c.departement] || "#999";
-      const deptLabel = DEPT_LABELS[c.departement] || c.departement || "";
+      if (ml !== curMonth) { html += `<div class="month-heading">${ml}</div>`; curMonth = ml; curDay = ""; }
+
+      const dk = dayKey(c.date);
+      if (dk !== curDay) {
+        const sameDayCount = filtered.filter(x => dayKey(x.date) === dk).length;
+        html += `<div class="date-heading"><span class="day">${formatFullDateHeading(c.date)}</span><span class="count">${sameDayCount} course${sameDayCount > 1 ? "s" : ""}</span></div>`;
+        curDay = dk;
+      }
+
+      const deptName = c.departement || "";
       html += `
         <div class="race-card" onclick="openFiche('${c.id}')">
           <div>
             <div class="name">${c.nom}</div>
             <div class="meta">
-              ${deptLabel ? `<span class="dept-tag" style="background:${deptColor};">${deptLabel}</span>` : ""}
-              ${formatDayLabel(c.date)} · ${c.commune}${c.distances ? " · " + c.distances : ""}
+              ${c.commune || ""}${deptName ? ", " + deptName : ""}${c.distances ? " · " + c.distances : ""}
             </div>
           </div>
           <div class="race-right">
@@ -360,13 +381,11 @@
     const ficheEl = document.getElementById("view-fiche");
 
     const distances = (c.distances || "").split(/,\s+/).map(s => s.trim()).filter(Boolean);
-    const deniveles = (c.denivele || "").split(/,\s+/).map(s => s.trim()).filter(Boolean);
     let parcoursHtml = "";
     if (distances.length) {
-      parcoursHtml = distances.map((d, i) => `
+      parcoursHtml = distances.map(d => `
         <div class="parcours-row">
           <span class="dist">${d}</span>
-          <span class="deniv">${deniveles[i] || "Dénivelé non communiqué"}</span>
         </div>`).join("");
     } else {
       parcoursHtml = `<div class="parcours-row"><span class="dist">Distance non communiquée</span></div>`;
@@ -440,8 +459,7 @@
       const logoHtml = club.logo
         ? `<img src="${club.logo}" alt="Logo ${club.nom}" />`
         : initials(club.nom);
-      const deptColor = DEPT_COLORS[club.departement] || "#999";
-      const deptLabel = DEPT_LABELS[club.departement] || club.departement || "";
+      const deptName = club.departement || "";
       const links = [];
       if (club.site) links.push(`<a href="${club.site}" target="_blank" rel="noopener">Site</a>`);
       if (club.reseaux) links.push(`<a href="${club.reseaux}" target="_blank" rel="noopener">Réseaux</a>`);
@@ -452,7 +470,7 @@
             <div class="club-logo">${logoHtml}</div>
             <div>
               <div class="club-name">${club.nom}</div>
-              <div class="club-meta">${deptLabel ? `<span class="dept-tag" style="background:${deptColor};">${deptLabel}</span>` : ""} ${club.commune || ""}${club.discipline ? " · " + club.discipline : ""}</div>
+              <div class="club-meta">${club.commune || ""}${deptName ? ", " + deptName : ""}${club.discipline ? " · " + club.discipline : ""}</div>
             </div>
           </div>
           ${links.length ? `<div class="club-links">${links.join("")}</div>` : ""}
