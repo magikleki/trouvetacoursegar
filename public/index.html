@@ -78,10 +78,24 @@
     .filters-col { position: sticky; top: 20px; }
   }
 
-  .month-heading { font-size: 20px; font-weight: 800; margin: 1.8rem 0 0.9rem; }
+  .month-heading {
+    font-size: 20px; font-weight: 800; margin: 1.8rem 0 0.9rem;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none;
+  }
   .month-heading:first-of-type { margin-top: 0; }
-  .date-heading { display: flex; align-items: baseline; gap: 8px; margin: 1.2rem 0 0.6rem; }
-  .date-heading .day { font-size: 15px; font-weight: 700; text-transform: capitalize; color: var(--accent-deep); }
+  .month-heading .chevron { font-size: 13px; color: var(--muted); transition: transform 0.15s ease; }
+  .month-heading.collapsed .chevron { transform: rotate(-90deg); }
+  .month-heading .mcount { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 8px; }
+  .month-body.collapsed { display: none; }
+
+  .date-heading { display: flex; align-items: center; gap: 10px; margin: 1.3rem 0 0.7rem; }
+  .date-heading .day-badge {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 9px;
+    background: var(--accent); color: #fff; font-weight: 800; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .date-heading .day { font-size: 14.5px; font-weight: 700; text-transform: capitalize; color: var(--ink); }
   .date-heading .count { font-size: 11px; color: var(--muted); }
   .date-heading::after { content: ""; flex: 1; height: 2px; background: var(--border); margin-left: 4px; }
 
@@ -244,7 +258,6 @@
       <h2 class="page-title">Trouve ta Course</h2>
 
       <div class="month-band">
-        <div class="section-label" style="color:#fff; opacity:0.85;">Mois (plusieurs choix possibles)</div>
         <div class="month-chips" id="monthChips"></div>
       </div>
 
@@ -466,7 +479,12 @@
   function formatFullDateHeading(dateStr) {
     const d = new Date(dateStr);
     if (isNaN(d)) return "Date à définir";
-    return d.toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "long" });
+    return d.toLocaleDateString("fr-FR", { weekday: "long", month: "long" });
+  }
+  function dayNumber(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "?";
+    return String(d.getDate()).padStart(2, "0");
   }
   function dayKey(dateStr) {
     const d = new Date(dateStr);
@@ -542,13 +560,21 @@
 
     let html = `<div class="result-count">${filtered.length} course${filtered.length > 1 ? "s" : ""}</div>`;
     let curMonth = "", curDay = "";
+    let monthIndex = -1;
     for (const c of filtered) {
       const ml = formatMonthLabel(c.date);
-      if (ml !== curMonth) { html += `<div class="month-heading">${ml}</div>`; curMonth = ml; curDay = ""; }
+      if (ml !== curMonth) {
+        if (curMonth !== "") html += `</div>`; // close previous month-body
+        monthIndex++;
+        const monthCount = filtered.filter(x => formatMonthLabel(x.date) === ml).length;
+        html += `<div class="month-heading" onclick="toggleMonth(${monthIndex})"><span>${ml}<span class="mcount">(${monthCount})</span></span><span class="chevron">▾</span></div>`;
+        html += `<div class="month-body" id="monthBody${monthIndex}">`;
+        curMonth = ml; curDay = "";
+      }
       const dk = dayKey(c.date);
       if (dk !== curDay) {
         const sameDayCount = filtered.filter(x => dayKey(x.date) === dk).length;
-        html += `<div class="date-heading"><span class="day">${formatFullDateHeading(c.date)}</span><span class="count">${sameDayCount} course${sameDayCount > 1 ? "s" : ""}</span></div>`;
+        html += `<div class="date-heading"><span class="day-badge">${dayNumber(c.date)}</span><span class="day">${formatFullDateHeading(c.date)}</span><span class="count">${sameDayCount} course${sameDayCount > 1 ? "s" : ""}</span></div>`;
         curDay = dk;
       }
       html += `
@@ -563,8 +589,16 @@
           </div>
         </div>`;
     }
+    if (curMonth !== "") html += `</div>`; // close last month-body
     if (!filtered.length) html += `<div class="state-message">Aucune course ne correspond à ces filtres.</div>`;
     container.innerHTML = html;
+  }
+
+  function toggleMonth(i) {
+    const body = document.getElementById("monthBody" + i);
+    const heading = body.previousElementSibling;
+    body.classList.toggle("collapsed");
+    heading.classList.toggle("collapsed");
   }
 
   function renderHomePreview() {
