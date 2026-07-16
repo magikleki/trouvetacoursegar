@@ -64,6 +64,8 @@
   .ccard .thumb .logo-frame img { width: 82%; height: 82%; object-fit: contain; }
   .ccard .thumb .poster-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 52%; aspect-ratio: 1/1.4142; max-height: 90%; background: #fff; border-radius: 8px; box-shadow: 0 6px 16px -6px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .ccard .thumb .poster-frame img { width: 100%; height: 100%; object-fit: contain; }
+  .ccard .thumb .poster-frame-small { position: absolute; top: 9px; right: 9px; width: 30px; aspect-ratio: 1/1.4142; background: #fff; border-radius: 5px; box-shadow: 0 4px 10px -4px rgba(0,0,0,0.35); overflow: hidden; }
+  .ccard .thumb .poster-frame-small img { width: 100%; height: 100%; object-fit: contain; }
   .ccard .thumb .badges-top { position: absolute; top: 9px; left: 9px; display: flex; gap: 5px; }
   .ccard .thumb .badges-bottom { position: absolute; bottom: 9px; left: 9px; display: flex; gap: 5px; flex-wrap: wrap; right: 9px; }
   .pill { font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; color: #fff; white-space: nowrap; }
@@ -80,6 +82,9 @@
   .type-Triathlon { background: #12857A; }
   .type-Vétathlon { background: #C1512A; }
   .type-Piste { background: #B23B3B; }
+  .type-Cross { background: #6B7A2E; }
+  .type-Ekiden { background: #B23368; }
+  .type-Backyard { background: #3D4A8C; }
   .thumb-Trail { background: linear-gradient(135deg,#d7e9d1,#b7d8c6); }
   .thumb-Route { background: linear-gradient(135deg,#dceaf5,#bcd8ec); }
   .thumb-Nature { background: linear-gradient(135deg,#f2e6d3,#e6cfa8); }
@@ -87,6 +92,9 @@
   .thumb-Triathlon { background: linear-gradient(135deg,#d7f0ec,#b3e0d8); }
   .thumb-Vétathlon { background: linear-gradient(135deg,#f7ddd0,#eab99f); }
   .thumb-Piste { background: linear-gradient(135deg,#f7d7d7,#eab3b3); }
+  .thumb-Cross { background: linear-gradient(135deg,#eef0d8,#d5d9a8); }
+  .thumb-Ekiden { background: linear-gradient(135deg,#fbe0ea,#f0b8cf); }
+  .thumb-Backyard { background: linear-gradient(135deg,#e0e2f2,#b9bde0); }
   .icon-Trail::after { content:"🏔️"; }
   .icon-Route::after { content:"🛣️"; }
   .icon-Nature::after { content:"🌿"; }
@@ -94,6 +102,9 @@
   .icon-Triathlon::after { content:"🏊"; }
   .icon-Vétathlon::after { content:"🚴"; }
   .icon-Piste::after { content:"🏟️"; }
+  .icon-Cross::after { content:"🌾"; }
+  .icon-Ekiden::after { content:"🎽"; }
+  .icon-Backyard::after { content:"🔄"; }
 
   .fiche-wrap { max-width: 1100px; margin: 0 auto; padding: 1.6rem 1.2rem 3rem; }
   .breadcrumb { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 1rem; cursor: pointer; }
@@ -444,16 +455,14 @@
     filtered.forEach(c => {
       const tc = typeClass(c.type);
       const distances = (c.distances || "").split(/,\s+/).map(s => s.trim()).filter(Boolean);
-      const distBadges = distances.slice(0, 2).map(d => `<span class="pill dark">${d}</span>`).join("") + (distances.length > 2 ? `<span class="pill dark">+${distances.length - 2}</span>` : "");
-      const mediaHtml = c.affiche
-        ? `<div class="poster-frame"><img src="${c.affiche}" alt="Affiche ${c.nom}" /></div>`
-        : `<div class="big-icon icon-${tc}"></div>`;
-      const thumbClass = c.affiche ? "" : `thumb-${tc}`;
-      const thumbStyle = c.affiche ? ` style="background: var(--bg);"` : "";
+      const distBadges = (tc === "Backyard" || tc === "Ekiden") ? "" :
+        distances.slice(0, 2).map(d => `<span class="pill dark">${d}</span>`).join("") + (distances.length > 2 ? `<span class="pill dark">+${distances.length - 2}</span>` : "");
+      const posterHtml = c.affiche ? `<div class="poster-frame-small"><img src="${c.affiche}" alt="Affiche ${c.nom}" /></div>` : "";
       html += `
         <div class="ccard" onclick="openFiche('${c.id}')">
-          <div class="thumb ${thumbClass}"${thumbStyle}>
-            ${mediaHtml}
+          <div class="thumb thumb-${tc}">
+            <div class="big-icon icon-${tc}"></div>
+            ${posterHtml}
             <div class="badges-top"><span class="pill type-${tc}">${c.type || "—"}</span></div>
             <div class="badges-bottom">${distBadges}</div>
           </div>
