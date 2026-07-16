@@ -3,395 +3,260 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Trouve ta Course — Calendrier running du Sud</title>
+<title>Trouve ta Course — Calendrier running du Gard</title>
 <style>
   :root {
-    --surface-2: #ffffff;
-    --surface-1: #f4f3f0;
-    --ink: #1a1915;
-    --muted: #6b6a63;
-    --mutedlight: #9c9a92;
-    --border: #e5e3dd;
-    --border-strong: #d3d0c7;
-
-    --gard: #FF6A1A;
-    --vaucluse: #FF3131;
-    --herault: #D66FE0;
-    --bdr: #2AA8E8;
-
-    --accent: #0A6E64;
-    --accent-deep: #074F48;
+    --bg: #F7F5F0;
+    --card: #ffffff;
+    --ink: #1D1B16;
+    --muted: #746F62;
+    --border: #E8E3D8;
+    --accent: #E06A2C;
+    --accent-deep: #A8481A;
+    --accent-tint: #FBEBE0;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--surface-1); color: var(--ink); font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; }
-  a { color: inherit; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  a { color: inherit; text-decoration: none; }
 
-  .topbar { background: var(--ink); color: #fff; padding: 0.9rem 1.2rem; display: flex; align-items: center; gap: 1rem; }
-  .brand { display: flex; align-items: center; gap: 9px; flex-shrink: 0; cursor: pointer; }
-  .brand .word div:first-child { font-weight: 700; font-size: 13px; }
-  .brand .word div:last-child { font-weight: 700; font-size: 13px; color: #6FD8C8; }
-  .left-links { display: none; gap: 20px; margin-left: 1.8rem; }
-  .left-links a { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.85); text-decoration: none; white-space: nowrap; cursor: pointer; }
-  .search-wrap { display: none; flex: 1; max-width: 300px; position: relative; margin-left: auto; }
-  .search-wrap input { width: 100%; background: rgba(255,255,255,0.14); border: none; color: #fff; padding: 8px 12px 8px 32px; border-radius: 999px; font-size: 13px; }
-  .search-wrap input::placeholder { color: rgba(255,255,255,0.55); }
-  .search-wrap .ic { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; opacity: 0.7; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.3rem; background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 15px; cursor: pointer; }
+  .brand .dot { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid var(--accent); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .brand .dot::after { content:""; width:6px; height:6px; border-radius:50%; background: var(--accent); }
+  .brand span.hi { color: var(--accent); }
+  .topnav { display: none; gap: 22px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .topnav a { cursor: pointer; }
+  .topnav a:hover { color: var(--ink); }
+  @media (min-width: 780px) { .topnav { display: flex; } }
 
-  @media (min-width: 900px) {
-    .topbar { padding: 1rem 2.5rem; }
-    .left-links { display: flex; }
-    .search-wrap { display: block; }
-    .showcase-grid { grid-template-columns: repeat(3, 1fr); }
-    .preview-grid { grid-template-columns: 1fr 1fr; }
-  }
+  .hero { text-align: center; padding: 2.6rem 1.2rem 1.6rem; background: linear-gradient(180deg, var(--accent-tint) 0%, var(--bg) 100%); }
+  .hero .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; color: var(--accent-deep); text-transform: uppercase; margin-bottom: 0.8rem; }
+  .hero .eyebrow .dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:6px; }
+  .hero h1 { font-size: clamp(1.9rem, 6.5vw, 2.7rem); line-height: 1.08; margin: 0 0 0.9rem; font-weight: 800; }
+  .hero h1 em { font-style: italic; color: var(--accent); font-weight: 700; }
+  .hero p.sub { color: var(--muted); font-size: 14px; max-width: 30em; margin: 0 auto 1.5rem; }
+  .search-box { max-width: 520px; margin: 0 auto 1rem; background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 4px; display: flex; box-shadow: 0 8px 24px -12px rgba(0,0,0,0.15); }
+  .search-box input { flex: 1; border: none; background: none; padding: 12px 16px; font-size: 14px; outline: none; min-width: 0; }
+  .search-box button { background: var(--accent); color: #fff; border: none; border-radius: 999px; padding: 0 20px; font-weight: 700; font-size: 13px; cursor: pointer; }
+  .hero-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .hero-chip { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 7px 15px; font-size: 12.5px; font-weight: 700; color: var(--ink); cursor: pointer; }
+  .hero-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .hero-stats { display: flex; gap: 2rem; justify-content: center; font-size: 13px; color: var(--muted); }
+  .hero-stats b { font-size: 17px; color: var(--ink); }
 
-  .preview-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-  .preview-cta { display: block; text-align: center; margin-top: 1.4rem; background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; }
-
-  .band { width: 100%; }
-  .band-white { background: #fff; }
-  .band-grey { background: var(--surface-1); }
-  .band-accent { background: #E4F2EF; }
-  .band-inner { max-width: 1160px; margin: 0 auto; padding: 2.6rem 1.2rem; }
-  .eyebrow { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent-deep); text-align: center; margin-bottom: 0.5rem; }
-
-  .showcase h1 { font-size: 26px; text-align: center; margin: 0 0 0.4rem; }
-  .showcase .sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 2rem; }
-  .showcase-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-  .showcase-card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 16px; padding: 1.6rem 1.3rem; text-align: center; cursor: pointer; transition: border-color 0.15s ease; }
-  .showcase-card:hover { border-color: var(--accent); }
-  .showcase-card .ic { font-size: 30px; margin-bottom: 0.8rem; }
-  .showcase-card h3 { font-size: 17px; margin: 0 0 0.5rem; }
-  .showcase-card p { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.5; }
-
-  h2.page-title { text-align: center; font-size: 21px; margin: 0 0 1.6rem; }
-
-  .content-area { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
-  .filters-col { background: var(--surface-2); border: 0.5px solid var(--border); border-top: 3px solid var(--accent); border-radius: 14px; padding: 1rem; height: fit-content; }
-  .section-label { font-size: 11px; font-weight: 800; color: var(--accent-deep); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
-  .month-band { background: var(--accent); border-radius: 14px; padding: 1rem 1.1rem; margin-bottom: 1.5rem; }
-  .month-band .month-chips { margin-bottom: 0; }
-  .month-band .month-chip { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.85); }
-  .month-band .month-chip.active { background: #fff; color: var(--accent-deep); border-color: #fff; }
-  .month-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
-  .month-chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 0.5px solid var(--border-strong); color: var(--muted); background: transparent; cursor: pointer; font-weight: 600; }
-  .month-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
-  select, input[type="text"] { width: 100%; font: inherit; font-size: 13px; border: 0.5px solid var(--border-strong); border-radius: 8px; padding: 0.5rem 0.7rem; margin-bottom: 8px; background: #fff; color: var(--ink); }
-
-  @media (min-width: 900px) {
-    .content-area { grid-template-columns: 260px 1fr; align-items: start; }
-    .filters-col { position: sticky; top: 20px; }
-  }
-
-  .month-heading {
-    font-size: 20px; font-weight: 800; margin: 1.8rem 0 0.9rem;
-    display: flex; align-items: center; justify-content: space-between;
-    cursor: pointer; user-select: none;
-  }
-  .month-heading:first-of-type { margin-top: 0; }
-  .month-heading .chevron { font-size: 13px; color: var(--muted); transition: transform 0.15s ease; }
-  .month-heading.collapsed .chevron { transform: rotate(-90deg); }
-  .month-heading .mcount { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 8px; }
-  .month-body.collapsed { display: none; }
-
-  .date-heading { display: flex; align-items: center; gap: 10px; margin: 1.3rem 0 0.7rem; }
-  .date-heading .day-badge {
-    flex-shrink: 0; width: 34px; height: 34px; border-radius: 9px;
-    background: var(--accent); color: #fff; font-weight: 800; font-size: 14px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .date-heading .day { font-size: 14.5px; font-weight: 700; text-transform: capitalize; color: var(--ink); }
-  .date-heading .count { font-size: 11px; color: var(--muted); }
-  .date-heading::after { content: ""; flex: 1; height: 2px; background: var(--border); margin-left: 4px; }
-
-  .result-count { font-size: 12.5px; color: var(--accent-deep); font-weight: 700; margin-bottom: 10px; }
-  .race-card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px; padding: 0.9rem 1.05rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; cursor: pointer; transition: border-color 0.15s ease; }
-  .race-card:hover { border-color: var(--accent); }
-  .race-card .name { font-size: 14.5px; font-weight: 700; margin-bottom: 3px; }
-  .race-card .meta { font-size: 12px; color: var(--muted); }
-  .race-right { display: flex; align-items: center; gap: 9px; }
-  .type-tag { font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
-  .btn-ghost { border: 0.5px solid var(--border-strong); background: transparent; height: 29px; padding: 0 11px; font-size: 11.5px; font-weight: 700; border-radius: 7px; color: var(--ink); cursor: pointer; }
-
-  .type-Trail { background: #EAF3DE; color: #27500A; }
-  .type-Route { background: #E6F1FB; color: #0C447C; }
-  .type-Nature { background: #FAEEDA; color: #633806; }
-  .type-UrbanTrail { background: #EEEDFE; color: #3C3489; }
-  .type-Triathlon { background: #E1F5EE; color: #085041; }
-  .type-Vétathlon { background: #FAECE7; color: #712B13; }
-  .type-Piste { background: #FCEBEB; color: #791F1F; }
-  .type-loisir { background: #E6F1FB; color: #0C447C; }
-
-  .back-link { font-size: 13px; color: var(--muted); margin-bottom: 14px; cursor: pointer; }
-  .poster-frame { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 16px; aspect-ratio: 1 / 1.4142; max-width: 220px; margin: 0 auto 1.2rem; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-  .poster-frame img { width: 100%; height: 100%; object-fit: contain; }
-  .poster-frame .ph { text-align: center; color: var(--mutedlight); font-size: 12px; }
-  .badge-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; justify-content: center; }
-  .badge-neutral { font-size: 11px; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); border: 0.5px solid var(--border); color: var(--muted); }
-  h1.course-title { font-size: 23px; margin: 0 0 6px; text-align: center; }
-  .course-sub { font-size: 13.5px; color: var(--muted); margin-bottom: 1.4rem; text-align: center; }
-  .parcours-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 1.4rem; }
-  .parcours-row { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 10px; padding: 0.7rem 0.95rem; display: flex; justify-content: space-between; align-items: center; }
-  .parcours-row .dist { font-size: 15px; font-weight: 700; }
-  .btn-primary { display: block; width: 100%; text-align: center; background: var(--accent); color: #fff; border: none; height: 44px; line-height: 44px; border-radius: 9px; font-size: 14px; font-weight: 700; margin-bottom: 1.4rem; cursor: pointer; text-decoration: none; }
-  .org-card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem; margin-bottom: 1.4rem; }
-  .org-line { font-size: 13px; margin-bottom: 7px; display: flex; align-items: center; gap: 7px; }
-  .org-line:last-child { margin-bottom: 0; }
-  .map-frame { border-radius: 12px; overflow: hidden; border: 0.5px solid var(--border); }
-  .map-frame iframe { width: 100%; height: 220px; border: none; display: block; }
-  .fiche-narrow { max-width: 520px; margin: 0 auto; }
-
-  .club-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
-  .club-row { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px; padding: 0.85rem 1rem; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: border-color 0.15s ease; }
-  .club-row:hover { border-color: var(--accent); }
-  .club-logo { width: 42px; height: 42px; border-radius: 8px; background: var(--surface-1); border: 0.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: var(--accent-deep); flex-shrink: 0; overflow: hidden; }
-  .club-logo img { width: 100%; height: 100%; object-fit: contain; }
-  .club-row .info { flex: 1; min-width: 0; }
-  .club-name { font-weight: 700; font-size: 14px; }
-  .club-meta { font-size: 12px; color: var(--muted); }
-  .club-hero-logo { width: 92px; height: 92px; border-radius: 16px; background: var(--surface-2); border: 0.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22px; color: var(--accent-deep); margin: 0 auto 1rem; overflow: hidden; }
-  .club-hero-logo img { width: 100%; height: 100%; object-fit: contain; }
-
-  .challenge-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-  .challenge-card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px; padding: 1.1rem; }
-  .challenge-card .dept-name { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.8rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border); }
-  .rank-row { display: flex; align-items: center; gap: 10px; padding: 0.4rem 0; font-size: 13px; }
-  .rank-row .rank { width: 22px; font-weight: 800; color: var(--muted); }
-  .rank-row .rname { flex: 1; font-weight: 600; }
-  .rank-row .rcount { font-size: 12px; color: var(--muted); }
-  .challenge-note { font-size: 11px; color: var(--muted); margin-top: 0.8rem; font-style: italic; }
-  @media (min-width: 900px) { .challenge-grid { grid-template-columns: repeat(4, 1fr); } }
-
-  .insta-grid { display: grid; grid-template-columns: 1fr; gap: 0.8rem; }
-  .insta-card { display: flex; align-items: center; gap: 12px; border-radius: 14px; padding: 1rem 1.1rem; color: #fff; text-decoration: none; }
-  .insta-card .ic { font-size: 20px; }
-  .insta-card .txt div:first-child { font-weight: 700; font-size: 13px; }
-  .insta-card .txt div:last-child { font-size: 12px; opacity: 0.85; }
-  @media (min-width: 900px) { .insta-grid { grid-template-columns: repeat(4, 1fr); } }
-
+  .section { max-width: 1160px; margin: 0 auto; padding: 1.6rem 1.2rem 3rem; }
+  .result-count { font-weight: 800; font-size: 15px; margin-bottom: 1rem; }
+  .result-count span { color: var(--muted); font-weight: 500; font-size: 13px; }
+  .state-message { text-align: center; color: var(--muted); padding: 2.5rem 1rem; font-size: 13px; }
   .empty-state { text-align: center; color: var(--muted); padding: 2.6rem 1rem; }
   .empty-state .ic { font-size: 28px; margin-bottom: 0.6rem; }
-  .empty-state .big { font-weight: 700; color: var(--ink); margin-bottom: 0.4rem; }
-  .state-message { text-align: center; color: var(--muted); padding: 2.5rem 1rem; font-size: 13px; }
+  .empty-state .big { font-weight: 800; color: var(--ink); margin-bottom: 0.4rem; }
 
-  footer { background: var(--ink); color: rgba(255,255,255,0.85); margin-top: 3rem; padding: 2.2rem 1.2rem 1.4rem; }
+  .course-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 560px) { .course-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 820px) { .course-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1040px) { .course-grid { grid-template-columns: repeat(4, 1fr); } }
+  .ccard { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; cursor: pointer; transition: box-shadow .15s ease; aspect-ratio: 1 / 1; position: relative; }
+  .ccard:hover { box-shadow: 0 14px 28px -18px rgba(0,0,0,.28); }
+  .ccard .thumb { position: absolute; top: 0; left: 0; right: 0; height: 68%; background-size: cover; background-position: center; }
+  .ccard .thumb .big-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 44px; opacity: 0.45; }
+  .ccard .thumb .badges-top { position: absolute; top: 9px; left: 9px; display: flex; gap: 5px; }
+  .ccard .thumb .badges-bottom { position: absolute; bottom: 9px; left: 9px; display: flex; gap: 5px; flex-wrap: wrap; right: 9px; }
+  .pill { font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; color: #fff; white-space: nowrap; }
+  .pill.dark { background: rgba(0,0,0,0.55); color: #fff; }
+  .ccard .body { position: absolute; bottom: 0; left: 0; right: 0; height: 32%; padding: 10px 12px; overflow: hidden; }
+  .ccard .date { font-size: 10.5px; font-weight: 700; color: var(--accent-deep); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
+  .ccard .title { font-weight: 800; font-size: 13.5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ccard .loc { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .type-Trail { background: #3F7D3A; }
+  .type-Route { background: #1E6FA8; }
+  .type-Nature { background: #A6712A; }
+  .type-UrbanTrail { background: #6E4FC9; }
+  .type-Triathlon { background: #12857A; }
+  .type-Vétathlon { background: #C1512A; }
+  .type-Piste { background: #B23B3B; }
+  .thumb-Trail { background: linear-gradient(135deg,#d7e9d1,#b7d8c6); }
+  .thumb-Route { background: linear-gradient(135deg,#dceaf5,#bcd8ec); }
+  .thumb-Nature { background: linear-gradient(135deg,#f2e6d3,#e6cfa8); }
+  .thumb-UrbanTrail { background: linear-gradient(135deg,#efe3fb,#d9c0f2); }
+  .thumb-Triathlon { background: linear-gradient(135deg,#d7f0ec,#b3e0d8); }
+  .thumb-Vétathlon { background: linear-gradient(135deg,#f7ddd0,#eab99f); }
+  .thumb-Piste { background: linear-gradient(135deg,#f7d7d7,#eab3b3); }
+  .icon-Trail::after { content:"🏔️"; }
+  .icon-Route::after { content:"🛣️"; }
+  .icon-Nature::after { content:"🌿"; }
+  .icon-UrbanTrail::after { content:"🏙️"; }
+  .icon-Triathlon::after { content:"🏊"; }
+  .icon-Vétathlon::after { content:"🚴"; }
+  .icon-Piste::after { content:"🏟️"; }
+
+  .fiche-wrap { max-width: 1100px; margin: 0 auto; padding: 1.6rem 1.2rem 3rem; }
+  .breadcrumb { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 1rem; cursor: pointer; }
+  .fiche-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.4rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .fiche-head h1 { font-size: clamp(1.5rem, 4vw, 2.1rem); margin: 10px 0 4px; }
+  .fiche-head .loc { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .03em; }
+  .fiche-map { width: 100%; max-width: 220px; height: 130px; border-radius: 14px; flex-shrink: 0; overflow: hidden; border: 1px solid var(--border); }
+  .fiche-map iframe { width: 100%; height: 100%; border: none; }
+
+  .stat-bar { display: grid; grid-template-columns: repeat(2, 1fr); background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 1.4rem; }
+  @media (min-width: 640px) { .stat-bar { grid-template-columns: repeat(4, 1fr); } }
+  .stat-cell { padding: 1rem 1.2rem; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .stat-cell:nth-child(2n) { border-right: none; }
+  @media (min-width: 640px) { .stat-cell { border-bottom: none; } .stat-cell:nth-child(2n) { border-right: 1px solid var(--border); } .stat-cell:last-child { border-right: none; } }
+  .stat-cell .l { font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+  .stat-cell .v { font-size: 17px; font-weight: 800; }
+  .stat-cell .v.accent { color: var(--accent-deep); }
+
+  .action-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.8rem; }
+  .btn-inscription { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; border: none; border-radius: 999px; padding: 9px 22px; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 8px 18px -8px rgba(224,106,44,0.55); }
+  .btn-facebook { display: inline-flex; align-items: center; gap: 6px; background: #fff; color: #1877F2; border: 1.5px solid #1877F2; border-radius: 999px; padding: 8px 18px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn-share { display: inline-flex; align-items: center; gap: 6px; background: var(--card); border: 1.5px solid var(--ink); border-radius: 999px; padding: 8px 18px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+
+  .two-col { display: grid; grid-template-columns: 1fr; gap: 1.6rem; }
+  @media (min-width: 860px) { .two-col { grid-template-columns: 1.5fr 1fr; } }
+
+  .block-label { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; margin-bottom: 0.9rem; }
+  .block-label .bar { width: 4px; height: 16px; background: var(--accent); border-radius: 2px; }
+
+  .course-table { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .course-table .row { display: grid; grid-template-columns: 2fr 1fr; align-items: center; padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); font-size: 13px; gap: 8px; }
+  .course-table .row:last-child { border-bottom: none; }
+
+  .side-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem; margin-bottom: 1rem; }
+  .org-row { display: flex; align-items: center; gap: 10px; }
+  .org-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+  .info-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-row .l { color: var(--muted); }
+  .info-row .v { font-weight: 700; text-align: right; }
+
+  .btn-toggle-results { display: flex; align-items: center; justify-content: space-between; width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 0.9rem 1.1rem; font-size: 13.5px; font-weight: 700; cursor: pointer; text-align: left; }
+  .btn-toggle-results .edition-tag { font-size: 10.5px; font-weight: 800; background: var(--accent-tint); color: var(--accent-deep); padding: 3px 9px; border-radius: 999px; margin-left: 8px; }
+  .btn-toggle-results .chevron { color: var(--muted); font-size: 12px; transition: transform .15s ease; }
+
+  .lb-table { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .lb-row { display: grid; grid-template-columns: 36px 2fr 1fr; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 6px; }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row.head { background: var(--bg); font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+  .lb-pos { font-weight: 800; color: var(--accent-deep); }
+  .lb-pos.top3 { background: var(--accent); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .lb-name { font-weight: 700; }
+  .lb-club { font-size: 10.5px; color: var(--muted); }
+  .lb-time { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+
+  .lb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px; }
+  .lb-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .lb-tab { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; }
+  .lb-tab.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .lb-search { border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; font-size: 12.5px; }
+
+  footer { background: var(--ink); color: rgba(255,255,255,0.85); margin-top: 1rem; padding: 2.2rem 1.2rem 1.4rem; }
   .footer-inner { max-width: 1160px; margin: 0 auto; }
   .footer-grid { display: grid; grid-template-columns: 1fr; gap: 1.6rem; margin-bottom: 1.6rem; }
+  @media (min-width: 780px) { .footer-grid { grid-template-columns: 1.4fr 1fr 1fr; } }
   .footer-col.brand-col p { font-size: 12.5px; color: rgba(255,255,255,0.6); margin: 0.7rem 0 0; line-height: 1.5; max-width: 26em; }
   .footer-col h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); margin: 0 0 0.7rem; }
   .footer-col ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; font-size: 13px; }
-  .footer-col a { text-decoration: none; color: rgba(255,255,255,0.85); cursor: pointer; }
-  .footer-bottom { border-top: 1px solid rgba(255,255,255,0.15); padding-top: 1rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; font-size: 11.5px; color: rgba(255,255,255,0.45); }
-  @media (min-width: 900px) { .footer-grid { grid-template-columns: 1.4fr 1fr 1fr 1fr; } }
+  .footer-col a { cursor: pointer; }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,0.15); padding-top: 1rem; font-size: 11.5px; color: rgba(255,255,255,0.45); }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="brand" onclick="showPage('accueil')">
-    <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true"><circle cx="62" cy="16" r="10" fill="#b0aea6"/><path d="M18 92 L34 60 L45 71 L60 50 L49 30 L66 14 L82 36 L71 52 L80 90 L66 90 L60 60 L47 78 L36 92 Z" fill="#b0aea6"/></svg>
-    <div class="word"><div>TROUVE TA</div><div>COURSE</div></div>
-  </div>
-  <div class="left-links">
-    <a onclick="showPage('boutique')">Boutique</a>
+  <div class="brand" onclick="showPage('accueil')"><span class="dot"></span> TROUVE TA <span class="hi">COURSE</span></div>
+  <div class="topnav">
+    <a onclick="showPage('accueil')">Calendrier</a>
+    <a onclick="showPage('club')">Clubs</a>
     <a onclick="showPage('resultats')">Résultats</a>
-    <a href="#">Proposer une course</a>
-  </div>
-  <div class="search-wrap">
-    <span class="ic">🔎</span>
-    <input type="text" id="globalSearch" placeholder="Chercher une course, une ville..." />
+    <a onclick="showPage('challenge')">Challenge</a>
   </div>
 </div>
 
 <div id="page-accueil">
-
-  <div class="band band-white">
-    <div class="band-inner showcase">
-      <div class="eyebrow">Comment ça marche</div>
-      <h1>Trouve ta Course</h1>
-      <div class="sub">3 façons d'explorer le running dans le Gard, le Vaucluse, l'Hérault et les Bouches-du-Rhône</div>
-      <div class="showcase-grid">
-        <div class="showcase-card" onclick="showPage('course')">
-          <div class="ic">🏃</div>
-          <h3>Trouve ta Course</h3>
-          <p>Le calendrier des courses running, trails et compétitions des 4 départements.</p>
-        </div>
-        <div class="showcase-card" onclick="showPage('club')">
-          <div class="ic">🎽</div>
-          <h3>Trouve ton Club</h3>
-          <p>Les clubs d'athlétisme et de trail affiliés, avec leurs contacts et leur site officiel.</p>
-        </div>
-        <div class="showcase-card" onclick="showPage('runclub')">
-          <div class="ic">👟</div>
-          <h3>Trouve ton Run Club</h3>
-          <p>Les rassemblements de coureurs type "tous les lundis 19h" — bientôt disponible.</p>
-        </div>
-      </div>
+  <div class="hero">
+    <div class="eyebrow"><span class="dot"></span>GARD (30)</div>
+    <h1>Trouve ta <em>prochaine</em><br>course.</h1>
+    <p class="sub">Le calendrier running le plus complet du Gard — courses, clubs et résultats, une seule adresse, toute l'année.</p>
+    <div class="search-box"><input id="heroSearch" placeholder="Chercher une course, une ville..." /><button onclick="renderCalendrier()">Chercher</button></div>
+    <div class="hero-chips" id="heroChips">
+      <button class="hero-chip active" data-bucket="tous">Toutes</button>
+      <button class="hero-chip" data-bucket="weekend">Ce week-end</button>
+      <button class="hero-chip" data-bucket="mois">Ce mois-ci</button>
+      <button class="hero-chip" data-bucket="plustard">Plus tard</button>
+    </div>
+    <div class="hero-stats">
+      <div><b id="statCourses">—</b> courses à venir</div>
+      <div><b id="statResultats">—</b> résultats disponibles</div>
     </div>
   </div>
 
-  <div class="band band-grey">
-    <div class="band-inner">
-      <div class="eyebrow">Calendrier</div>
-      <h2 class="page-title">Les prochaines courses</h2>
-      <div id="homePreview"><div class="state-message">Chargement…</div></div>
-    </div>
-  </div>
-
-  <div class="band band-white">
-    <div class="band-inner">
-      <div class="eyebrow">Classement</div>
-      <h2 class="page-title">Challenge Trouve ta Course</h2>
-      <div id="homeChallenge"></div>
-    </div>
-  </div>
-
-  <div class="band band-accent">
-    <div class="band-inner">
-      <div class="eyebrow">Communauté</div>
-      <h2 class="page-title">Suis-nous chaque semaine</h2>
-      <div class="insta-grid" id="instaGrid"></div>
-    </div>
-  </div>
-
-</div>
-
-<div id="page-course" style="display:none;">
-  <div class="band band-white">
-    <div class="band-inner">
-      <div class="back-link" onclick="showPage('accueil')">← Accueil</div>
-      <h2 class="page-title">Trouve ta Course</h2>
-
-      <div class="month-band">
-        <div class="month-chips" id="monthChips"></div>
-      </div>
-
-      <div class="content-area">
-        <div class="filters-col">
-          <div class="section-label">Département</div>
-          <select id="fDept">
-            <option value="Tous">Tous les départements</option>
-            <option value="Gard">Gard (30)</option>
-            <option value="Vaucluse">Vaucluse (84)</option>
-            <option value="Hérault">Hérault (34)</option>
-            <option value="Bouches-du-Rhône">Bouches-du-Rhône (13)</option>
-          </select>
-          <div class="section-label">Distance</div>
-          <select id="fDist">
-            <option value="Tous">Toutes distances</option>
-            <option value="0-10">Moins de 10 km</option>
-            <option value="10-21">10 à 21 km</option>
-            <option value="21-42">21 à 42 km</option>
-            <option value="42-999">Plus de 42 km</option>
-          </select>
-          <div class="section-label">Type</div>
-          <select id="fType"><option value="Tous">Tous les types</option></select>
-          <div class="section-label">Recherche</div>
-          <input type="text" id="fSearch" placeholder="Ville, nom de course..." />
-        </div>
-        <div id="calendrierContent"><div class="state-message">Chargement…</div></div>
-      </div>
-    </div>
+  <div class="section">
+    <div id="calendrierContent"><div class="state-message">Chargement…</div></div>
   </div>
 </div>
 
 <div id="page-fiche" style="display:none;">
-  <div class="band band-white">
-    <div class="band-inner fiche-narrow" id="ficheContent"></div>
-  </div>
+  <div class="fiche-wrap" id="ficheContent"></div>
 </div>
 
 <div id="page-club" style="display:none;">
-  <div class="band band-white">
-    <div class="band-inner">
-      <div class="back-link" onclick="showPage('accueil')">← Accueil</div>
-      <h2 class="page-title">Trouve ton Club</h2>
-      <div class="content-area">
-        <div class="filters-col">
-          <div class="section-label">Département</div>
-          <select id="fClubDept">
-            <option value="Tous">Tous les départements</option>
-            <option value="Gard">Gard (30)</option>
-            <option value="Vaucluse">Vaucluse (84)</option>
-            <option value="Hérault">Hérault (34)</option>
-            <option value="Bouches-du-Rhône">Bouches-du-Rhône (13)</option>
-          </select>
-          <div class="section-label">Recherche</div>
-          <input type="text" id="fClubSearch" placeholder="Club, ville..." />
-        </div>
-        <div id="clubsContent"><div class="state-message">Chargement…</div></div>
-      </div>
+  <div class="section">
+    <div class="breadcrumb" onclick="showPage('accueil')">← Accueil</div>
+    <h1 style="margin:0 0 1.2rem;">Trouve ton Club</h1>
+    <div style="max-width:320px; margin-bottom:1.4rem;">
+      <input id="fClubSearch" placeholder="Club, ville..." style="width:100%; border:1px solid var(--border); border-radius:999px; padding:9px 16px; font-size:13px;" />
     </div>
+    <div id="clubsContent"><div class="state-message">Chargement…</div></div>
   </div>
 </div>
 
 <div id="page-club-fiche" style="display:none;">
-  <div class="band band-white">
-    <div class="band-inner fiche-narrow" id="clubFicheContent"></div>
-  </div>
+  <div class="fiche-wrap" id="clubFicheContent"></div>
 </div>
 
 <div id="page-runclub" style="display:none;">
-  <div class="band band-white">
-    <div class="band-inner">
-      <div class="back-link" onclick="showPage('accueil')">← Accueil</div>
-      <h2 class="page-title">Trouve ton Run Club</h2>
-      <div class="empty-state">
-        <div class="ic">👟</div>
-        <div class="big">Bientôt disponible</div>
-        <p>Les rassemblements de coureurs (type "tous les lundis 19h") arrivent bientôt : jour, heure, lieu de rendez-vous et niveau pour chaque run club des 4 départements.</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="page-challenge" style="display:none;">
-  <div class="band band-white">
-    <div class="band-inner">
-      <div class="back-link" onclick="showPage('accueil')">← Accueil</div>
-      <h2 class="page-title">Challenge Trouve ta Course</h2>
-      <div style="max-width:320px; margin:0 auto 1.8rem;">
-        <select id="fChallengeDept" style="width:100%;">
-          <option value="Tous">Tous les départements</option>
-          <option value="Gard">Gard (30)</option>
-          <option value="Vaucluse">Vaucluse (84)</option>
-          <option value="Hérault">Hérault (34)</option>
-          <option value="Bouches-du-Rhône">Bouches-du-Rhône (13)</option>
-        </select>
-      </div>
-      <div class="challenge-grid" id="challengePageGrid"></div>
+  <div class="section">
+    <div class="breadcrumb" onclick="showPage('accueil')">← Accueil</div>
+    <div class="empty-state">
+      <div class="ic">👟</div>
+      <div class="big">Trouve ton Run Club — bientôt disponible</div>
+      <p>Les rassemblements de coureurs (type "tous les lundis 19h") arrivent bientôt.</p>
     </div>
   </div>
 </div>
 
 <div id="page-resultats" style="display:none;">
-  <div class="band band-white">
-    <div class="band-inner">
-      <div class="back-link" onclick="showPage('accueil')">← Accueil</div>
-      <h2 class="page-title">Résultats des courses</h2>
-      <div style="max-width:320px; margin:0 auto 1.8rem;">
-        <select id="fResultatsDept" style="width:100%;">
-          <option value="Tous">Tous les départements</option>
-          <option value="Gard">Gard (30)</option>
-          <option value="Vaucluse">Vaucluse (84)</option>
-          <option value="Hérault">Hérault (34)</option>
-          <option value="Bouches-du-Rhône">Bouches-du-Rhône (13)</option>
-        </select>
-      </div>
-      <div id="resultatsListContent"><div class="state-message">Chargement…</div></div>
+  <div class="fiche-wrap">
+    <div class="breadcrumb" onclick="showPage('accueil')">← Accueil</div>
+    <h1 style="margin:0 0 1.2rem;">Résultats des courses</h1>
+    <div id="resultatsListContent"><div class="state-message">Chargement…</div></div>
+  </div>
+</div>
+
+<div id="page-leaderboard" style="display:none;">
+  <div class="fiche-wrap" id="leaderboardContent"></div>
+</div>
+
+<div id="page-challenge" style="display:none;">
+  <div class="section">
+    <div class="breadcrumb" onclick="showPage('accueil')">← Accueil</div>
+    <div class="empty-state">
+      <div class="ic">🏆</div>
+      <div class="big">Challenge Trouve ta Course — bientôt disponible</div>
+      <p>Le classement des coureurs les plus assidus du Gard arrivera une fois assez de résultats collectés.</p>
     </div>
   </div>
 </div>
 
 <div id="page-boutique" style="display:none;">
-  <div class="band band-white">
-    <div class="band-inner">
-      <div class="back-link" onclick="showPage('accueil')">← Accueil</div>
-      <div class="empty-state">
-        <div class="ic">🛍️</div>
-        <div class="big">Boutique — à venir prochainement</div>
-        <p>Dossards, t-shirts et goodies "Trouve ta Course" pour tes 4 départements préférés.</p>
-      </div>
+  <div class="section">
+    <div class="breadcrumb" onclick="showPage('accueil')">← Accueil</div>
+    <div class="empty-state">
+      <div class="ic">🛍️</div>
+      <div class="big">Boutique — à venir prochainement</div>
+      <p>Dossards, t-shirts et goodies "Trouve ta Course" pour le Gard.</p>
     </div>
   </div>
 </div>
@@ -400,346 +265,241 @@
   <div class="footer-inner">
     <div class="footer-grid">
       <div class="footer-col brand-col">
-        <div class="word" style="line-height:1;"><div style="font-weight:700; font-size:14px; color:#fff;">TROUVE TA</div><div style="font-weight:700; font-size:14px; color:#6FD8C8;">COURSE</div></div>
-        <p>Le calendrier running du Gard, du Vaucluse, de l'Hérault et des Bouches-du-Rhône. Courses, clubs et run clubs, mis à jour chaque semaine.</p>
+        <div style="font-weight:800; font-size:15px;">TROUVE TA <span style="color:var(--accent);">COURSE</span></div>
+        <p>Le calendrier running du Gard. Courses, clubs et résultats, mis à jour chaque semaine.</p>
       </div>
       <div class="footer-col">
         <h4>Navigation</h4>
         <ul>
-          <li><a onclick="showPage('course')">Trouve ta Course</a></li>
-          <li><a onclick="showPage('club')">Trouve ton Club</a></li>
-          <li><a onclick="showPage('runclub')">Trouve ton Run Club</a></li>
+          <li><a onclick="showPage('accueil')">Calendrier</a></li>
+          <li><a onclick="showPage('club')">Clubs</a></li>
+          <li><a onclick="showPage('runclub')">Run Club</a></li>
           <li><a onclick="showPage('resultats')">Résultats</a></li>
           <li><a onclick="showPage('challenge')">Challenge</a></li>
           <li><a onclick="showPage('boutique')">Boutique</a></li>
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Départements</h4>
-        <ul><li>Gard (30)</li><li>Vaucluse (84)</li><li>Hérault (34)</li><li>Bouches-du-Rhône (13)</li></ul>
-      </div>
-      <div class="footer-col">
         <h4>Suivre</h4>
-        <ul>
-          <li><a href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">@trouvetacourse_gard</a></li>
-          <li><a href="https://instagram.com/trouvetacourse_vaucluse" target="_blank" rel="noopener">@trouvetacourse_vaucluse</a></li>
-          <li><a href="https://instagram.com/trouvetacourse_34" target="_blank" rel="noopener">@trouvetacourse_34</a></li>
-          <li><a href="https://instagram.com/trouvetacourse_13" target="_blank" rel="noopener">@trouvetacourse_13</a></li>
-        </ul>
+        <ul><li><a href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">@trouvetacourse_gard</a></li></ul>
       </div>
     </div>
-    <div class="footer-bottom">
-      <span>© 2026 Trouve ta Course</span>
-      <span>Contact · Proposer une course · Mentions légales</span>
-    </div>
+    <div class="footer-bottom">© 2026 Trouve ta Course — Gard</div>
   </div>
 </footer>
 
 <script>
-  const MONTHS_FR = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
-  const INSTA = {
-    Gard: { color: '#FF6A1A', handle: '@trouvetacourse_gard', url: 'https://instagram.com/trouvetacourse_gard' },
-    Vaucluse: { color: '#FF3131', handle: '@trouvetacourse_vaucluse', url: 'https://instagram.com/trouvetacourse_vaucluse' },
-    'Hérault': { color: '#D66FE0', handle: '@trouvetacourse_34', url: 'https://instagram.com/trouvetacourse_34' },
-    'Bouches-du-Rhône': { color: '#2AA8E8', handle: '@trouvetacourse_13', url: 'https://instagram.com/trouvetacourse_13' },
-  };
-
   let allCourses = [];
   let allClubs = [];
+  let allResultats = [];
   let coursesLoaded = false;
   let clubsLoaded = false;
-  let selectedMonths = new Set();
+  let resultatsLoaded = false;
 
-  const pageIds = ['accueil','course','fiche','club','club-fiche','runclub','challenge','resultats','boutique'];
+  const pageIds = ['accueil','fiche','club','club-fiche','runclub','resultats','leaderboard','challenge','boutique'];
   function showPage(p) {
     pageIds.forEach(id => {
       const el = document.getElementById('page-' + id);
       if (el) el.style.display = (id === p) ? 'block' : 'none';
     });
     window.scrollTo(0, 0);
-    if (p === 'course') loadCourses();
     if (p === 'club') loadClubs();
     if (p === 'resultats') loadResultatsList();
   }
 
-  function typeClass(type) { return "type-" + (type || "").replace(/\s+/g, ""); }
-  function formatMonthLabel(dateStr) {
-    const d = new Date(dateStr);
-    if (isNaN(d)) return "Date à définir";
-    return `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
-  }
-  function monthKey(dateStr) {
-    const d = new Date(dateStr);
-    if (isNaN(d)) return null;
-    return `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
-  }
+  function typeClass(type) { return (type || "").replace(/\s+/g, ""); }
+
   function formatDayLabel(dateStr) {
     const d = new Date(dateStr);
     if (isNaN(d)) return dateStr || "—";
-    return d.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" });
-  }
-  function formatFullDateHeading(dateStr) {
-    const d = new Date(dateStr);
-    if (isNaN(d)) return "Date à définir";
-    return d.toLocaleDateString("fr-FR", { weekday: "long", month: "long" });
-  }
-  function dayNumber(dateStr) {
-    const d = new Date(dateStr);
-    if (isNaN(d)) return "?";
-    return String(d.getDate()).padStart(2, "0");
-  }
-  function dayKey(dateStr) {
-    const d = new Date(dateStr);
-    if (isNaN(d)) return "unknown";
-    return d.toISOString().slice(0, 10);
-  }
-  function extractDistances(str) {
-    if (!str) return [];
-    return (str.match(/[\d,.]+(?=\s*km)/g) || []).map(s => parseFloat(s.replace(",", ".")));
-  }
-  function matchesDistanceRange(course, range) {
-    if (range === "Tous") return true;
-    const [min, max] = range.split("-").map(Number);
-    return extractDistances(course.distances).some(d => d >= min && d < max);
+    return d.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
   }
   function initials(name) {
     return (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   }
 
+  function getBucket(dateStr) {
+    const today = new Date();
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "plustard";
+    const day = today.getDay();
+    const daysUntilFriday = (5 - day + 7) % 7;
+    const weekendStart = new Date(today); weekendStart.setHours(0,0,0,0); weekendStart.setDate(today.getDate() + daysUntilFriday);
+    const weekendEnd = new Date(weekendStart); weekendEnd.setDate(weekendStart.getDate() + 2);
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    if (d >= weekendStart && d <= weekendEnd) return "weekend";
+    if (d > weekendEnd && d <= monthEnd) return "mois";
+    return "plustard";
+  }
+
   async function loadCourses() {
-    if (coursesLoaded) { renderCalendrier(); return; }
+    if (coursesLoaded) return;
     const res = await fetch("/api/courses");
     const data = await res.json();
     allCourses = res.ok ? (data.courses || []) : [];
     coursesLoaded = true;
-
-    const months = [...new Set(allCourses.map(c => monthKey(c.date)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-    const chipsContainer = document.getElementById("monthChips");
-    chipsContainer.innerHTML = "";
-    months.forEach(m => {
-      const sample = allCourses.find(c => monthKey(c.date) === m);
-      const chip = document.createElement("button");
-      chip.className = "month-chip";
-      chip.textContent = formatMonthLabel(sample.date);
-      chip.addEventListener("click", () => {
-        if (selectedMonths.has(m)) selectedMonths.delete(m); else selectedMonths.add(m);
-        chip.classList.toggle("active");
-        renderCalendrier();
-      });
-      chipsContainer.appendChild(chip);
-    });
-
-    const types = [...new Set(allCourses.map(c => c.type).filter(Boolean))];
-    const typeSelect = document.getElementById("fType");
-    types.forEach(t => {
-      const opt = document.createElement("option");
-      opt.value = t; opt.textContent = t;
-      typeSelect.appendChild(opt);
-    });
-
+    document.getElementById("statCourses").textContent = allCourses.length;
     renderCalendrier();
-    renderHomePreview();
-    renderChallenge();
   }
+
+  document.querySelectorAll('.hero-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.hero-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      renderCalendrier();
+    });
+  });
+  document.getElementById('heroSearch').addEventListener('input', renderCalendrier);
 
   function renderCalendrier() {
     const container = document.getElementById("calendrierContent");
+    if (!coursesLoaded) { container.innerHTML = `<div class="state-message">Chargement…</div>`; return; }
     if (!allCourses.length) { container.innerHTML = `<div class="state-message">Aucune course enregistrée pour l'instant.</div>`; return; }
 
-    const fDept = document.getElementById("fDept").value;
-    const fDist = document.getElementById("fDist").value;
-    const fType = document.getElementById("fType").value;
-    const fSearch = document.getElementById("fSearch").value.trim().toLowerCase();
+    const query = document.getElementById('heroSearch').value.trim().toLowerCase();
+    const activeChip = document.querySelector('.hero-chip.active');
+    const bucket = activeChip ? activeChip.dataset.bucket : 'tous';
 
-    let filtered = allCourses.filter(c => {
-      if (selectedMonths.size > 0 && !selectedMonths.has(monthKey(c.date))) return false;
-      if (fDept !== "Tous" && c.departement !== fDept) return false;
-      if (fType !== "Tous" && c.type !== fType) return false;
-      if (!matchesDistanceRange(c, fDist)) return false;
-      if (fSearch && !(c.nom.toLowerCase().includes(fSearch) || c.commune.toLowerCase().includes(fSearch))) return false;
-      return true;
+    const filtered = allCourses.filter(c => {
+      const matchesBucket = (bucket === 'tous') || (getBucket(c.date) === bucket);
+      const matchesQuery = !query || c.nom.toLowerCase().includes(query) || (c.commune || "").toLowerCase().includes(query);
+      return matchesBucket && matchesQuery;
     });
 
-    let html = `<div class="result-count">${filtered.length} course${filtered.length > 1 ? "s" : ""}</div>`;
-    let curMonth = "", curDay = "";
-    let monthIndex = -1;
-    for (const c of filtered) {
-      const ml = formatMonthLabel(c.date);
-      if (ml !== curMonth) {
-        if (curMonth !== "") html += `</div>`; // close previous month-body
-        monthIndex++;
-        const monthCount = filtered.filter(x => formatMonthLabel(x.date) === ml).length;
-        html += `<div class="month-heading" onclick="toggleMonth(${monthIndex})"><span>${ml}<span class="mcount">(${monthCount})</span></span><span class="chevron">▾</span></div>`;
-        html += `<div class="month-body" id="monthBody${monthIndex}">`;
-        curMonth = ml; curDay = "";
-      }
-      const dk = dayKey(c.date);
-      if (dk !== curDay) {
-        const sameDayCount = filtered.filter(x => dayKey(x.date) === dk).length;
-        html += `<div class="date-heading"><span class="day-badge">${dayNumber(c.date)}</span><span class="day">${formatFullDateHeading(c.date)}</span><span class="count">${sameDayCount} course${sameDayCount > 1 ? "s" : ""}</span></div>`;
-        curDay = dk;
-      }
+    let html = `<div class="result-count">${filtered.length} course${filtered.length > 1 ? "s" : ""} <span>à venir dans le Gard</span></div>`;
+    html += `<div class="course-grid">`;
+    filtered.forEach(c => {
+      const tc = typeClass(c.type);
+      const distances = (c.distances || "").split(/,\s+/).map(s => s.trim()).filter(Boolean);
+      const distBadges = distances.slice(0, 2).map(d => `<span class="pill dark">${d}</span>`).join("") + (distances.length > 2 ? `<span class="pill dark">+${distances.length - 2}</span>` : "");
       html += `
-        <div class="race-card" onclick="openFiche('${c.id}')">
-          <div>
-            <div class="name">${c.nom}</div>
-            <div class="meta">${c.commune || ""}${c.departement ? ", " + c.departement : ""}${c.distances ? " · " + c.distances : ""}</div>
+        <div class="ccard" onclick="openFiche('${c.id}')">
+          <div class="thumb thumb-${tc}">
+            <div class="big-icon icon-${tc}"></div>
+            <div class="badges-top"><span class="pill type-${tc}">${c.type || "—"}</span></div>
+            <div class="badges-bottom">${distBadges}</div>
           </div>
-          <div class="race-right">
-            <span class="type-tag ${typeClass(c.type)}">${c.type || "—"}</span>
-            <button class="btn-ghost" onclick="event.stopPropagation(); openFiche('${c.id}')">Voir la fiche</button>
+          <div class="body">
+            <div class="date">${formatDayLabel(c.date)}</div>
+            <div class="title">${c.nom}</div>
+            <div class="loc">${c.commune || ""}, Gard</div>
           </div>
         </div>`;
-    }
-    if (curMonth !== "") html += `</div>`; // close last month-body
-    if (!filtered.length) html += `<div class="state-message">Aucune course ne correspond à ces filtres.</div>`;
+    });
+    html += `</div>`;
+    if (!filtered.length) html = `<div class="empty-state"><div class="ic">🔎</div><div class="big">Aucune course ne correspond</div><p>Essaie une autre période ou un autre mot-clé.</p></div>`;
     container.innerHTML = html;
   }
 
-  function toggleMonth(i) {
-    const body = document.getElementById("monthBody" + i);
-    const heading = body.previousElementSibling;
-    body.classList.toggle("collapsed");
-    heading.classList.toggle("collapsed");
-  }
-
-  function renderHomePreview() {
-    const container = document.getElementById("homePreview");
-    const today = new Date();
-    const next = allCourses.filter(c => new Date(c.date) >= today).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5);
-    if (!next.length) { container.innerHTML = `<div class="state-message">Calendrier bientôt disponible.</div>`; return; }
-    container.innerHTML = `<div class="preview-grid">` + next.map(c => `
-      <div class="race-card" onclick="showPage('course'); setTimeout(() => openFiche('${c.id}'), 50);">
-        <div>
-          <div class="name">${c.nom}</div>
-          <div class="meta">${formatDayLabel(c.date)} · ${c.commune || ""}${c.departement ? ", " + c.departement : ""}${c.distances ? " · " + c.distances : ""}</div>
-        </div>
-        <span class="type-tag ${typeClass(c.type)}">${c.type || "—"}</span>
-      </div>`).join("") + `</div>
-      <button class="preview-cta" onclick="showPage('course')">Voir tout le calendrier →</button>`;
+  async function loadResultatsCountForStats() {
+    const res = await fetch("/api/resultats");
+    const data = await res.json();
+    allResultats = res.ok ? (data.resultats || []) : [];
+    resultatsLoaded = true;
+    document.getElementById("statResultats").textContent = allResultats.length;
   }
 
   function openFiche(id) {
     const c = allCourses.find(x => x.id === id);
     if (!c) return;
+    const tc = typeClass(c.type);
     const distances = (c.distances || "").split(/,\s+/).map(s => s.trim()).filter(Boolean);
-    const parcoursHtml = distances.length
-      ? distances.map(d => `<div class="parcours-row"><span class="dist">${d}</span></div>`).join("")
-      : `<div class="parcours-row"><span class="dist">Distance non communiquée</span></div>`;
-    const posterHtml = c.affiche ? `<img src="${c.affiche}" alt="Affiche ${c.nom}" />` : `<div class="ph">Affiche non disponible</div>`;
     const mapQuery = encodeURIComponent(`${c.commune}, France`);
+    const edition = (new Date(c.date)).getFullYear() || new Date().getFullYear();
 
     document.getElementById("ficheContent").innerHTML = `
-      <div class="back-link" onclick="showPage('course')">← Retour au calendrier</div>
-      <div class="poster-frame">${posterHtml}</div>
-      <div class="badge-row">
-        <span class="type-tag ${typeClass(c.type)}">${c.type || "—"}</span>
-        ${c.challenge ? `<span class="badge-neutral">${c.challenge}</span>` : ""}
+      <div class="breadcrumb" onclick="showPage('accueil')">Accueil / Calendrier / ${c.nom}</div>
+      <div class="fiche-head">
+        <div>
+          <span class="pill type-${tc}">${c.type || "—"}</span>
+          ${c.challenge ? `<span class="pill" style="background:var(--bg); color:var(--muted); border:1px solid var(--border);">${c.challenge}</span>` : ""}
+          <h1>${c.nom}</h1>
+          <div class="loc">${c.commune || ""} · Gard</div>
+        </div>
+        <div class="fiche-map"><iframe src="https://maps.google.com/maps?q=${mapQuery}&output=embed" loading="lazy"></iframe></div>
       </div>
-      <h1 class="course-title">${c.nom}</h1>
-      <div class="course-sub">${formatDayLabel(c.date)}${c.heure ? " · " + c.heure : ""} · ${c.commune}${c.departement ? ", " + c.departement : ""}</div>
-      <div class="section-label">Parcours proposés</div>
-      <div class="parcours-list">${parcoursHtml}</div>
-      ${c.site ? `<a class="btn-primary" href="${c.site}" target="_blank" rel="noopener">S'inscrire à cette course ↗</a>` : ""}
-      ${(c.contact || c.reseaux) ? `
-        <div class="org-card">
-          <div class="section-label" style="margin-bottom:9px;">Organisation</div>
-          ${c.contact ? `<div class="org-line">✉️ ${c.contact}</div>` : ""}
-          ${c.reseaux ? `<div class="org-line">📷 <a href="${c.reseaux}" target="_blank" rel="noopener">${c.reseaux}</a></div>` : ""}
-        </div>` : ""}
-      <div class="map-frame"><iframe src="https://maps.google.com/maps?q=${mapQuery}&output=embed" loading="lazy"></iframe></div>
-      <div id="ficheResultats"></div>
+
+      <div class="stat-bar">
+        <div class="stat-cell"><div class="l">Date</div><div class="v">${formatDayLabel(c.date)}</div></div>
+        <div class="stat-cell"><div class="l">Distances</div><div class="v accent">${c.distances || "Non communiqué"}</div></div>
+        <div class="stat-cell"><div class="l">Coureurs classés</div><div class="v accent" id="ficheCoureursCount">—</div></div>
+        <div class="stat-cell"><div class="l">Départ</div><div class="v">${c.heure || "Non communiqué"}</div></div>
+      </div>
+
+      <div class="action-row">
+        ${c.site ? `<a class="btn-inscription" href="${c.site}" target="_blank" rel="noopener">✓ S'inscrire</a>` : ""}
+        ${c.reseaux ? `<a class="btn-facebook" href="${c.reseaux}" target="_blank" rel="noopener">📘 Réseaux</a>` : ""}
+        <button class="btn-share" onclick="navigator.share ? navigator.share({title:'${c.nom.replace(/'/g,"")}', url:location.href}) : alert('Copie le lien de la page pour partager.')">↗ Partager</button>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="block-label"><span class="bar"></span>Parcours</div>
+          <div class="course-table">
+            ${distances.length ? distances.map(d => `<div class="row"><strong>${d}</strong><span></span></div>`).join("") : `<div class="row"><strong>Distance non communiquée</strong></div>`}
+          </div>
+
+          <div class="block-label" style="margin-top:1.6rem;"><span class="bar"></span>Résultats</div>
+          <button class="btn-toggle-results" onclick="toggleFicheResults('${c.id}')">
+            <span>Voir les résultats <span class="edition-tag">Édition ${edition}</span></span>
+            <span class="chevron" id="resChevron">▾</span>
+          </button>
+          <div id="resPreview" style="display:none; margin-top:10px;"></div>
+        </div>
+
+        <div>
+          ${c.contact ? `
+          <div class="side-card">
+            <div class="block-label" style="margin-bottom:0.7rem;"><span class="bar"></span>Organisation</div>
+            <div class="org-row"><div class="org-avatar">✉️</div><div style="font-size:13px;">${c.contact}</div></div>
+          </div>` : ""}
+
+          <div class="side-card">
+            <div class="block-label" style="margin-bottom:0.4rem;"><span class="bar"></span>Infos pratiques</div>
+            <div class="info-row"><span class="l">Distances</span><span class="v">${c.distances || "Non communiqué"}</span></div>
+            <div class="info-row"><span class="l">Lieu</span><span class="v">${c.commune || "Non communiqué"}</span></div>
+            <div class="info-row"><span class="l">Département</span><span class="v">Gard (30)</span></div>
+            ${c.challenge ? `<div class="info-row"><span class="l">Label</span><span class="v">${c.challenge}</span></div>` : ""}
+          </div>
+        </div>
+      </div>
     `;
     showPage('fiche');
-    loadResultatsForCourse(c.id);
+    updateFicheResultsCount(c.id);
   }
 
-  async function loadResultatsList() {
-    if (!coursesLoaded) await loadCourses();
-    const container = document.getElementById("resultatsListContent");
-    container.innerHTML = `<div class="state-message">Chargement…</div>`;
-    try {
-      const res = await fetch(`/api/resultats`);
-      const data = await res.json();
-      const resultats = res.ok ? (data.resultats || []) : [];
-      renderResultatsList(resultats);
-    } catch (err) {
-      container.innerHTML = `<div class="state-message">Erreur de chargement.</div>`;
-    }
-    document.getElementById("fResultatsDept").onchange = () => renderResultatsList(window.__lastResultats || []);
-  }
-
-  function renderResultatsList(resultats) {
-    window.__lastResultats = resultats;
-    const container = document.getElementById("resultatsListContent");
-    const fDept = document.getElementById("fResultatsDept").value;
-
-    const grouped = {};
-    resultats.forEach(r => {
-      if (!r.courseId) return;
-      if (!grouped[r.courseId]) grouped[r.courseId] = 0;
-      grouped[r.courseId]++;
-    });
-
-    const entries = Object.keys(grouped).map(courseId => {
-      const course = allCourses.find(c => c.id === courseId);
-      return { courseId, count: grouped[courseId], course };
-    }).filter(e => e.course && (fDept === "Tous" || e.course.departement === fDept));
-
-    if (!entries.length) {
-      container.innerHTML = `<div class="empty-state"><div class="ic">🏁</div><div class="big">Aucun résultat pour l'instant</div><p>Dès qu'une course sera traitée, son classement apparaîtra ici.</p></div>`;
-      return;
-    }
-
-    container.innerHTML = entries.map(e => `
-      <div class="race-card" onclick="openFiche('${e.courseId}')">
-        <div>
-          <div class="name">${e.course.nom}</div>
-          <div class="meta">${e.course.commune || ""}${e.course.departement ? ", " + e.course.departement : ""}</div>
-        </div>
-        <span class="badge-neutral">${e.count} coureurs</span>
-      </div>`).join("");
-  }
-
-  async function loadResultatsForCourse(courseId) {
-    const container = document.getElementById("ficheResultats");
-    if (!container) return;
+  async function updateFicheResultsCount(courseId) {
     try {
       const res = await fetch(`/api/resultats?courseId=${encodeURIComponent(courseId)}`);
       const data = await res.json();
       const resultats = res.ok ? (data.resultats || []) : [];
-      if (!resultats.length) { container.innerHTML = ""; return; }
+      const el = document.getElementById("ficheCoureursCount");
+      if (el) el.textContent = resultats.length || "—";
+      window.__ficheResultatsCache = resultats;
+    } catch (err) { /* silencieux */ }
+  }
 
-      const byDistance = {};
-      resultats.forEach(r => {
-        const key = r.distance || "Distance non précisée";
-        if (!byDistance[key]) byDistance[key] = [];
-        byDistance[key].push(r);
-      });
-
-      let html = `<div class="section-label" style="margin-top:1.4rem;">Résultats</div>`;
-      Object.keys(byDistance).forEach(distance => {
-        html += `<div style="font-weight:700; font-size:14px; margin:0.8rem 0 0.5rem;">${distance}</div>`;
-        html += `<div class="org-card" style="padding:0.5rem 0.9rem;">`;
-        byDistance[distance].forEach((r, i) => {
-          html += `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; ${i > 0 ? 'border-top:1px solid var(--border);' : ''} font-size:13px;">
-              <div style="display:flex; gap:8px; align-items:center;">
-                <span style="font-weight:700; color:var(--accent-deep); width:26px;">${r.classementGeneral ?? "—"}</span>
-                <div>
-                  <div style="font-weight:600;">${r.prenom} ${r.nom}</div>
-                  <div style="font-size:11.5px; color:var(--muted);">${r.club || ""}${r.classementCategorie ? " · " + r.classementCategorie : ""}</div>
-                </div>
-              </div>
-              <div style="font-weight:700;">${r.temps}</div>
-            </div>`;
-        });
-        html += `</div>`;
-      });
-      container.innerHTML = html;
-    } catch (err) {
-      container.innerHTML = "";
-    }
+  function toggleFicheResults(courseId) {
+    const el = document.getElementById('resPreview');
+    const chevron = document.getElementById('resChevron');
+    const open = el.style.display !== 'none';
+    if (open) { el.style.display = 'none'; chevron.style.transform = 'rotate(0deg)'; return; }
+    chevron.style.transform = 'rotate(180deg)';
+    el.style.display = 'block';
+    const resultats = window.__ficheResultatsCache || [];
+    if (!resultats.length) { el.innerHTML = `<div class="state-message">Aucun résultat disponible pour l'instant.</div>`; return; }
+    const top3 = resultats.slice(0, 3);
+    el.innerHTML = `
+      <div class="lb-table" onclick="openLeaderboard('${courseId}')" style="cursor:pointer;">
+        <div class="lb-row head"><span>Pl.</span><span>Coureur</span><span>Temps</span></div>
+        ${top3.map(r => `
+          <div class="lb-row">
+            <span class="lb-pos top3">${r.classementGeneral ?? "—"}</span>
+            <div><div class="lb-name">${r.prenom} ${r.nom}</div><div class="lb-club">${r.club || ""}${r.distance ? " · " + r.distance : ""}</div></div>
+            <span class="lb-time">${r.temps}</span>
+          </div>`).join("")}
+        <div class="lb-row" style="justify-content:center; color:var(--accent-deep); font-weight:700;">Voir les ${resultats.length} résultats →</div>
+      </div>`;
   }
 
   async function loadClubs() {
@@ -749,32 +509,25 @@
     allClubs = res.ok ? (data.clubs || []) : [];
     clubsLoaded = true;
     renderClubs();
+    document.getElementById("fClubSearch").addEventListener("input", renderClubs);
   }
 
   function renderClubs() {
     const container = document.getElementById("clubsContent");
     if (!allClubs.length) { container.innerHTML = `<div class="state-message">Aucun club enregistré pour l'instant.</div>`; return; }
+    const q = document.getElementById("fClubSearch").value.trim().toLowerCase();
+    const filtered = allClubs.filter(club => !q || club.nom.toLowerCase().includes(q) || (club.commune || "").toLowerCase().includes(q));
+    if (!filtered.length) { container.innerHTML = `<div class="state-message">Aucun club ne correspond.</div>`; return; }
 
-    const fDept = document.getElementById("fClubDept").value;
-    const fSearch = document.getElementById("fClubSearch").value.trim().toLowerCase();
-    const filtered = allClubs.filter(club => {
-      if (fDept !== "Tous" && club.departement !== fDept) return false;
-      if (fSearch && !(club.nom.toLowerCase().includes(fSearch) || (club.commune || "").toLowerCase().includes(fSearch))) return false;
-      return true;
-    });
-
-    if (!filtered.length) { container.innerHTML = `<div class="state-message">Aucun club ne correspond à ces filtres.</div>`; return; }
-
-    container.innerHTML = `<div class="club-grid">${filtered.map(club => {
-      const logoHtml = club.logo ? `<img src="${club.logo}" alt="Logo ${club.nom}" />` : initials(club.nom);
+    container.innerHTML = `<div class="course-grid" style="grid-template-columns:1fr;">${filtered.map(club => {
+      const logoHtml = club.logo ? `<img src="${club.logo}" style="width:100%;height:100%;object-fit:contain;" />` : initials(club.nom);
       return `
-        <div class="club-row" onclick="openClubFiche('${club.id}')">
-          <div class="club-logo">${logoHtml}</div>
-          <div class="info">
-            <div class="club-name">${club.nom}</div>
-            <div class="club-meta">${club.commune || ""}${club.departement ? ", " + club.departement : ""}</div>
+        <div class="side-card" style="cursor:pointer; display:flex; align-items:center; gap:12px; aspect-ratio:auto;" onclick="openClubFiche('${club.id}')">
+          <div class="org-avatar" style="border-radius:10px; overflow:hidden;">${logoHtml}</div>
+          <div>
+            <div style="font-weight:800; font-size:14px;">${club.nom}</div>
+            <div style="font-size:12px; color:var(--muted);">${club.commune || ""}${club.discipline ? " · " + club.discipline : ""}</div>
           </div>
-          ${club.discipline ? `<span class="type-tag type-loisir">${club.discipline}</span>` : ""}
         </div>`;
     }).join("")}</div>`;
   }
@@ -782,70 +535,111 @@
   function openClubFiche(id) {
     const club = allClubs.find(x => x.id === id);
     if (!club) return;
-    const logoHtml = club.logo ? `<img src="${club.logo}" alt="Logo ${club.nom}" />` : initials(club.nom);
+    const logoHtml = club.logo ? `<img src="${club.logo}" style="width:100%;height:100%;object-fit:contain;" />` : initials(club.nom);
     document.getElementById("clubFicheContent").innerHTML = `
-      <div class="back-link" onclick="showPage('club')">← Retour aux clubs</div>
-      <div class="club-hero-logo">${logoHtml}</div>
-      <h1 class="course-title">${club.nom}</h1>
-      <div class="course-sub">${club.commune || ""}${club.departement ? ", " + club.departement : ""}</div>
-      ${club.discipline ? `<div class="badge-row"><span class="type-tag type-loisir">${club.discipline}</span></div>` : ""}
-      ${club.site ? `<a class="btn-primary" href="${club.site}" target="_blank" rel="noopener">Visiter le site du club ↗</a>` : ""}
-      ${(club.contact || club.reseaux) ? `
-        <div class="org-card">
-          <div class="section-label" style="margin-bottom:9px;">Contact</div>
-          ${club.contact ? `<div class="org-line">✉️ ${club.contact}</div>` : ""}
-          ${club.reseaux ? `<div class="org-line">📷 <a href="${club.reseaux}" target="_blank" rel="noopener">${club.reseaux}</a></div>` : ""}
-        </div>` : ""}
-      <div class="map-frame"><iframe src="https://maps.google.com/maps?q=${encodeURIComponent((club.commune || "") + ", France")}&output=embed" loading="lazy"></iframe></div>
+      <div class="breadcrumb" onclick="showPage('club')">← Retour aux clubs</div>
+      <div class="fiche-head">
+        <div><h1>${club.nom}</h1><div class="loc">${club.commune || ""} · Gard</div></div>
+        <div class="org-avatar" style="width:90px;height:90px;font-size:26px;border-radius:16px;">${logoHtml}</div>
+      </div>
+      ${club.discipline ? `<span class="pill" style="background:var(--accent-tint); color:var(--accent-deep);">${club.discipline}</span>` : ""}
+      <div class="action-row" style="margin-top:1.4rem;">
+        ${club.site ? `<a class="btn-inscription" href="${club.site}" target="_blank" rel="noopener">Visiter le site ↗</a>` : ""}
+        ${club.reseaux ? `<a class="btn-facebook" href="${club.reseaux}" target="_blank" rel="noopener">📘 Réseaux</a>` : ""}
+      </div>
+      ${club.contact ? `<div class="side-card">✉️ ${club.contact}</div>` : ""}
     `;
     showPage('club-fiche');
   }
 
-  function challengeCardHtml(dept) {
-    const color = { Gard: '#B34600', Vaucluse: '#A30000', 'Hérault': '#8E2E9E', 'Bouches-du-Rhône': '#12628F' }[dept];
-    return `
-      <div class="challenge-card">
-        <div class="dept-name" style="color:${color};">${dept}</div>
-        <div class="rank-row"><span class="rank">1</span><span class="rname">—</span><span class="rcount">—</span></div>
-        <div class="rank-row"><span class="rank">2</span><span class="rname">—</span><span class="rcount">—</span></div>
-        <div class="rank-row"><span class="rank">3</span><span class="rname">—</span><span class="rcount">—</span></div>
-        <div class="challenge-note">Bientôt disponible</div>
+  async function loadResultatsList() {
+    if (!coursesLoaded) await loadCourses();
+    if (!resultatsLoaded) await loadResultatsCountForStats();
+    const container = document.getElementById("resultatsListContent");
+
+    const grouped = {};
+    allResultats.forEach(r => {
+      if (!r.courseId) return;
+      grouped[r.courseId] = (grouped[r.courseId] || 0) + 1;
+    });
+
+    const entries = Object.keys(grouped).map(courseId => {
+      const course = allCourses.find(c => c.id === courseId);
+      return { courseId, count: grouped[courseId], course };
+    }).filter(e => e.course);
+
+    if (!entries.length) {
+      container.innerHTML = `<div class="empty-state"><div class="ic">🏁</div><div class="big">Aucun résultat pour l'instant</div><p>Dès qu'une course sera traitée, son classement apparaîtra ici.</p></div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="course-grid" style="grid-template-columns:1fr;">${entries.map(e => `
+      <div class="side-card" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; aspect-ratio:auto;" onclick="openLeaderboard('${e.courseId}')">
+        <div>
+          <div style="font-weight:800; font-size:14px;">${e.course.nom}</div>
+          <div style="font-size:12px; color:var(--muted);">${e.course.commune || ""}, Gard</div>
+        </div>
+        <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep);">${e.count} coureurs</span>
+      </div>`).join("")}</div>`;
+  }
+
+  async function openLeaderboard(courseId) {
+    const course = allCourses.find(c => c.id === courseId);
+    const res = await fetch(`/api/resultats?courseId=${encodeURIComponent(courseId)}`);
+    const data = await res.json();
+    const resultats = res.ok ? (data.resultats || []) : [];
+    const edition = course ? ((new Date(course.date)).getFullYear() || new Date().getFullYear()) : new Date().getFullYear();
+
+    const distances = [...new Set(resultats.map(r => r.distance).filter(Boolean))];
+    window.__leaderboardData = resultats;
+
+    document.getElementById("leaderboardContent").innerHTML = `
+      <div class="breadcrumb" onclick="openFiche('${courseId}')">← Retour à ${course ? course.nom : "la course"}</div>
+      <h1 style="margin:6px 0 4px;">Résultats — ${course ? course.nom : ""} <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep); vertical-align:middle;">Édition ${edition}</span></h1>
+      <div class="loc" style="margin-bottom:1.3rem;">${course ? course.commune : ""}, Gard · ${resultats.length} coureurs classés</div>
+      <div class="lb-header">
+        <div class="lb-tabs" id="lbTabs">
+          <button class="lb-tab active" data-distance="tous" onclick="filterLeaderboard('tous')">Toutes (${resultats.length})</button>
+          ${distances.map(d => `<button class="lb-tab" data-distance="${d}" onclick="filterLeaderboard('${d}')">${d} (${resultats.filter(r => r.distance === d).length})</button>`).join("")}
+        </div>
+        <input class="lb-search" id="lbSearch" placeholder="Chercher un coureur..." oninput="renderLeaderboardTable()" />
+      </div>
+      <div id="lbTableWrap"></div>
+    `;
+    window.__leaderboardFilter = 'tous';
+    renderLeaderboardTable();
+    showPage('leaderboard');
+  }
+
+  function filterLeaderboard(distance) {
+    window.__leaderboardFilter = distance;
+    document.querySelectorAll('#lbTabs .lb-tab').forEach(t => t.classList.toggle('active', t.dataset.distance === distance));
+    renderLeaderboardTable();
+  }
+
+  function renderLeaderboardTable() {
+    const q = (document.getElementById('lbSearch')?.value || '').trim().toLowerCase();
+    const filter = window.__leaderboardFilter || 'tous';
+    let rows = window.__leaderboardData || [];
+    if (filter !== 'tous') rows = rows.filter(r => r.distance === filter);
+    if (q) rows = rows.filter(r => `${r.prenom} ${r.nom}`.toLowerCase().includes(q));
+
+    const wrap = document.getElementById('lbTableWrap');
+    if (!wrap) return;
+    wrap.innerHTML = `
+      <div class="lb-table">
+        <div class="lb-row head"><span>Pl.</span><span>Coureur</span><span>Temps</span></div>
+        ${rows.map(r => `
+          <div class="lb-row">
+            <span class="lb-pos ${r.classementGeneral && r.classementGeneral <= 3 ? 'top3' : ''}">${r.classementGeneral ?? "—"}</span>
+            <div><div class="lb-name">${r.prenom} ${r.nom}</div><div class="lb-club">${r.club || ""}${r.classementCategorie ? " · " + r.classementCategorie : ""}</div></div>
+            <span class="lb-time">${r.temps}</span>
+          </div>`).join("") || `<div class="state-message">Aucun coureur ne correspond.</div>`}
       </div>`;
   }
-  function renderChallenge() {
-    const depts = ['Gard', 'Vaucluse', 'Hérault', 'Bouches-du-Rhône'];
-    document.getElementById("homeChallenge").innerHTML = `<div class="challenge-grid">${depts.map(challengeCardHtml).join("")}</div>`;
-    renderChallengePage();
-  }
-  function renderChallengePage() {
-    const fDept = document.getElementById("fChallengeDept").value;
-    const depts = fDept === "Tous" ? ['Gard', 'Vaucluse', 'Hérault', 'Bouches-du-Rhône'] : [fDept];
-    document.getElementById("challengePageGrid").innerHTML = depts.map(challengeCardHtml).join("");
-  }
-  document.getElementById("fChallengeDept").addEventListener("change", renderChallengePage);
-
-  document.getElementById("instaGrid").innerHTML = Object.entries(INSTA).map(([dept, d]) => `
-    <a class="insta-card" href="${d.url}" target="_blank" rel="noopener" style="background:${d.color};">
-      <span class="ic">📷</span><div class="txt"><div>${dept}</div><div>${d.handle}</div></div>
-    </a>`).join("");
-
-  ['fDept','fDist','fType'].forEach(id => document.getElementById(id).addEventListener('change', renderCalendrier));
-  document.getElementById('fSearch').addEventListener('input', renderCalendrier);
-  document.getElementById('fClubDept').addEventListener('change', renderClubs);
-  document.getElementById('fClubSearch').addEventListener('input', renderClubs);
-
-  document.getElementById('globalSearch').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const term = e.target.value.trim();
-      showPage('course');
-      loadCourses().then(() => {
-        document.getElementById('fSearch').value = term;
-        renderCalendrier();
-      });
-    }
-  });
 
   loadCourses();
+  loadResultatsCountForStats();
 </script>
 
 </body>
