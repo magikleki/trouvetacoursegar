@@ -192,7 +192,6 @@
     </div>
     <div class="hero-stats">
       <div><b id="statCourses">—</b> courses à venir</div>
-      <div><b id="statResultats">—</b> résultats disponibles</div>
     </div>
   </div>
 
@@ -473,7 +472,6 @@
     const data = await res.json();
     allResultats = res.ok ? (data.resultats || []) : [];
     resultatsLoaded = true;
-    document.getElementById("statResultats").textContent = allResultats.length;
   }
 
   function openFiche(id) {
