@@ -448,9 +448,11 @@
       const mediaHtml = c.affiche
         ? `<div class="poster-frame"><img src="${c.affiche}" alt="Affiche ${c.nom}" /></div>`
         : `<div class="big-icon icon-${tc}"></div>`;
+      const thumbClass = c.affiche ? "" : `thumb-${tc}`;
+      const thumbStyle = c.affiche ? ` style="background: var(--bg);"` : "";
       html += `
         <div class="ccard" onclick="openFiche('${c.id}')">
-          <div class="thumb thumb-${tc}">
+          <div class="thumb ${thumbClass}"${thumbStyle}>
             ${mediaHtml}
             <div class="badges-top"><span class="pill type-${tc}">${c.type || "—"}</span></div>
             <div class="badges-bottom">${distBadges}</div>
