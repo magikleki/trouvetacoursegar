@@ -60,6 +60,10 @@
   .ccard:hover { box-shadow: 0 14px 28px -18px rgba(0,0,0,.28); }
   .ccard .thumb { position: absolute; top: 0; left: 0; right: 0; height: 68%; background-size: cover; background-position: center; }
   .ccard .thumb .big-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 44px; opacity: 0.45; }
+  .ccard .thumb .logo-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 58%; aspect-ratio: 1/1; max-width: 90px; background: #fff; border-radius: 14px; box-shadow: 0 6px 16px -6px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .ccard .thumb .logo-frame img { width: 82%; height: 82%; object-fit: contain; }
+  .ccard .thumb .poster-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 52%; aspect-ratio: 1/1.4142; max-height: 90%; background: #fff; border-radius: 8px; box-shadow: 0 6px 16px -6px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .ccard .thumb .poster-frame img { width: 100%; height: 100%; object-fit: contain; }
   .ccard .thumb .badges-top { position: absolute; top: 9px; left: 9px; display: flex; gap: 5px; }
   .ccard .thumb .badges-bottom { position: absolute; bottom: 9px; left: 9px; display: flex; gap: 5px; flex-wrap: wrap; right: 9px; }
   .pill { font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; color: #fff; white-space: nowrap; }
@@ -183,8 +187,8 @@
     <div class="hero-chips" id="heroChips">
       <button class="hero-chip active" data-bucket="tous">Toutes</button>
       <button class="hero-chip" data-bucket="weekend">Ce week-end</button>
-      <button class="hero-chip" data-bucket="mois">Ce mois-ci</button>
-      <button class="hero-chip" data-bucket="plustard">Plus tard</button>
+      <button class="hero-chip" data-bucket="mois">Ce mois</button>
+      <span id="monthPicker" style="display:contents;"></span>
     </div>
     <div class="hero-stats">
       <div><b id="statCourses">—</b> courses à venir</div>
@@ -332,6 +336,65 @@
     return "plustard";
   }
 
+  const MOIS_FR = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+
+  function monthKeyOf(dateStr) {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${d.getMonth()}`;
+  }
+
+  function getUpcomingMonths(count) {
+    const today = new Date();
+    const months = [];
+    for (let i = 1; i <= count; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+      months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: MOIS_FR[d.getMonth()] });
+    }
+    return months;
+  }
+
+  function renderMonthPicker(count) {
+    const picker = document.getElementById('monthPicker');
+    const all = getUpcomingMonths(11);
+    const activeKey = window.__selectedMonthKey;
+    const activeKeys = window.__selectedMonthKeys;
+
+    let html = all.slice(0, 3).map(m => `<button class="hero-chip${m.key === activeKey ? ' active' : ''}" data-month="${m.key}" onclick="selectMonth('${m.key}', event)">${m.label}</button>`).join('');
+
+    if (count > 3) {
+      const rest = all.slice(3);
+      for (let i = 0; i < rest.length; i += 2) {
+        const pair = rest.slice(i, i + 2);
+        const keys = pair.map(m => m.key);
+        const label = pair.map(m => m.label).join('-');
+        const isActive = activeKeys && keys.length === activeKeys.length && keys.every(k => activeKeys.includes(k));
+        html += `<button class="hero-chip${isActive ? ' active' : ''}" data-months="${keys.join(',')}" onclick='selectMonthPair(${JSON.stringify(keys)}, event)'>${label}</button>`;
+      }
+      html += `<button class="hero-chip" onclick="renderMonthPicker(3); event.stopPropagation();">−</button>`;
+    } else {
+      html += `<button class="hero-chip" onclick="renderMonthPicker(11); event.stopPropagation();">+</button>`;
+    }
+    picker.innerHTML = html;
+  }
+
+  function selectMonth(key, e) {
+    e.stopPropagation();
+    window.__selectedMonthKey = key;
+    window.__selectedMonthKeys = null;
+    document.querySelectorAll('#heroChips .hero-chip[data-bucket]').forEach(c => c.classList.remove('active'));
+    renderMonthPicker(3);
+    renderCalendrier();
+  }
+
+  function selectMonthPair(keys, e) {
+    e.stopPropagation();
+    window.__selectedMonthKey = null;
+    window.__selectedMonthKeys = keys;
+    document.querySelectorAll('#heroChips .hero-chip[data-bucket]').forEach(c => c.classList.remove('active'));
+    renderMonthPicker(11);
+    renderCalendrier();
+  }
+
   async function loadCourses() {
     if (coursesLoaded) return;
     const res = await fetch("/api/courses");
@@ -339,13 +402,17 @@
     allCourses = res.ok ? (data.courses || []) : [];
     coursesLoaded = true;
     document.getElementById("statCourses").textContent = allCourses.length;
+    renderMonthPicker(3);
     renderCalendrier();
   }
 
-  document.querySelectorAll('.hero-chip').forEach(chip => {
+  document.querySelectorAll('#heroChips .hero-chip[data-bucket]').forEach(chip => {
     chip.addEventListener('click', () => {
-      document.querySelectorAll('.hero-chip').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('#heroChips .hero-chip, #monthPicker .hero-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
+      window.__selectedMonthKey = null;
+      window.__selectedMonthKeys = null;
+      renderMonthPicker(3);
       renderCalendrier();
     });
   });
@@ -357,11 +424,18 @@
     if (!allCourses.length) { container.innerHTML = `<div class="state-message">Aucune course enregistrée pour l'instant.</div>`; return; }
 
     const query = document.getElementById('heroSearch').value.trim().toLowerCase();
-    const activeChip = document.querySelector('.hero-chip.active');
-    const bucket = activeChip ? activeChip.dataset.bucket : 'tous';
+    const activeChip = document.querySelector('#heroChips .hero-chip.active, #monthPicker .hero-chip.active');
 
     const filtered = allCourses.filter(c => {
-      const matchesBucket = (bucket === 'tous') || (getBucket(c.date) === bucket);
+      let matchesBucket;
+      if (activeChip && activeChip.dataset.month) {
+        matchesBucket = monthKeyOf(c.date) === activeChip.dataset.month;
+      } else if (activeChip && activeChip.dataset.months) {
+        matchesBucket = activeChip.dataset.months.split(',').includes(monthKeyOf(c.date));
+      } else {
+        const bucket = activeChip ? activeChip.dataset.bucket : 'tous';
+        matchesBucket = (bucket === 'tous') || (getBucket(c.date) === bucket);
+      }
       const matchesQuery = !query || c.nom.toLowerCase().includes(query) || (c.commune || "").toLowerCase().includes(query);
       return matchesBucket && matchesQuery;
     });
@@ -372,10 +446,13 @@
       const tc = typeClass(c.type);
       const distances = (c.distances || "").split(/,\s+/).map(s => s.trim()).filter(Boolean);
       const distBadges = distances.slice(0, 2).map(d => `<span class="pill dark">${d}</span>`).join("") + (distances.length > 2 ? `<span class="pill dark">+${distances.length - 2}</span>` : "");
+      const mediaHtml = c.affiche
+        ? `<div class="poster-frame"><img src="${c.affiche}" alt="Affiche ${c.nom}" /></div>`
+        : `<div class="big-icon icon-${tc}"></div>`;
       html += `
         <div class="ccard" onclick="openFiche('${c.id}')">
           <div class="thumb thumb-${tc}">
-            <div class="big-icon icon-${tc}"></div>
+            ${mediaHtml}
             <div class="badges-top"><span class="pill type-${tc}">${c.type || "—"}</span></div>
             <div class="badges-bottom">${distBadges}</div>
           </div>
@@ -512,6 +589,15 @@
     document.getElementById("fClubSearch").addEventListener("input", renderClubs);
   }
 
+  function disciplineStyle(discipline) {
+    const d = (discipline || "").toLowerCase();
+    if (d.includes("piste") || d.includes("athlé")) return { tc: "Piste", icon: "🏅" };
+    if (d.includes("trail")) return { tc: "Trail", icon: "🏔️" };
+    if (d.includes("route")) return { tc: "Route", icon: "🏃" };
+    if (d.includes("triathlon") || d.includes("vétathlon")) return { tc: "Triathlon", icon: "🏊" };
+    return { tc: "Nature", icon: "🏃" };
+  }
+
   function renderClubs() {
     const container = document.getElementById("clubsContent");
     if (!allClubs.length) { container.innerHTML = `<div class="state-message">Aucun club enregistré pour l'instant.</div>`; return; }
@@ -519,14 +605,21 @@
     const filtered = allClubs.filter(club => !q || club.nom.toLowerCase().includes(q) || (club.commune || "").toLowerCase().includes(q));
     if (!filtered.length) { container.innerHTML = `<div class="state-message">Aucun club ne correspond.</div>`; return; }
 
-    container.innerHTML = `<div class="course-grid" style="grid-template-columns:1fr;">${filtered.map(club => {
-      const logoHtml = club.logo ? `<img src="${club.logo}" style="width:100%;height:100%;object-fit:contain;" />` : initials(club.nom);
+    container.innerHTML = `<div class="course-grid">${filtered.map(club => {
+      const { tc, icon } = disciplineStyle(club.discipline);
+      const mediaHtml = club.logo
+        ? `<div class="logo-frame"><img src="${club.logo}" alt="Logo ${club.nom}" /></div>`
+        : `<div class="big-icon" style="opacity:0.45;">${icon}</div>`;
       return `
-        <div class="side-card" style="cursor:pointer; display:flex; align-items:center; gap:12px; aspect-ratio:auto;" onclick="openClubFiche('${club.id}')">
-          <div class="org-avatar" style="border-radius:10px; overflow:hidden;">${logoHtml}</div>
-          <div>
-            <div style="font-weight:800; font-size:14px;">${club.nom}</div>
-            <div style="font-size:12px; color:var(--muted);">${club.commune || ""}${club.discipline ? " · " + club.discipline : ""}</div>
+        <div class="ccard" onclick="openClubFiche('${club.id}')">
+          <div class="thumb thumb-${tc}">
+            ${mediaHtml}
+            ${club.discipline ? `<div class="badges-top"><span class="pill type-${tc}">${club.discipline}</span></div>` : ""}
+          </div>
+          <div class="body">
+            <div class="date">${(club.commune || "").toUpperCase()}</div>
+            <div class="title">${club.nom}</div>
+            <div class="loc">${club.commune || ""}, Gard</div>
           </div>
         </div>`;
     }).join("")}</div>`;
