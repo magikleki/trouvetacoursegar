@@ -21,21 +21,29 @@ export default async function handler(request, response) {
       airtableUrl += `&filterByFormula=${encodeURIComponent(formula)}`;
     }
 
-    const airtableResponse = await fetch(airtableUrl, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-
-    if (!airtableResponse.ok) {
-      const errorText = await airtableResponse.text();
-      return response.status(airtableResponse.status).json({
-        error: "Erreur lors de la récupération des données Airtable",
-        details: errorText,
+    let allRecords = [];
+    let offset;
+    do {
+      let pageUrl = airtableUrl;
+      if (offset) pageUrl += `&offset=${offset}`;
+      const airtableResponse = await fetch(pageUrl, {
+        headers: { Authorization: `Bearer ${apiKey}` },
       });
-    }
 
-    const data = await airtableResponse.json();
+      if (!airtableResponse.ok) {
+        const errorText = await airtableResponse.text();
+        return response.status(airtableResponse.status).json({
+          error: "Erreur lors de la récupération des données Airtable",
+          details: errorText,
+        });
+      }
 
-    const courses = data.records.map((record) => {
+      const data = await airtableResponse.json();
+      allRecords = allRecords.concat(data.records);
+      offset = data.offset;
+    } while (offset);
+
+    const courses = allRecords.map((record) => {
       const posterAttachment = record.fields["Affiche"];
       const posterUrl =
         Array.isArray(posterAttachment) && posterAttachment.length > 0
