@@ -56,6 +56,7 @@ export default async function handler(request, response) {
         contact: record.fields["Contact"] || "",
         reseaux: record.fields["Réseaux sociaux"] || "",
         affiche: posterUrl,
+        statut: record.fields["Statut"] || "",
       };
     });
 

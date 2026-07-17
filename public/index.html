@@ -201,6 +201,7 @@
     <a onclick="showPage('club')">Clubs</a>
     <a onclick="showPage('resultats')">Résultats</a>
     <a onclick="showPage('challenge')">Challenge</a>
+    <a href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Proposer une course / Signaler une erreur</a>
   </div>
 </div>
 
@@ -305,6 +306,7 @@
           <li><a onclick="showPage('resultats')">Résultats</a></li>
           <li><a onclick="showPage('challenge')">Challenge</a></li>
           <li><a onclick="showPage('boutique')">Boutique</a></li>
+          <li><a href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Proposer une course / Signaler une erreur</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -469,7 +471,9 @@
     filtered.forEach(c => {
       const tc = typeClass(c.type);
       const distances = (c.distances || "").split(/,\s+/).map(s => s.trim()).filter(Boolean);
-      const distBadges = (tc === "Backyard" || tc === "Ekiden") ? "" :
+      const distBadges = c.statut === "Non confirmé"
+        ? `<span class="pill dark" style="background:rgba(178,59,59,0.85);">Non confirmée</span>`
+        : (tc === "Backyard" || tc === "Ekiden") ? "" :
         distances.slice(0, 2).map(d => `<span class="pill dark">${d}</span>`).join("") + (distances.length > 2 ? `<span class="pill dark">+${distances.length - 2}</span>` : "");
       const posterHtml = c.affiche ? `<div class="poster-frame-small"><img src="${c.affiche}" alt="Affiche ${c.nom}" /></div>` : "";
       html += `
@@ -545,6 +549,11 @@
         </div>
         ${posterHtml}
       </div>
+
+      ${c.statut === "Non confirmé" ? `
+      <div style="background:#FCEBEB; border:1px solid #E8B4B4; color:#791F1F; border-radius:12px; padding:0.9rem 1.1rem; margin-bottom:1.4rem; font-weight:700; font-size:13.5px; display:flex; align-items:center; gap:8px;">
+        ⚠️ Course non confirmée à ce jour — la date n'a pas encore été officiellement annoncée par l'organisateur pour cette édition.
+      </div>` : ""}
 
       <div class="two-col">
         <div>
