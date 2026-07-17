@@ -40,9 +40,57 @@
   .search-box button { background: var(--accent); color: #fff; border: none; border-radius: 999px; padding: 0 20px; font-weight: 700; font-size: 13px; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
   .search-box button:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -8px rgba(224,106,44,0.55); }
   .hero-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 1.4rem; }
-  .hero-chip { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 7px 15px; font-size: 12.5px; font-weight: 700; color: var(--ink); cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease; }
-  .hero-chip:hover { border-color: var(--accent); box-shadow: 0 6px 14px -8px rgba(224,106,44,0.4); }
-  .hero-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  .date-filter-btn { background: var(--card); border: 1.5px solid var(--accent); color: var(--accent-deep); border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: box-shadow .15s ease; }
+  .date-filter-btn:hover { box-shadow: 0 8px 18px -10px rgba(224,106,44,0.45); }
+  .date-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .date-filter-btn.active:hover { box-shadow: 0 8px 18px -10px rgba(224,106,44,0.6); }
+  .date-reset-btn { background: none; border: none; color: var(--muted); font-size: 13px; font-weight: 700; cursor: pointer; padding: 9px 8px; }
+  .date-reset-btn:hover { color: var(--accent-deep); }
+  .type-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+  .date-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(29,27,22,0.5); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+  .date-modal-overlay.open { display: flex; }
+  .date-modal { background: var(--card); border-radius: 22px; width: 100%; max-width: 400px; max-height: 88vh; overflow-y: auto; padding: 1.5rem 1.5rem 1.2rem; }
+  .date-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+  .date-modal-title { font-size: 20px; font-weight: 800; }
+  .date-modal-close { background: var(--bg); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 14px; color: var(--muted); cursor: pointer; }
+  .date-modal-close:hover { background: var(--accent-tint); color: var(--accent-deep); }
+
+  .date-modal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.1rem; }
+  .date-nav-arrow { background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer; padding: 4px 10px; border-radius: 8px; }
+  .date-nav-arrow:hover { background: var(--accent-tint); color: var(--accent-deep); }
+  .date-nav-label { font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; }
+
+  .date-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 8px; }
+  .date-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 1.3rem; }
+  .date-cell { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; border-radius: 10px; cursor: pointer; color: var(--ink); position: relative; }
+  .date-cell.other-month { color: var(--border); cursor: default; pointer-events: none; }
+  .date-cell.past { color: var(--border); cursor: default; pointer-events: none; }
+  .date-cell.in-range { background: var(--accent-tint); border-radius: 0; }
+  .date-cell.range-start { background: var(--accent); color: #fff; border-radius: 10px 0 0 10px; }
+  .date-cell.range-end { background: var(--accent); color: #fff; border-radius: 0 10px 10px 0; }
+  .date-cell.range-single { background: var(--accent); color: #fff; border-radius: 10px; }
+  .date-cell:not(.other-month):not(.past):hover { background: var(--accent-tint); }
+
+  .date-month-shortcuts { display: flex; flex-wrap: wrap; gap: 14px 18px; margin-bottom: 1.4rem; }
+  .date-month-shortcut { background: none; border: none; font-size: 14px; color: var(--ink); cursor: pointer; padding: 2px 0; border-bottom: 2px solid transparent; }
+  .date-month-shortcut:hover { color: var(--accent-deep); border-bottom-color: var(--accent); }
+  .date-month-shortcut.year-label { font-weight: 400; }
+
+  .date-modal-footer { position: sticky; bottom: -1.2rem; background: var(--card); padding-top: 4px; }
+  .date-apply-btn { display: block; width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 999px; padding: 14px; font-size: 14px; font-weight: 800; cursor: pointer; margin-bottom: 0.9rem; transition: box-shadow .15s ease; }
+  .date-apply-btn:hover { box-shadow: 0 10px 20px -10px rgba(224,106,44,0.55); }
+  .date-clear-link { text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; text-decoration: underline; }
+  .date-clear-link:hover { color: var(--accent-deep); }
+
+  .challenge-options { margin-bottom: 1.2rem; max-height: 50vh; overflow-y: auto; }
+  .checkbox-box { width: 20px; height: 20px; border: 2px solid var(--border-strong); border-radius: 5px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color .15s ease, background .15s ease; }
+  .distance-option-row { display: flex; align-items: center; gap: 12px; padding: 13px 4px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .distance-option-row:last-child { border-bottom: none; }
+  .distance-option-row:hover { color: var(--accent-deep); }
+  .distance-option-row.active .checkbox-box { background: var(--accent); border-color: var(--accent); }
+  .distance-option-row.active { color: var(--accent-deep); }
   .hero-stats { display: flex; gap: 2rem; justify-content: center; font-size: 13px; color: var(--muted); }
   .hero-stats b { font-size: 17px; color: var(--ink); }
 
@@ -235,13 +283,85 @@
     <p class="sub">Le calendrier running le plus complet du Gard — courses, clubs et résultats, une seule adresse, toute l'année.</p>
     <div class="search-box"><input id="heroSearch" placeholder="Chercher une course, une ville..." /><button onclick="renderCalendrier()">Chercher</button></div>
     <div class="hero-chips" id="heroChips">
-      <button class="hero-chip active" data-bucket="tous">Toutes</button>
-      <button class="hero-chip" data-bucket="weekend">Ce week-end</button>
-      <button class="hero-chip" data-bucket="mois">Ce mois</button>
-      <span id="monthPicker" style="display:contents;"></span>
+      <button class="date-filter-btn" id="dateFilterBtn" onclick="openDateModal()">
+        <span id="dateFilterLabel">Date</span>
+      </button>
+      <button class="date-filter-btn" id="distanceFilterBtn" onclick="openDistanceModal()">
+        <span id="distanceFilterLabel">Distance</span>
+      </button>
+      <button class="date-filter-btn" id="challengeFilterBtn" onclick="openChallengeModal()">
+        <span id="challengeFilterLabel">Challenge</span>
+      </button>
+      <button class="date-filter-btn" id="typeFilterBtn" onclick="openTypeModal()">
+        <span id="typeFilterLabel">Type de course</span>
+      </button>
+      <button class="date-reset-btn" onclick="resetAllFilters()">↺ Effacer</button>
     </div>
     <div class="hero-stats">
       <div><b id="statCourses">—</b> courses à venir</div>
+    </div>
+  </div>
+
+  <div class="date-modal-overlay" id="dateModalOverlay" onclick="if(event.target===this) closeDateModal()">
+    <div class="date-modal">
+      <div class="date-modal-header">
+        <div class="date-modal-title">Date</div>
+        <button class="date-modal-close" onclick="closeDateModal()">✕</button>
+      </div>
+      <div class="date-modal-nav">
+        <button class="date-nav-arrow" onclick="shiftMonth(-1)">‹</button>
+        <div class="date-nav-label" id="calMonthLabel">Juillet 2026</div>
+        <button class="date-nav-arrow" onclick="shiftMonth(1)">›</button>
+      </div>
+      <div class="date-weekdays"><span>LU</span><span>MA</span><span>ME</span><span>JE</span><span>VE</span><span>SA</span><span>DI</span></div>
+      <div class="date-grid" id="calGrid"></div>
+      <div class="date-month-shortcuts" id="monthShortcuts"></div>
+      <div class="date-modal-footer">
+        <button class="date-apply-btn" onclick="applyDateFilter()" id="applyBtn">Afficher 0 course</button>
+        <div class="date-clear-link" onclick="clearDateFilter()">Tout effacer</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="date-modal-overlay" id="distanceModalOverlay" onclick="if(event.target===this) closeDistanceModal()">
+    <div class="date-modal">
+      <div class="date-modal-header">
+        <div class="date-modal-title">Distance</div>
+        <button class="date-modal-close" onclick="closeDistanceModal()">✕</button>
+      </div>
+      <div class="challenge-options" id="distanceOptionsList"></div>
+      <div class="date-modal-footer">
+        <button class="date-apply-btn" onclick="applyDistanceFilter()" id="distanceApplyBtn">Afficher 0 course</button>
+        <div class="date-clear-link" onclick="clearDistanceFilter()">Tout effacer</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="date-modal-overlay" id="challengeModalOverlay" onclick="if(event.target===this) closeChallengeModal()">
+    <div class="date-modal">
+      <div class="date-modal-header">
+        <div class="date-modal-title">Challenge</div>
+        <button class="date-modal-close" onclick="closeChallengeModal()">✕</button>
+      </div>
+      <div class="challenge-options" id="challengeOptionsList"></div>
+      <div class="date-modal-footer">
+        <button class="date-apply-btn" onclick="applyChallengeFilter()" id="challengeApplyBtn">Afficher 0 course</button>
+        <div class="date-clear-link" onclick="clearChallengeFilter()">Tout effacer</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="date-modal-overlay" id="typeModalOverlay" onclick="if(event.target===this) closeTypeModal()">
+    <div class="date-modal">
+      <div class="date-modal-header">
+        <div class="date-modal-title">Type de course</div>
+        <button class="date-modal-close" onclick="closeTypeModal()">✕</button>
+      </div>
+      <div class="challenge-options" id="typeOptionsList"></div>
+      <div class="date-modal-footer">
+        <button class="date-apply-btn" onclick="applyTypeFilter()" id="typeApplyBtn">Afficher 0 course</button>
+        <div class="date-clear-link" onclick="clearTypeFilter()">Tout effacer</div>
+      </div>
     </div>
   </div>
 
@@ -371,76 +491,365 @@
     return (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   }
 
-  function getBucket(dateStr) {
-    const today = new Date();
-    const d = new Date(dateStr);
-    if (isNaN(d)) return "plustard";
-    const day = today.getDay();
-    const daysUntilFriday = (5 - day + 7) % 7;
-    const weekendStart = new Date(today); weekendStart.setHours(0,0,0,0); weekendStart.setDate(today.getDate() + daysUntilFriday);
-    const weekendEnd = new Date(weekendStart); weekendEnd.setDate(weekendStart.getDate() + 2);
-    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    if (d >= weekendStart && d <= weekendEnd) return "weekend";
-    if (d > weekendEnd && d <= monthEnd) return "mois";
-    return "plustard";
-  }
-
+  const TODAY = new Date();
   const MOIS_FR = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 
-  function monthKeyOf(dateStr) {
-    const d = new Date(dateStr);
-    return `${d.getFullYear()}-${d.getMonth()}`;
+  let calViewYear = TODAY.getFullYear();
+  let calViewMonth = TODAY.getMonth();
+  let rangeStart = null;
+  let rangeEnd = null;
+  let appliedStart = null;
+  let appliedEnd = null;
+
+  function todayMidnight() { const d = new Date(TODAY); d.setHours(0,0,0,0); return d; }
+  function sameDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+
+  function openDateModal() {
+    document.getElementById('dateModalOverlay').classList.add('open');
+    calViewYear = (rangeStart || todayMidnight()).getFullYear();
+    calViewMonth = (rangeStart || todayMidnight()).getMonth();
+    renderCalendarModal();
+    renderMonthShortcuts();
+  }
+  function closeDateModal() { document.getElementById('dateModalOverlay').classList.remove('open'); }
+
+  function shiftMonth(delta) {
+    calViewMonth += delta;
+    if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+    if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+    renderCalendarModal();
+  }
+  function jumpToMonth(year, month) { calViewYear = year; calViewMonth = month; renderCalendarModal(); }
+  function selectYear(year) {
+    rangeStart = new Date(year, 0, 1);
+    rangeEnd = new Date(year, 11, 31);
+    calViewYear = year; calViewMonth = 0;
+    renderCalendarModal();
   }
 
-  function getUpcomingMonths(count) {
-    const today = new Date();
-    const months = [];
-    for (let i = 1; i <= count; i++) {
+  function renderMonthShortcuts() {
+    const wrap = document.getElementById('monthShortcuts');
+    const today = todayMidnight();
+    let html = '';
+    let lastYear = today.getFullYear();
+    for (let i = 1; i <= 6; i++) {
       const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-      months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: MOIS_FR[d.getMonth()] });
-    }
-    return months;
-  }
-
-  function renderMonthPicker(count) {
-    const picker = document.getElementById('monthPicker');
-    const all = getUpcomingMonths(11);
-    const activeKey = window.__selectedMonthKey;
-    const activeKeys = window.__selectedMonthKeys;
-
-    let html = all.slice(0, 3).map(m => `<button class="hero-chip${m.key === activeKey ? ' active' : ''}" data-month="${m.key}" onclick="selectMonth('${m.key}', event)">${m.label}</button>`).join('');
-
-    if (count > 3) {
-      const rest = all.slice(3);
-      for (let i = 0; i < rest.length; i += 2) {
-        const pair = rest.slice(i, i + 2);
-        const keys = pair.map(m => m.key);
-        const label = pair.map(m => m.label).join('-');
-        const isActive = activeKeys && keys.length === activeKeys.length && keys.every(k => activeKeys.includes(k));
-        html += `<button class="hero-chip${isActive ? ' active' : ''}" data-months="${keys.join(',')}" onclick='selectMonthPair(${JSON.stringify(keys)}, event)'>${label}</button>`;
+      if (d.getFullYear() !== lastYear) {
+        html += `<span class="date-month-shortcut year-label" onclick="selectYear(${d.getFullYear()})">${d.getFullYear()}</span>`;
+        lastYear = d.getFullYear();
+        continue;
       }
-      html += `<button class="hero-chip" onclick="renderMonthPicker(3); event.stopPropagation();">−</button>`;
-    } else {
-      html += `<button class="hero-chip" onclick="renderMonthPicker(11); event.stopPropagation();">+</button>`;
+      html += `<span class="date-month-shortcut" onclick="jumpToMonth(${d.getFullYear()}, ${d.getMonth()})">${MOIS_FR[d.getMonth()].toLowerCase()}</span>`;
     }
-    picker.innerHTML = html;
+    wrap.innerHTML = html;
   }
 
-  function selectMonth(key, e) {
-    e.stopPropagation();
-    window.__selectedMonthKey = key;
-    window.__selectedMonthKeys = null;
-    document.querySelectorAll('#heroChips .hero-chip[data-bucket]').forEach(c => c.classList.remove('active'));
-    renderMonthPicker(3);
+  function renderCalendarModal() {
+    document.getElementById('calMonthLabel').textContent = `${MOIS_FR[calViewMonth]} ${calViewYear}`;
+    const grid = document.getElementById('calGrid');
+    const firstOfMonth = new Date(calViewYear, calViewMonth, 1);
+    let startOffset = firstOfMonth.getDay() - 1;
+    if (startOffset < 0) startOffset = 6;
+    const daysInMonth = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+    const today = todayMidnight();
+
+    let html = '';
+    for (let i = 0; i < startOffset; i++) {
+      const d = new Date(calViewYear, calViewMonth, 1 - (startOffset - i));
+      html += `<div class="date-cell other-month">${d.getDate()}</div>`;
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(calViewYear, calViewMonth, day);
+      const classes = ['date-cell'];
+      if (d < today) classes.push('past');
+      if (rangeStart && !rangeEnd && sameDay(d, rangeStart)) classes.push('range-single');
+      if (rangeStart && rangeEnd) {
+        if (sameDay(d, rangeStart)) classes.push(sameDay(rangeStart, rangeEnd) ? 'range-single' : 'range-start');
+        else if (sameDay(d, rangeEnd)) classes.push('range-end');
+        else if (d > rangeStart && d < rangeEnd) classes.push('in-range');
+      }
+      html += `<div class="${classes.join(' ')}" onclick="pickDate(${calViewYear}, ${calViewMonth}, ${day})">${day}</div>`;
+    }
+    const totalCells = startOffset + daysInMonth;
+    const trailing = (7 - (totalCells % 7)) % 7;
+    for (let i = 1; i <= trailing; i++) html += `<div class="date-cell other-month">${i}</div>`;
+    grid.innerHTML = html;
+    updateApplyButtonCount();
+  }
+
+  function pickDate(year, month, day) {
+    const picked = new Date(year, month, day);
+    if (picked < todayMidnight()) return;
+    if (!rangeStart || (rangeStart && rangeEnd)) { rangeStart = picked; rangeEnd = null; }
+    else if (picked < rangeStart) { rangeEnd = rangeStart; rangeStart = picked; }
+    else { rangeEnd = picked; }
+    renderCalendarModal();
+  }
+
+  function countCoursesInRange(start, end) {
+    let count = 0;
+    allCourses.forEach(c => {
+      const d = new Date(c.date);
+      if (!start) { count++; return; }
+      const e = end || start;
+      if (d >= start && d <= new Date(e.getFullYear(), e.getMonth(), e.getDate(), 23, 59, 59)) count++;
+    });
+    return count;
+  }
+
+  function updateApplyButtonCount() {
+    const count = countCoursesInRange(rangeStart, rangeEnd);
+    document.getElementById('applyBtn').textContent = `Afficher ${count} course${count > 1 ? 's' : ''}`;
+  }
+
+  function formatShort(d) { return `${d.getDate()} ${MOIS_FR[d.getMonth()].slice(0,3).toLowerCase()}`; }
+
+  function applyDateFilter() {
+    appliedStart = rangeStart; appliedEnd = rangeEnd;
+    updateDateButtonLabel();
+    closeDateModal();
     renderCalendrier();
   }
+  function clearDateFilter() {
+    rangeStart = null; rangeEnd = null; appliedStart = null; appliedEnd = null;
+    renderCalendarModal();
+    updateDateButtonLabel();
+    renderCalendrier();
+  }
+  function updateDateButtonLabel() {
+    const label = document.getElementById('dateFilterLabel');
+    const btn = document.getElementById('dateFilterBtn');
+    if (!appliedStart) { label.textContent = 'Date'; btn.classList.remove('active'); return; }
+    btn.classList.add('active');
+    if (!appliedEnd || sameDay(appliedStart, appliedEnd)) { label.textContent = formatShort(appliedStart); return; }
+    label.textContent = `${formatShort(appliedStart)} → ${formatShort(appliedEnd)}`;
+  }
 
-  function selectMonthPair(keys, e) {
-    e.stopPropagation();
-    window.__selectedMonthKey = null;
-    window.__selectedMonthKeys = keys;
-    document.querySelectorAll('#heroChips .hero-chip[data-bucket]').forEach(c => c.classList.remove('active'));
-    renderMonthPicker(11);
+  /* ---- DISTANCE ---- */
+  const DISTANCE_RANGES = [
+    { key: "5", label: "5 km", min: 4.5, max: 5.5 },
+    { key: "10", label: "10 km", min: 9, max: 11 },
+    { key: "10-20", label: "De 10 à 20 km", min: 10, max: 20 },
+    { key: "20-40", label: "Entre 20 et 40 km", min: 20, max: 40 },
+    { key: "40-80", label: "Entre 40 et 80 km", min: 40, max: 80 },
+    { key: "80+", label: "80 km et +", min: 80, max: Infinity },
+  ];
+  let appliedDistances = new Set();
+  window.__pendingDistances = new Set();
+
+  function extractDistancesArr(str) {
+    if (!str) return [];
+    return (str.match(/[\d,.]+(?=\s*km)/g) || []).map(s => parseFloat(s.replace(",", ".")));
+  }
+  function courseMatchesDistances(c, selectedSet) {
+    if (selectedSet.size === 0) return true;
+    const dists = extractDistancesArr(c.distances);
+    return dists.some(d => [...selectedSet].some(key => {
+      const r = DISTANCE_RANGES.find(r => r.key === key);
+      return r && d >= r.min && d <= r.max;
+    }));
+  }
+  function countCoursesForDistances(selectedSet) {
+    return allCourses.filter(c => courseMatchesDistances(c, selectedSet)).length;
+  }
+  function renderDistanceOptions() {
+    document.getElementById('distanceOptionsList').innerHTML = DISTANCE_RANGES.map(r => {
+      const active = window.__pendingDistances.has(r.key);
+      return `<div class="distance-option-row${active ? ' active' : ''}" onclick="toggleDistance('${r.key}')">
+        <span class="checkbox-box">${active ? '<span style="color:#fff; font-size:12px; font-weight:800;">✓</span>' : ''}</span>
+        <span>${r.label}</span>
+      </div>`;
+    }).join('');
+  }
+  function toggleDistance(key) {
+    if (window.__pendingDistances.has(key)) window.__pendingDistances.delete(key);
+    else window.__pendingDistances.add(key);
+    renderDistanceOptions();
+    updateDistanceApplyCount();
+  }
+  function updateDistanceApplyCount() {
+    const count = countCoursesForDistances(window.__pendingDistances);
+    document.getElementById('distanceApplyBtn').textContent = `Afficher ${count} course${count > 1 ? 's' : ''}`;
+  }
+  function openDistanceModal() {
+    window.__pendingDistances = new Set(appliedDistances);
+    renderDistanceOptions();
+    updateDistanceApplyCount();
+    document.getElementById('distanceModalOverlay').classList.add('open');
+  }
+  function closeDistanceModal() { document.getElementById('distanceModalOverlay').classList.remove('open'); }
+  function applyDistanceFilter() {
+    appliedDistances = new Set(window.__pendingDistances);
+    updateDistanceButtonLabel();
+    closeDistanceModal();
+    renderCalendrier();
+  }
+  function clearDistanceFilter() {
+    appliedDistances = new Set(); window.__pendingDistances = new Set();
+    updateDistanceButtonLabel();
+    renderDistanceOptions();
+    updateDistanceApplyCount();
+    renderCalendrier();
+  }
+  function updateDistanceButtonLabel() {
+    const label = document.getElementById('distanceFilterLabel');
+    const btn = document.getElementById('distanceFilterBtn');
+    if (appliedDistances.size === 0) { label.textContent = 'Distance'; btn.classList.remove('active'); return; }
+    btn.classList.add('active');
+    if (appliedDistances.size === 1) {
+      const r = DISTANCE_RANGES.find(r => r.key === [...appliedDistances][0]);
+      label.textContent = r.label; return;
+    }
+    label.textContent = `Distance (${appliedDistances.size})`;
+  }
+
+  /* ---- CHALLENGE ---- */
+  let appliedChallenges = new Set();
+  window.__pendingChallenges = new Set();
+
+  function getAllChallenges() {
+    const set = new Set();
+    allCourses.forEach(c => { if (c.challenge) set.add(c.challenge); });
+    return [...set].sort();
+  }
+  function courseMatchesChallenges(c, selectedSet) {
+    if (selectedSet.size === 0) return true;
+    return selectedSet.has(c.challenge || "");
+  }
+  function countCoursesForChallenges(selectedSet) {
+    return allCourses.filter(c => courseMatchesChallenges(c, selectedSet)).length;
+  }
+  function renderChallengeOptions() {
+    const challenges = getAllChallenges();
+    const wrap = document.getElementById('challengeOptionsList');
+    if (!challenges.length) { wrap.innerHTML = `<div class="state-message">Aucun challenge enregistré pour l'instant.</div>`; return; }
+    wrap.innerHTML = challenges.map(c => {
+      const active = window.__pendingChallenges.has(c);
+      return `<div class="distance-option-row${active ? ' active' : ''}" onclick="toggleChallenge('${c.replace(/'/g, "\\'")}')">
+        <span class="checkbox-box">${active ? '<span style="color:#fff; font-size:12px; font-weight:800;">✓</span>' : ''}</span>
+        <span>${c}</span>
+      </div>`;
+    }).join('');
+  }
+  function toggleChallenge(c) {
+    if (window.__pendingChallenges.has(c)) window.__pendingChallenges.delete(c);
+    else window.__pendingChallenges.add(c);
+    renderChallengeOptions();
+    updateChallengeApplyCount();
+  }
+  function updateChallengeApplyCount() {
+    const count = countCoursesForChallenges(window.__pendingChallenges);
+    document.getElementById('challengeApplyBtn').textContent = `Afficher ${count} course${count > 1 ? 's' : ''}`;
+  }
+  function openChallengeModal() {
+    window.__pendingChallenges = new Set(appliedChallenges);
+    renderChallengeOptions();
+    updateChallengeApplyCount();
+    document.getElementById('challengeModalOverlay').classList.add('open');
+  }
+  function closeChallengeModal() { document.getElementById('challengeModalOverlay').classList.remove('open'); }
+  function applyChallengeFilter() {
+    appliedChallenges = new Set(window.__pendingChallenges);
+    updateChallengeButtonLabel();
+    closeChallengeModal();
+    renderCalendrier();
+  }
+  function clearChallengeFilter() {
+    appliedChallenges = new Set(); window.__pendingChallenges = new Set();
+    updateChallengeButtonLabel();
+    renderChallengeOptions();
+    updateChallengeApplyCount();
+    renderCalendrier();
+  }
+  function updateChallengeButtonLabel() {
+    const label = document.getElementById('challengeFilterLabel');
+    const btn = document.getElementById('challengeFilterBtn');
+    if (appliedChallenges.size === 0) { label.textContent = 'Challenge'; btn.classList.remove('active'); return; }
+    btn.classList.add('active');
+    if (appliedChallenges.size === 1) {
+      const c = [...appliedChallenges][0];
+      label.textContent = c.length > 22 ? c.slice(0, 20) + '…' : c;
+      return;
+    }
+    label.textContent = `Challenge (${appliedChallenges.size})`;
+  }
+
+  /* ---- TYPE ---- */
+  const TYPE_COLORS = {
+    Trail: "#3F7D3A", Route: "#1E6FA8", Nature: "#A6712A", "Urban Trail": "#6E4FC9",
+    Triathlon: "#12857A", "Vétathlon": "#C1512A", Ekiden: "#B23368", Cross: "#6B7A2E", Backyard: "#3D4A8C",
+  };
+  const AIRTABLE_TYPES = ["Trail", "Route", "Nature", "Urban Trail", "Triathlon", "Vétathlon", "Ekiden", "Cross", "Backyard"];
+  let appliedTypes = new Set();
+  window.__pendingTypes = new Set();
+
+  function courseMatchesTypes(c, selectedSet) {
+    if (selectedSet.size === 0) return true;
+    return selectedSet.has(c.type);
+  }
+  function countCoursesForTypes(selectedSet) {
+    return allCourses.filter(c => courseMatchesTypes(c, selectedSet)).length;
+  }
+  function renderTypeOptions() {
+    document.getElementById('typeOptionsList').innerHTML = AIRTABLE_TYPES.map(t => {
+      const active = window.__pendingTypes.has(t);
+      const color = TYPE_COLORS[t] || "#999";
+      return `<div class="distance-option-row${active ? ' active' : ''}" onclick="toggleType('${t}')">
+        <span class="checkbox-box">${active ? '<span style="color:#fff; font-size:12px; font-weight:800;">✓</span>' : ''}</span>
+        <span class="type-dot" style="background:${color};"></span>
+        <span>${t}</span>
+      </div>`;
+    }).join('');
+  }
+  function toggleType(t) {
+    if (window.__pendingTypes.has(t)) window.__pendingTypes.delete(t);
+    else window.__pendingTypes.add(t);
+    renderTypeOptions();
+    updateTypeApplyCount();
+  }
+  function updateTypeApplyCount() {
+    const count = countCoursesForTypes(window.__pendingTypes);
+    document.getElementById('typeApplyBtn').textContent = `Afficher ${count} course${count > 1 ? 's' : ''}`;
+  }
+  function openTypeModal() {
+    window.__pendingTypes = new Set(appliedTypes);
+    renderTypeOptions();
+    updateTypeApplyCount();
+    document.getElementById('typeModalOverlay').classList.add('open');
+  }
+  function closeTypeModal() { document.getElementById('typeModalOverlay').classList.remove('open'); }
+  function applyTypeFilter() {
+    appliedTypes = new Set(window.__pendingTypes);
+    updateTypeButtonLabel();
+    closeTypeModal();
+    renderCalendrier();
+  }
+  function clearTypeFilter() {
+    appliedTypes = new Set(); window.__pendingTypes = new Set();
+    updateTypeButtonLabel();
+    renderTypeOptions();
+    updateTypeApplyCount();
+    renderCalendrier();
+  }
+  function updateTypeButtonLabel() {
+    const label = document.getElementById('typeFilterLabel');
+    const btn = document.getElementById('typeFilterBtn');
+    if (appliedTypes.size === 0) { label.textContent = 'Type de course'; btn.classList.remove('active'); return; }
+    btn.classList.add('active');
+    if (appliedTypes.size === 1) { label.textContent = [...appliedTypes][0]; return; }
+    label.textContent = `Type de course (${appliedTypes.size})`;
+  }
+
+  function resetAllFilters() {
+    rangeStart = null; rangeEnd = null; appliedStart = null; appliedEnd = null;
+    appliedChallenges = new Set(); window.__pendingChallenges = new Set();
+    appliedDistances = new Set(); window.__pendingDistances = new Set();
+    appliedTypes = new Set(); window.__pendingTypes = new Set();
+    document.getElementById('heroSearch').value = '';
+    updateDateButtonLabel();
+    updateChallengeButtonLabel();
+    updateDistanceButtonLabel();
+    updateTypeButtonLabel();
     renderCalendrier();
   }
 
@@ -451,20 +860,9 @@
     allCourses = res.ok ? (data.courses || []) : [];
     coursesLoaded = true;
     document.getElementById("statCourses").textContent = allCourses.length;
-    renderMonthPicker(3);
     renderCalendrier();
   }
 
-  document.querySelectorAll('#heroChips .hero-chip[data-bucket]').forEach(chip => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('#heroChips .hero-chip, #monthPicker .hero-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      window.__selectedMonthKey = null;
-      window.__selectedMonthKeys = null;
-      renderMonthPicker(3);
-      renderCalendrier();
-    });
-  });
   document.getElementById('heroSearch').addEventListener('input', renderCalendrier);
 
   function renderCalendrier() {
@@ -473,20 +871,19 @@
     if (!allCourses.length) { container.innerHTML = `<div class="state-message">Aucune course enregistrée pour l'instant.</div>`; return; }
 
     const query = document.getElementById('heroSearch').value.trim().toLowerCase();
-    const activeChip = document.querySelector('#heroChips .hero-chip.active, #monthPicker .hero-chip.active');
 
     const filtered = allCourses.filter(c => {
-      let matchesBucket;
-      if (activeChip && activeChip.dataset.month) {
-        matchesBucket = monthKeyOf(c.date) === activeChip.dataset.month;
-      } else if (activeChip && activeChip.dataset.months) {
-        matchesBucket = activeChip.dataset.months.split(',').includes(monthKeyOf(c.date));
-      } else {
-        const bucket = activeChip ? activeChip.dataset.bucket : 'tous';
-        matchesBucket = (bucket === 'tous') || (getBucket(c.date) === bucket);
+      const d = new Date(c.date);
+      let matchesDate = true;
+      if (appliedStart) {
+        const e = appliedEnd || appliedStart;
+        matchesDate = d >= appliedStart && d <= new Date(e.getFullYear(), e.getMonth(), e.getDate(), 23, 59, 59);
       }
+      const matchesChallenge = courseMatchesChallenges(c, appliedChallenges);
+      const matchesDistance = courseMatchesDistances(c, appliedDistances);
+      const matchesType = courseMatchesTypes(c, appliedTypes);
       const matchesQuery = !query || c.nom.toLowerCase().includes(query) || (c.commune || "").toLowerCase().includes(query);
-      return matchesBucket && matchesQuery;
+      return matchesDate && matchesChallenge && matchesDistance && matchesType && matchesQuery;
     });
 
     let html = `<div class="result-count">${filtered.length} course${filtered.length > 1 ? "s" : ""} <span>à venir dans le Gard</span></div>`;
