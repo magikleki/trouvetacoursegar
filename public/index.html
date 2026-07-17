@@ -297,9 +297,6 @@
       </button>
       <button class="date-reset-btn" onclick="resetAllFilters()">↺ Effacer</button>
     </div>
-    <div class="hero-stats">
-      <div><b id="statCourses">—</b> courses à venir</div>
-    </div>
   </div>
 
   <div class="date-modal-overlay" id="dateModalOverlay" onclick="if(event.target===this) closeDateModal()">
@@ -859,7 +856,6 @@
     const data = await res.json();
     allCourses = res.ok ? (data.courses || []) : [];
     coursesLoaded = true;
-    document.getElementById("statCourses").textContent = allCourses.length;
     renderCalendrier();
   }
 
