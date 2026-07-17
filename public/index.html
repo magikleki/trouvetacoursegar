@@ -524,8 +524,10 @@
       </div>
       <div class="fiche-hero-flex">
         <div class="fiche-hero-left">
-          <span class="pill type-${tc}">${c.type || "—"}</span>
-          ${c.challenge ? `<span class="pill" style="background:var(--bg); color:var(--muted); border:1px solid var(--border);">🏆 ${c.challenge}</span>` : ""}
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-self:flex-start;">
+            <span class="pill type-${tc}">${c.type || "—"}</span>
+            ${c.challenge ? `<span class="pill" style="background:var(--bg); color:var(--muted); border:1px solid var(--border);">🏆 ${c.challenge}</span>` : ""}
+          </div>
           <h1>${c.nom}</h1>
           <div class="loc">${c.commune || ""} · Gard</div>
 
