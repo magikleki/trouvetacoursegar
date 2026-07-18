@@ -107,14 +107,18 @@
   .podium-row { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; overflow: hidden; }
   .podium-row > .pill { flex-shrink: 0; }
   .podium-winners { display: flex; gap: 6px; flex-wrap: nowrap; font-size: 12px; font-weight: 700; min-width: 0; flex: 1; }
-  .podium-winners span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; line-height: 1.5; }
-  .podium-winners span:not(.sep) { flex: 1 1 0; }
+  /* Chaque gagnant·e est un mini-flex icône + nom, pour que le trophée et
+     le symbole ♂/♀ (dont le rendu/la hauteur naturelle varie selon la
+     police et l'OS) restent alignés au centre l'un par rapport à l'autre
+     et par rapport au nom, plutôt que de dépendre de l'alignement en ligne
+     par défaut du texte brut (qui les décale légèrement). */
+  .podium-winner { display: flex; align-items: center; gap: 5px; min-width: 0; flex: 1 1 0; line-height: 1.5; }
+  .podium-winner .icon { display: inline-flex; align-items: center; flex-shrink: 0; line-height: 1; }
+  .podium-winner .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .podium-winners .sep { color: var(--border); font-weight: 400; flex-shrink: 0; overflow: visible; }
   /* Sur mobile, la largeur manque pour afficher les 2 gagnant·e·s côte à
      côte sans les tronquer sévèrement : on les empile à la place, chacun
-     sur sa propre ligne pleine largeur. Le gap est un peu plus large que
-     3px pour laisser respirer l'emoji ♂️/♀️, dont le rendu est plus haut
-     que le texte et qui se retrouvait légèrement rogné sinon.
+     sur sa propre ligne pleine largeur.
      La pastille de distance (ex: "8 km (Le Pueylong)") peut aussi être
      longue : si elle reste sur la même ligne que les noms, elle leur vole
      de la largeur et les tronque encore plus. On met donc la pastille sur
@@ -124,7 +128,7 @@
     .podium-row { flex-direction: column; align-items: flex-start; gap: 6px; }
     .podium-winners { flex-direction: column; align-items: flex-start; gap: 7px; width: 100%; }
     .podium-winners .sep { display: none; }
-    .podium-winners span:not(.sep) { width: 100%; flex: none; }
+    .podium-winner { width: 100%; flex: none; }
   }
   .podium-cta { margin-top: auto; background: none; border: 1px solid var(--border); border-radius: 10px; padding: 10px; font-size: 12.5px; font-weight: 800; color: var(--muted); cursor: pointer; transition: border-color .15s ease, color .15s ease; }
   .podium-cta:hover { border-color: var(--accent); color: var(--accent-deep); }
@@ -1691,7 +1695,7 @@
               <div class="podium-row">
                 <span class="pill dark" style="background:var(--ink);">${cat}</span>
                 <div class="podium-winners">
-                  ${winner ? `<span>🏆 ${winner.club || "Équipe"}</span>` : ""}
+                  ${winner ? `<span class="podium-winner"><span class="icon">🏆</span><span class="name">${winner.club || "Équipe"}</span></span>` : ""}
                 </div>
               </div>`;
           }).join("");
@@ -1703,9 +1707,9 @@
           <div class="podium-row">
             <span class="pill dark" style="background:var(--ink);">${distance}</span>
             <div class="podium-winners">
-              ${winnerH ? `<span>🏆♂️ ${winnerH.prenom} ${winnerH.nom}</span>` : ""}
+              ${winnerH ? `<span class="podium-winner"><span class="icon">🏆♂️</span><span class="name">${winnerH.prenom} ${winnerH.nom}</span></span>` : ""}
               ${winnerH && winnerF ? `<span class="sep">·</span>` : ""}
-              ${winnerF ? `<span>🏆♀️ ${winnerF.prenom} ${winnerF.nom}</span>` : ""}
+              ${winnerF ? `<span class="podium-winner"><span class="icon">🏆♀️</span><span class="name">${winnerF.prenom} ${winnerF.nom}</span></span>` : ""}
             </div>
           </div>`;
       }).join("");
