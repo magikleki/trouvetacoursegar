@@ -114,10 +114,15 @@
      côte sans les tronquer sévèrement : on les empile à la place, chacun
      sur sa propre ligne pleine largeur. Le gap est un peu plus large que
      3px pour laisser respirer l'emoji ♂️/♀️, dont le rendu est plus haut
-     que le texte et qui se retrouvait légèrement rogné sinon. */
+     que le texte et qui se retrouvait légèrement rogné sinon.
+     La pastille de distance (ex: "8 km (Le Pueylong)") peut aussi être
+     longue : si elle reste sur la même ligne que les noms, elle leur vole
+     de la largeur et les tronque encore plus. On met donc la pastille sur
+     sa propre ligne, au-dessus, pour que les noms aient toute la largeur
+     de la vignette. */
   @media (max-width: 599px) {
-    .podium-row { align-items: flex-start; }
-    .podium-winners { flex-direction: column; align-items: flex-start; gap: 7px; }
+    .podium-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .podium-winners { flex-direction: column; align-items: flex-start; gap: 7px; width: 100%; }
     .podium-winners .sep { display: none; }
     .podium-winners span:not(.sep) { width: 100%; flex: none; }
   }
