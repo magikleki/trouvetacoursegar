@@ -161,9 +161,9 @@
   @media (max-width: 779px) { .home-preview-grid > .ccard:not(:first-child) { display: none; } }
   .see-all-btn { display: inline-block; background: var(--accent); color: #fff; border: none; border-radius: 999px; padding: 13px 28px; font-size: 14px; font-weight: 800; cursor: pointer; transition: box-shadow .15s ease, transform .15s ease; }
   .see-all-btn:hover { box-shadow: 0 10px 20px -10px rgba(224,106,44,0.55); transform: translateY(-1px); }
-  .ccard { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; cursor: pointer; transition: box-shadow .15s ease, border-color .15s ease; aspect-ratio: 1 / 1; position: relative; }
+  .ccard { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; cursor: pointer; transition: box-shadow .15s ease, border-color .15s ease; position: relative; display: flex; flex-direction: column; }
   .ccard:hover { box-shadow: 0 14px 28px -18px rgba(0,0,0,.28); border-color: var(--accent); }
-  .ccard .thumb { position: absolute; top: 0; left: 0; right: 0; height: 68%; background-size: cover; background-position: center; }
+  .ccard .thumb { position: relative; aspect-ratio: 3 / 2; flex-shrink: 0; background-size: cover; background-position: center; }
   .ccard .thumb .big-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 44px; opacity: 0.45; }
   .ccard .thumb .logo-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 58%; aspect-ratio: 1/1; max-width: 90px; background: #fff; border-radius: 14px; box-shadow: 0 6px 16px -6px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .ccard .thumb .logo-frame img { width: 82%; height: 82%; object-fit: contain; }
@@ -172,15 +172,16 @@
   .ccard .thumb .poster-frame-small { position: absolute; top: 9px; right: 9px; width: 30px; aspect-ratio: 1/1.4142; background: #fff; border-radius: 5px; box-shadow: 0 4px 10px -4px rgba(0,0,0,0.35); overflow: hidden; }
   .ccard .thumb .poster-frame-small img { width: 100%; height: 100%; object-fit: contain; }
   .ccard .thumb .badges-top { position: absolute; top: 9px; left: 9px; right: 55px; display: flex; gap: 5px; flex-wrap: wrap; }
-  .ccard .thumb .badges-bottom { position: absolute; bottom: 9px; left: 9px; display: flex; gap: 5px; flex-wrap: wrap; right: 9px; }
   .pill { font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; color: #fff; white-space: nowrap; }
   .pill.dark { background: rgba(0,0,0,0.55); color: #fff; }
   .pill-distance { display: inline-block; font-size: 12.5px; font-weight: 700; padding: 4px 11px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); white-space: nowrap; flex-shrink: 0; }
   .result-date-label { font-size: 10.5px; font-weight: 700; color: var(--accent-deep); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
-  .ccard .body { position: absolute; bottom: 0; left: 0; right: 0; height: 32%; padding: 10px 12px; overflow: hidden; }
+  .ccard .body { padding: 10px 12px 12px; }
   .ccard .date { font-size: 10.5px; font-weight: 700; color: var(--accent-deep); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
   .ccard .title { font-weight: 800; font-size: 13.5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ccard .loc { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ccard-distances { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; overflow: hidden; max-height: 26px; }
+  .pill-unconfirmed { display: inline-block; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px; background: #FCEBEB; border: 1px solid #E8B4B4; color: #B23B3B; white-space: nowrap; }
 
   .type-Trail { background: #3F7D3A; }
   .type-Route { background: #1E6FA8; }
@@ -581,7 +582,15 @@
   let resultatsLoaded = false;
 
   const pageIds = ['accueil','calendrier','fiche','club','resultats','leaderboard','challenge'];
-  function showPage(p) {
+
+  // Navigation par historique : l'app ne changeait jamais history.state, donc
+  // le bouton/geste "retour" (notamment sur iPhone) n'avait rien à dépiler et
+  // quittait directement le site au lieu de revenir à l'écran précédent.
+  // On pousse maintenant un état à chaque navigation, et on restaure l'écran
+  // correspondant quand le navigateur déclenche "popstate" (retour arrière).
+  let isRestoringState = false;
+
+  function showPage(p, extra) {
     pageIds.forEach(id => {
       const el = document.getElementById('page-' + id);
       if (el) el.style.display = (id === p) ? 'block' : 'none';
@@ -589,7 +598,35 @@
     window.scrollTo(0, 0);
     if (p === 'club') loadClubs();
     if (p === 'resultats') loadResultatsList();
+
+    if (!isRestoringState) {
+      const state = Object.assign({ page: p }, extra || {});
+      history.pushState(state, '', location.pathname + location.search);
+    }
   }
+
+  async function applyHistoryState(state) {
+    isRestoringState = true;
+    try {
+      if (!state || !state.page) {
+        showPage('accueil');
+      } else if (state.page === 'fiche' && state.courseId) {
+        if (!coursesLoaded) await loadCourses();
+        openFiche(state.courseId);
+      } else if (state.page === 'leaderboard' && state.courseId) {
+        if (!coursesLoaded) await loadCourses();
+        await openLeaderboard(state.courseId);
+      } else {
+        showPage(state.page);
+      }
+    } finally {
+      isRestoringState = false;
+    }
+  }
+
+  window.addEventListener('popstate', (event) => {
+    applyHistoryState(event.state);
+  });
 
   function toggleMobileMenu() {
     document.getElementById('mobileMenu').classList.toggle('open');
@@ -1012,10 +1049,14 @@
   function renderCourseCardHtml(c) {
     const tc = typeClass(c.type);
     const distances = splitDistances(c.distances);
-    const distBadges = c.statut === "Non confirmé"
-      ? `<span class="pill dark" style="background:rgba(178,59,59,0.85);">Non confirmée</span>`
-      : (tc === "Backyard" || tc === "Ekiden") ? "" :
-      distances.slice(0, 2).map(d => `<span class="pill dark">${d}</span>`).join("") + (distances.length > 2 ? `<span class="pill dark">+${distances.length - 2}</span>` : "");
+    let distanceRowHtml = "";
+    if (c.statut === "Non confirmé") {
+      distanceRowHtml = `<div class="ccard-distances"><span class="pill-unconfirmed">Non confirmée</span></div>`;
+    } else if (tc !== "Backyard" && tc !== "Ekiden" && distances.length) {
+      const shown = distances.slice(0, 2);
+      const remaining = distances.length - shown.length;
+      distanceRowHtml = `<div class="ccard-distances">${shown.map(d => `<span class="pill-distance">${d}</span>`).join("")}${remaining > 0 ? `<span class="pill-distance">+${remaining}</span>` : ""}</div>`;
+    }
     const posterHtml = c.affiche ? `<div class="poster-frame-small"><img src="${c.affiche}" alt="Affiche ${c.nom}" /></div>` : "";
     return `
       <div class="ccard" onclick="openFiche('${c.id}')">
@@ -1023,12 +1064,12 @@
           <div class="big-icon icon-${tc}"></div>
           ${posterHtml}
           <div class="badges-top"><span class="pill type-${tc}">${c.type || "—"}</span>${c.challenge ? `<span class="pill dark" title="${c.challenge}">🏆</span>` : ""}</div>
-          <div class="badges-bottom">${distBadges}</div>
         </div>
         <div class="body">
           <div class="date">${formatDayLabel(c.date)}</div>
           <div class="title">${c.nom}</div>
           <div class="loc">${c.commune || ""}, Gard</div>
+          ${distanceRowHtml}
         </div>
       </div>`;
   }
@@ -1204,7 +1245,7 @@
       <div class="block-label" style="margin-top:1.8rem;"><span class="bar"></span>Localisation</div>
       <div class="fiche-map" style="width:100%; max-width:none; height:220px;"><iframe src="https://maps.google.com/maps?q=${mapQuery}&output=embed" loading="lazy"></iframe></div>
     `;
-    showPage('fiche');
+    showPage('fiche', { courseId: id });
     updateFicheResultsCount(c.id);
   }
 
@@ -1455,7 +1496,7 @@
       <div id="lbTableWrap"></div>
     `;
     renderLeaderboardTable();
-    showPage('leaderboard');
+    showPage('leaderboard', { courseId });
   }
 
   function toggleLeaderboardExpand(key) {
@@ -1701,6 +1742,7 @@
     wrap.innerHTML = html || `<div class="state-message">Aucun coureur ne correspond.</div>`;
   }
 
+  history.replaceState({ page: 'accueil' }, '', location.pathname + location.search);
   loadCourses();
   loadResultatsCountForStats();
 </script>
