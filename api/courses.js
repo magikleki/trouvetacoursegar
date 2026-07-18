@@ -65,7 +65,6 @@ export default async function handler(request, response) {
         reseaux: record.fields["Réseaux sociaux"] || "",
         affiche: posterUrl,
         statut: record.fields["Statut"] || "",
-        infos: record.fields["Infos"] || "",
       };
     });
 
@@ -83,11 +82,10 @@ export default async function handler(request, response) {
       return 0;
     });
 
-    // Cache court : pendant la collecte des résultats d'une course ("Infos" =
-    // "Incomplètes"), de nouvelles lignes peuvent être ajoutées à tout moment
-    // dans Airtable. Un cache trop long affichait des données figées (ex: un
-    // nombre de coureurs très en dessous de la réalité) pendant plusieurs
-    // minutes après chaque mise à jour.
+    // Cache court : des résultats peuvent être importés à tout moment dans
+    // Airtable, y compris en cours de journée. Un cache trop long affichait
+    // des données figées (ex: un nombre de coureurs en dessous de la
+    // réalité) pendant plusieurs minutes après chaque mise à jour.
     response.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate");
     return response.status(200).json({ courses });
   } catch (error) {

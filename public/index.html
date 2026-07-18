@@ -135,7 +135,6 @@
   .pill.dark { background: rgba(0,0,0,0.55); color: #fff; }
   .pill-distance { display: inline-block; font-size: 12.5px; font-weight: 700; padding: 4px 11px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); white-space: nowrap; flex-shrink: 0; }
   .result-date-label { font-size: 10.5px; font-weight: 700; color: var(--accent-deep); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
-  .result-provisional-note { font-size: 11px; font-style: italic; color: var(--accent-deep); opacity: .8; margin-top: 4px; }
   .ccard .body { position: absolute; bottom: 0; left: 0; right: 0; height: 32%; padding: 10px 12px; overflow: hidden; }
   .ccard .date { font-size: 10.5px; font-weight: 700; color: var(--accent-deep); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
   .ccard .title { font-weight: 800; font-size: 13.5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1148,6 +1147,19 @@
       return { courseId, count: grouped[courseId], course, distances: distancesByCourse[courseId] || [] };
     }).filter(e => e.course);
 
+    // Tri de la plus récente à la plus ancienne. Les courses sans date
+    // connue sont reléguées en fin de liste plutôt que de perturber l'ordre.
+    entries.sort((a, b) => {
+      const dA = new Date(a.course.date);
+      const dB = new Date(b.course.date);
+      const validA = !isNaN(dA);
+      const validB = !isNaN(dB);
+      if (validA && validB) return dB - dA;
+      if (validA) return -1;
+      if (validB) return 1;
+      return 0;
+    });
+
     window.__resultatsEntries = entries;
     filterResultats();
   }
@@ -1179,7 +1191,6 @@
           </div>
         </div>
         <div style="font-size:12px; color:var(--muted); margin-top:3px;">${e.course.commune || ""}, Gard</div>
-        ${e.course.infos === "Incomplètes" ? `<div class="result-provisional-note">⏳ Résultats en cours de collecte — ce nombre va encore évoluer</div>` : ""}
       </div>`).join("")}</div>`;
   }
 
