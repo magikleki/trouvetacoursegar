@@ -1191,6 +1191,7 @@
           </div>
         </div>
         <div style="font-size:12px; color:var(--muted); margin-top:3px;">${e.course.commune || ""}, Gard</div>
+        ${e.course.challenge ? `<div style="margin-top:6px;"><span class="pill" style="background:var(--bg); color:var(--muted); border:1px solid var(--border);">🏆 ${e.course.challenge}</span></div>` : ""}
       </div>`).join("")}</div>`;
   }
 
@@ -1293,7 +1294,7 @@
 
     document.getElementById("leaderboardContent").innerHTML = `
       <div class="breadcrumb"><span class="crumb" onclick="showPage('resultats')">← Retour à Résultats</span></div>
-      <h1 style="margin:6px 0 4px;">Résultats — ${course ? course.nom : ""} <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep); vertical-align:middle;">Édition ${edition}</span></h1>
+      <h1 style="margin:6px 0 4px;">Résultats — ${course ? course.nom : ""} <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep); vertical-align:middle;">Édition ${edition}</span>${course && course.challenge ? ` <span class="pill" style="background:var(--bg); color:var(--muted); border:1px solid var(--border); vertical-align:middle;">🏆 ${course.challenge}</span>` : ""}</h1>
       <div class="loc" style="margin-bottom:1.3rem;">${course ? course.commune : ""}, Gard · ${resultats.length} coureurs classés</div>
       <div style="margin-bottom:1.3rem; max-width:320px;">
         <input class="lb-search" id="lbSearch" placeholder="Chercher un coureur..." oninput="renderLeaderboardTable()" style="width:100%;" />
