@@ -1263,14 +1263,41 @@
     showPage('leaderboard');
   }
 
-  function toggleLeaderboardExpand(distance) {
-    window.__leaderboardExpanded[distance] = !window.__leaderboardExpanded[distance];
+  function toggleLeaderboardExpand(key) {
+    window.__leaderboardExpanded[key] = !window.__leaderboardExpanded[key];
     renderLeaderboardTable();
   }
 
   function switchLeaderboardTab(distance) {
     window.__leaderboardActiveDistance = distance;
     renderLeaderboardTable();
+  }
+
+  function switchLeaderboardCategory(distance, category) {
+    if (!window.__leaderboardActiveCategory) window.__leaderboardActiveCategory = {};
+    window.__leaderboardActiveCategory[distance] = category;
+    renderLeaderboardTable();
+  }
+
+  // Regroupe les lignes d'une distance par équipe : une course en duo a deux
+  // lignes Airtable (une par coureur) qui partagent le même classement général.
+  // Si TOUS les groupes ainsi formés contiennent exactement 2 coureurs, on
+  // considère que la distance est courue en duo/équipe.
+  function groupResultRows(rows) {
+    const groups = {};
+    rows.forEach(r => {
+      const key = (r.classementGeneral !== null && r.classementGeneral !== undefined) ? ('rank-' + r.classementGeneral) : ('id-' + r.id);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(r);
+    });
+    return Object.values(groups);
+  }
+
+  // Extrait le libellé de catégorie (ex: "Homme 4e" -> "Homme", "Mixte 1er" -> "Mixte")
+  function extractCategoryLabel(cat) {
+    if (!cat) return "Autres";
+    const label = cat.replace(/\s*\d+\s*(er|ère|e)?\s*$/i, '').trim();
+    return label || cat;
   }
 
   function renderLeaderboardTable() {
@@ -1289,8 +1316,8 @@
       window.__leaderboardActiveDistance = activeDistance;
     }
 
-    const renderDistanceBlock = (distance) => {
-      let rows = allRows.filter(r => r.distance === distance);
+    const renderSoloBlock = (distance, distanceRows) => {
+      let rows = distanceRows;
       if (q) rows = rows.filter(r => `${r.prenom} ${r.nom}`.toLowerCase().includes(q));
       if (!rows.length) {
         return `<div class="state-message">Aucun coureur ne correspond.</div>`;
@@ -1320,6 +1347,81 @@
           ${remaining > 0 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${distance}')">Voir les ${remaining} coureur${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""} ↓</button>` : ""}
           ${expanded && rows.length > 10 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${distance}')">Réduire ↑</button>` : ""}
         </div>`;
+    };
+
+    const renderDuoBlock = (distance, groups) => {
+      let teams = groups.map(g => ({
+        classementGeneral: g[0].classementGeneral,
+        classementCategorie: g[0].classementCategorie,
+        temps: g[0].temps,
+        vitesse: g[0].vitesse,
+        dossard: g[0].dossard,
+        club: g[0].club,
+        coureurs: g,
+      }));
+      teams.sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999));
+
+      if (q) teams = teams.filter(t => t.coureurs.some(c => `${c.prenom} ${c.nom}`.toLowerCase().includes(q)));
+      if (!teams.length) {
+        return `<div class="state-message">Aucune équipe ne correspond.</div>`;
+      }
+
+      const categories = [...new Set(teams.map(t => extractCategoryLabel(t.classementCategorie)))];
+      if (!window.__leaderboardActiveCategory) window.__leaderboardActiveCategory = {};
+      let activeCategory = window.__leaderboardActiveCategory[distance];
+      if (!activeCategory || !categories.includes(activeCategory)) {
+        activeCategory = categories[0];
+        window.__leaderboardActiveCategory[distance] = activeCategory;
+      }
+      const multiCat = categories.length > 1;
+
+      const renderCategoryTable = (catLabel) => {
+        const filteredTeams = teams.filter(t => extractCategoryLabel(t.classementCategorie) === catLabel);
+        if (!filteredTeams.length) return `<div class="state-message">Aucune équipe ne correspond.</div>`;
+
+        const expandKey = distance + '__' + catLabel;
+        const expanded = !!window.__leaderboardExpanded[expandKey];
+        const shown = expanded ? filteredTeams : filteredTeams.slice(0, 10);
+        const remaining = filteredTeams.length - shown.length;
+
+        return `
+          <div style="margin-bottom:1.8rem;">
+            ${!multiCat ? `<div class="block-label"><span class="bar"></span>${catLabel} <span style="font-weight:500; color:var(--muted); font-size:13px; margin-left:6px;">${filteredTeams.length} équipe${filteredTeams.length > 1 ? "s" : ""} classée${filteredTeams.length > 1 ? "s" : ""}</span></div>` : `<div style="font-size:12px; color:var(--muted); font-weight:700; margin-bottom:10px;">${filteredTeams.length} équipe${filteredTeams.length > 1 ? "s" : ""} classée${filteredTeams.length > 1 ? "s" : ""}</div>`}
+            <div class="lb-table">
+              <div class="lb-row-full head"><span>Rang</span><span>Doss.</span><span>Coureurs</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Équipe</span></div>
+              ${shown.map(t => `
+                <div class="lb-row-full">
+                  <span class="lb-pos ${t.classementGeneral && t.classementGeneral <= 3 ? 'top3' : ''}">${t.classementGeneral ?? "—"}</span>
+                  <span class="lb-dossard">${t.dossard || "—"}</span>
+                  <span class="lb-name">${t.coureurs.map(c => `${c.prenom} ${c.nom}`).join(" &amp; ")}</span>
+                  <span>${t.coureurs.map(c => c.sexe || "—").join("/")}</span>
+                  <span>${t.classementCategorie || "—"}</span>
+                  <span class="lb-time">${t.temps || "—"}</span>
+                  <span class="lb-vitesse">${t.vitesse || "—"}</span>
+                  <span class="lb-club-cell">${t.club || "—"}</span>
+                </div>`).join("")}
+            </div>
+            ${remaining > 0 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Voir les ${remaining} équipe${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""} ↓</button>` : ""}
+            ${expanded && filteredTeams.length > 10 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Réduire ↑</button>` : ""}
+          </div>`;
+      };
+
+      let catHtml = '';
+      if (multiCat) {
+        catHtml += `<div class="lb-tabs">${categories.map(cat => {
+          const count = teams.filter(t => extractCategoryLabel(t.classementCategorie) === cat).length;
+          return `<button class="lb-tab ${cat === activeCategory ? 'active' : ''}" onclick="switchLeaderboardCategory('${distance}', '${cat.replace(/'/g, "\\'")}')">${cat}<span class="count">${count}</span></button>`;
+        }).join("")}</div>`;
+      }
+      catHtml += renderCategoryTable(activeCategory);
+      return catHtml;
+    };
+
+    const renderDistanceBlock = (distance) => {
+      const distanceRows = allRows.filter(r => r.distance === distance);
+      const groups = groupResultRows(distanceRows);
+      const isDuo = groups.length > 0 && groups.every(g => g.length === 2);
+      return isDuo ? renderDuoBlock(distance, groups) : renderSoloBlock(distance, distanceRows);
     };
 
     let html = '';
