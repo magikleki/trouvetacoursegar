@@ -48,6 +48,21 @@
   .nav-report-menu-inner a { display: block; padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; cursor: pointer; }
   .nav-report-menu-inner a:hover { background: var(--accent-tint); color: var(--accent-deep); }
 
+  /* Menu mobile : le bandeau de navigation (.topnav) est caché sous 780px,
+     remplacé par un bouton hamburger qui déplie la même liste de liens. */
+  .hamburger-btn { display: inline-flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; width: 34px; height: 34px; background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0; }
+  .hamburger-btn span { display: block; width: 20px; height: 2px; background: var(--ink); border-radius: 2px; }
+  @media (min-width: 780px) { .hamburger-btn { display: none; } }
+
+  .mobile-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; background: var(--card); border-bottom: 1px solid var(--border); box-shadow: 0 14px 28px -18px rgba(0,0,0,.28); padding: 6px 1.3rem 16px; max-height: calc(100vh - 60px); overflow-y: auto; }
+  .mobile-menu.open { display: flex; }
+  @media (min-width: 780px) { .mobile-menu { display: none !important; } }
+  .mobile-menu-link { padding: 13px 4px; font-weight: 800; font-size: 15px; color: var(--ink); border-bottom: 1px solid var(--border); cursor: pointer; }
+  .mobile-menu-sep { height: 1px; background: var(--border); margin: 10px 0 2px; }
+  .mobile-menu-label { padding: 10px 4px 2px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .mobile-menu-sublink { display: block; padding: 11px 4px 11px 10px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .mobile-menu-sublink:hover { color: var(--accent-deep); }
+
   .hero { text-align: center; padding: 2.6rem 1.2rem 1.6rem; background: linear-gradient(180deg, var(--accent-tint) 0%, var(--bg) 100%); }
   .hero .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; color: var(--accent-deep); text-transform: uppercase; margin-bottom: 0.8rem; }
   .hero .eyebrow .dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:6px; }
@@ -138,6 +153,14 @@
   @media (min-width: 560px) { .course-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (min-width: 820px) { .course-grid { grid-template-columns: repeat(3, 1fr); } }
   @media (min-width: 1040px) { .course-grid { grid-template-columns: repeat(4, 1fr); } }
+
+  /* Aperçu sur la page d'accueil : 1 vignette sur mobile, 4 sur desktop
+     (une seule ligne, pas de paliers intermédiaires comme .course-grid). */
+  .home-preview-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 780px) { .home-preview-grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 779px) { .home-preview-grid > .ccard:not(:first-child) { display: none; } }
+  .see-all-btn { display: inline-block; background: var(--accent); color: #fff; border: none; border-radius: 999px; padding: 13px 28px; font-size: 14px; font-weight: 800; cursor: pointer; transition: box-shadow .15s ease, transform .15s ease; }
+  .see-all-btn:hover { box-shadow: 0 10px 20px -10px rgba(224,106,44,0.55); transform: translateY(-1px); }
   .ccard { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; cursor: pointer; transition: box-shadow .15s ease, border-color .15s ease; aspect-ratio: 1 / 1; position: relative; }
   .ccard:hover { box-shadow: 0 14px 28px -18px rgba(0,0,0,.28); border-color: var(--accent); }
   .ccard .thumb { position: absolute; top: 0; left: 0; right: 0; height: 68%; background-size: cover; background-position: center; }
@@ -339,7 +362,7 @@
   </div>
   <div class="topnav">
     <div class="nav-main">
-      <a class="nav-btn" onclick="showPage('accueil')">Calendrier</a>
+      <a class="nav-btn" onclick="showPage('calendrier')">Calendrier</a>
       <a class="nav-btn" onclick="showPage('resultats')">Résultats</a>
       <a class="nav-btn" onclick="showPage('challenge')">Tableau d'Honneur</a>
       <a class="nav-btn" onclick="showPage('club')">Clubs</a>
@@ -356,6 +379,21 @@
       </div>
     </div>
   </div>
+  <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="mobile-menu" id="mobileMenu">
+    <a class="mobile-menu-link" onclick="navigateMobile('calendrier')">Calendrier</a>
+    <a class="mobile-menu-link" onclick="navigateMobile('resultats')">Résultats</a>
+    <a class="mobile-menu-link" onclick="navigateMobile('challenge')">Tableau d'Honneur</a>
+    <a class="mobile-menu-link" onclick="navigateMobile('club')">Clubs</a>
+    <div class="mobile-menu-sep"></div>
+    <div class="mobile-menu-label">Signaler une erreur</div>
+    <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Sur une course</a>
+    <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Sur un club</a>
+    <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Sur un résultat</a>
+    <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Autre</a>
+  </div>
 </div>
 
 <div id="page-accueil">
@@ -363,8 +401,22 @@
     <div class="eyebrow"><span class="dot"></span>GARD (30)</div>
     <h1>Trouve ta <em>prochaine</em><br>course.</h1>
     <p class="sub">Le calendrier running le plus complet du Gard — courses, clubs et résultats, une seule adresse, toute l'année.</p>
-    <div class="search-box"><input id="heroSearch" placeholder="Chercher une course, une ville..." /><button onclick="renderCalendrier()">Chercher</button></div>
-    <div class="hero-chips" id="heroChips">
+  </div>
+
+  <div class="section">
+    <div class="home-preview-grid" id="homePreviewGrid"><div class="state-message">Chargement…</div></div>
+    <div style="text-align:center; margin-top:1.6rem;">
+      <button class="see-all-btn" onclick="showPage('calendrier')">Voir toutes les courses à venir</button>
+    </div>
+  </div>
+</div>
+
+<div id="page-calendrier" style="display:none;">
+  <div class="fiche-wrap" style="padding-bottom:0;">
+    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Calendrier</span></div>
+    <h1 style="margin:0 0 1.2rem;">Calendrier des courses</h1>
+    <div class="search-box" style="margin:0 0 1rem;"><input id="heroSearch" placeholder="Chercher une course, une ville..." /><button onclick="renderCalendrier()">Chercher</button></div>
+    <div class="hero-chips" id="heroChips" style="justify-content:flex-start;">
       <button class="date-filter-btn" id="dateFilterBtn" onclick="openDateModal()">
         <span id="dateFilterLabel">Date</span>
       </button>
@@ -504,7 +556,7 @@
       <div class="footer-col">
         <h4>Navigation</h4>
         <ul>
-          <li><a onclick="showPage('accueil')">Calendrier</a></li>
+          <li><a onclick="showPage('calendrier')">Calendrier</a></li>
           <li><a onclick="showPage('resultats')">Résultats</a></li>
           <li><a onclick="showPage('challenge')">Tableau d'Honneur</a></li>
           <li><a onclick="showPage('club')">Clubs</a></li>
@@ -528,7 +580,7 @@
   let clubsLoaded = false;
   let resultatsLoaded = false;
 
-  const pageIds = ['accueil','fiche','club','resultats','leaderboard','challenge'];
+  const pageIds = ['accueil','calendrier','fiche','club','resultats','leaderboard','challenge'];
   function showPage(p) {
     pageIds.forEach(id => {
       const el = document.getElementById('page-' + id);
@@ -537,6 +589,17 @@
     window.scrollTo(0, 0);
     if (p === 'club') loadClubs();
     if (p === 'resultats') loadResultatsList();
+  }
+
+  function toggleMobileMenu() {
+    document.getElementById('mobileMenu').classList.toggle('open');
+  }
+  function closeMobileMenu() {
+    document.getElementById('mobileMenu').classList.remove('open');
+  }
+  function navigateMobile(page) {
+    closeMobileMenu();
+    showPage(page);
   }
 
   function typeClass(type) { return (type || "").replace(/\s+/g, ""); }
@@ -932,9 +995,62 @@
     allCourses = res.ok ? (data.courses || []) : [];
     coursesLoaded = true;
     renderCalendrier();
+    renderHomePreview();
   }
 
   document.getElementById('heroSearch').addEventListener('input', renderCalendrier);
+
+  // Une course est "passée" seulement si sa date est connue et strictement
+  // avant aujourd'hui. Une course sans date connue ("À définir") n'est pas
+  // considérée comme passée : elle reste à venir tant qu'elle n'est pas
+  // datée dans le passé.
+  function isPastCourse(c) {
+    const d = new Date(c.date);
+    return !isNaN(d) && d < todayMidnight();
+  }
+
+  function renderCourseCardHtml(c) {
+    const tc = typeClass(c.type);
+    const distances = splitDistances(c.distances);
+    const distBadges = c.statut === "Non confirmé"
+      ? `<span class="pill dark" style="background:rgba(178,59,59,0.85);">Non confirmée</span>`
+      : (tc === "Backyard" || tc === "Ekiden") ? "" :
+      distances.slice(0, 2).map(d => `<span class="pill dark">${d}</span>`).join("") + (distances.length > 2 ? `<span class="pill dark">+${distances.length - 2}</span>` : "");
+    const posterHtml = c.affiche ? `<div class="poster-frame-small"><img src="${c.affiche}" alt="Affiche ${c.nom}" /></div>` : "";
+    return `
+      <div class="ccard" onclick="openFiche('${c.id}')">
+        <div class="thumb thumb-${tc}">
+          <div class="big-icon icon-${tc}"></div>
+          ${posterHtml}
+          <div class="badges-top"><span class="pill type-${tc}">${c.type || "—"}</span>${c.challenge ? `<span class="pill dark" title="${c.challenge}">🏆</span>` : ""}</div>
+          <div class="badges-bottom">${distBadges}</div>
+        </div>
+        <div class="body">
+          <div class="date">${formatDayLabel(c.date)}</div>
+          <div class="title">${c.nom}</div>
+          <div class="loc">${c.commune || ""}, Gard</div>
+        </div>
+      </div>`;
+  }
+
+  // Aperçu sur la page d'accueil : les 4 prochaines courses à venir
+  // (1 seule sur mobile via CSS), triées par date la plus proche. Les
+  // courses sans date connue ne peuvent pas être classées "prochaines",
+  // elles ne sont donc pas incluses ici (mais restent visibles sur la
+  // page Calendrier complète).
+  function renderHomePreview() {
+    const container = document.getElementById("homePreviewGrid");
+    if (!container) return;
+    if (!coursesLoaded) { container.innerHTML = `<div class="state-message">Chargement…</div>`; return; }
+
+    const upcoming = allCourses
+      .filter(c => { const d = new Date(c.date); return !isNaN(d) && d >= todayMidnight(); })
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .slice(0, 4);
+
+    if (!upcoming.length) { container.innerHTML = `<div class="state-message">Aucune course à venir pour l'instant.</div>`; return; }
+    container.innerHTML = upcoming.map(c => renderCourseCardHtml(c)).join("");
+  }
 
   function renderCalendrier() {
     const container = document.getElementById("calendrierContent");
@@ -944,6 +1060,7 @@
     const query = document.getElementById('heroSearch').value.trim().toLowerCase();
 
     const filtered = allCourses.filter(c => {
+      if (isPastCourse(c)) return false;
       const d = new Date(c.date);
       let matchesDate = true;
       if (appliedStart) {
@@ -959,29 +1076,7 @@
 
     let html = `<div class="result-count">${filtered.length} course${filtered.length > 1 ? "s" : ""} <span>à venir dans le Gard</span></div>`;
     html += `<div class="course-grid">`;
-    filtered.forEach(c => {
-      const tc = typeClass(c.type);
-      const distances = splitDistances(c.distances);
-      const distBadges = c.statut === "Non confirmé"
-        ? `<span class="pill dark" style="background:rgba(178,59,59,0.85);">Non confirmée</span>`
-        : (tc === "Backyard" || tc === "Ekiden") ? "" :
-        distances.slice(0, 2).map(d => `<span class="pill dark">${d}</span>`).join("") + (distances.length > 2 ? `<span class="pill dark">+${distances.length - 2}</span>` : "");
-      const posterHtml = c.affiche ? `<div class="poster-frame-small"><img src="${c.affiche}" alt="Affiche ${c.nom}" /></div>` : "";
-      html += `
-        <div class="ccard" onclick="openFiche('${c.id}')">
-          <div class="thumb thumb-${tc}">
-            <div class="big-icon icon-${tc}"></div>
-            ${posterHtml}
-            <div class="badges-top"><span class="pill type-${tc}">${c.type || "—"}</span>${c.challenge ? `<span class="pill dark" title="${c.challenge}">🏆</span>` : ""}</div>
-            <div class="badges-bottom">${distBadges}</div>
-          </div>
-          <div class="body">
-            <div class="date">${formatDayLabel(c.date)}</div>
-            <div class="title">${c.nom}</div>
-            <div class="loc">${c.commune || ""}, Gard</div>
-          </div>
-        </div>`;
-    });
+    filtered.forEach(c => { html += renderCourseCardHtml(c); });
     html += `</div>`;
     if (!filtered.length) html = `<div class="empty-state"><div class="ic">🔎</div><div class="big">Aucune course ne correspond</div><p>Essaie une autre période ou un autre mot-clé.</p></div>`;
     container.innerHTML = html;
