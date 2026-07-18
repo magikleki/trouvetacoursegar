@@ -59,7 +59,11 @@
   @media (min-width: 780px) { .mobile-menu { display: none !important; } }
   .mobile-menu-link { padding: 13px 4px; font-weight: 800; font-size: 15px; color: var(--ink); border-bottom: 1px solid var(--border); cursor: pointer; }
   .mobile-menu-sep { height: 1px; background: var(--border); margin: 10px 0 2px; }
-  .mobile-menu-label { padding: 10px 4px 2px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .mobile-menu-label { padding: 13px 4px; font-weight: 800; font-size: 15px; color: var(--ink); cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+  .mobile-menu-chevron { font-size: 11px; color: var(--muted); transition: transform .15s ease; }
+  .mobile-menu-chevron.open { transform: rotate(180deg); }
+  .mobile-menu-subgroup { display: none; padding-left: 6px; }
+  .mobile-menu-subgroup.open { display: block; }
   .mobile-menu-sublink { display: block; padding: 11px 4px 11px 10px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; }
   .mobile-menu-sublink:hover { color: var(--accent-deep); }
 
@@ -75,7 +79,7 @@
   .search-box button:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -8px rgba(224,106,44,0.55); }
   .podium-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 1rem; }
   @media (min-width: 780px) { .podium-grid { grid-template-columns: repeat(3, 1fr); } }
-  .podium-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.1rem; display: flex; flex-direction: column; gap: 10px; }
+  .podium-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.1rem; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
   .podium-card-title { font-weight: 800; font-size: 15px; }
   .podium-card-meta { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin-top: 3px; }
   .podium-row { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; overflow: hidden; }
@@ -84,6 +88,15 @@
   .podium-winners span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .podium-winners span:not(.sep) { flex: 1 1 0; }
   .podium-winners .sep { color: var(--border); font-weight: 400; flex-shrink: 0; overflow: visible; }
+  /* Sur mobile, la largeur manque pour afficher les 2 gagnant·e·s côte à
+     côte sans les tronquer sévèrement : on les empile à la place, chacun
+     sur sa propre ligne pleine largeur. */
+  @media (max-width: 599px) {
+    .podium-row { align-items: flex-start; }
+    .podium-winners { flex-direction: column; align-items: flex-start; gap: 3px; }
+    .podium-winners .sep { display: none; }
+    .podium-winners span:not(.sep) { width: 100%; flex: none; }
+  }
   .podium-cta { margin-top: auto; background: none; border: 1px solid var(--border); border-radius: 10px; padding: 10px; font-size: 12.5px; font-weight: 800; color: var(--muted); cursor: pointer; transition: border-color .15s ease, color .15s ease; }
   .podium-cta:hover { border-color: var(--accent); color: var(--accent-deep); }
   .hero-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 1.4rem; }
@@ -277,8 +290,10 @@
   .course-table .row { display: grid; grid-template-columns: 2fr 1fr; align-items: center; padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); font-size: 13px; gap: 8px; }
   .course-table .row:last-child { border-bottom: none; }
 
-  .side-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem; margin-bottom: 1rem; }
+  .side-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem; margin-bottom: 1rem; min-width: 0; }
   .side-card-clickable { transition: border-color .15s ease, box-shadow .15s ease; }
+  .challenge-tag { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--muted); min-width: 0; }
+  .challenge-tag .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .side-card-clickable:hover { border-color: var(--accent); box-shadow: 0 10px 20px -12px rgba(0,0,0,0.25); }
   .org-row { display: flex; align-items: center; gap: 10px; }
   .org-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
@@ -389,11 +404,16 @@
     <a class="mobile-menu-link" onclick="navigateMobile('challenge')">Tableau d'Honneur</a>
     <a class="mobile-menu-link" onclick="navigateMobile('club')">Clubs</a>
     <div class="mobile-menu-sep"></div>
-    <div class="mobile-menu-label">Signaler une erreur</div>
-    <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Sur une course</a>
-    <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Sur un club</a>
-    <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Sur un résultat</a>
-    <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Autre</a>
+    <div class="mobile-menu-label" onclick="toggleMobileReport()">
+      Signaler une erreur
+      <span class="mobile-menu-chevron" id="mobileReportChevron">▾</span>
+    </div>
+    <div class="mobile-menu-subgroup" id="mobileReportSubgroup">
+      <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Sur une course</a>
+      <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Sur un club</a>
+      <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Sur un résultat</a>
+      <a class="mobile-menu-sublink" href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Autre</a>
+    </div>
   </div>
 </div>
 
@@ -633,10 +653,16 @@
   }
   function closeMobileMenu() {
     document.getElementById('mobileMenu').classList.remove('open');
+    document.getElementById('mobileReportSubgroup').classList.remove('open');
+    document.getElementById('mobileReportChevron').classList.remove('open');
   }
   function navigateMobile(page) {
     closeMobileMenu();
     showPage(page);
+  }
+  function toggleMobileReport() {
+    document.getElementById('mobileReportSubgroup').classList.toggle('open');
+    document.getElementById('mobileReportChevron').classList.toggle('open');
   }
 
   function typeClass(type) { return (type || "").replace(/\s+/g, ""); }
@@ -1371,15 +1397,13 @@
     container.innerHTML = `<div class="course-grid" style="grid-template-columns:1fr;">${entries.map(e => `
       <div class="side-card side-card-clickable" style="cursor:pointer; aspect-ratio:auto;" onclick="openLeaderboard('${e.courseId}')">
         <div class="result-date-label">${formatDayLabel(e.course.date)}</div>
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-          <div style="font-weight:800; font-size:14px;">${e.course.nom}</div>
-          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
-            ${e.distances.map(d => `<span class="pill-distance">${d}</span>`).join("")}
-            <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep);">${e.count} coureurs</span>
-          </div>
+        <div style="font-weight:800; font-size:14px;">${e.course.nom}</div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:6px;">
+          ${e.distances.map(d => `<span class="pill-distance">${d}</span>`).join("")}
+          <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep);">${e.count} coureurs</span>
         </div>
-        <div style="font-size:12px; color:var(--muted); margin-top:3px;">${e.course.commune || ""}, Gard</div>
-        ${e.course.challenge ? `<div style="margin-top:6px;"><span class="pill" style="background:var(--bg); color:var(--muted); border:1px solid var(--border);">🏆 ${e.course.challenge}</span></div>` : ""}
+        <div style="font-size:12px; color:var(--muted); margin-top:6px;">${e.course.commune || ""}, Gard</div>
+        ${e.course.challenge ? `<div class="challenge-tag" title="${e.course.challenge}">🏆<span class="txt">${e.course.challenge}</span></div>` : ""}
       </div>`).join("")}</div>`;
   }
 
