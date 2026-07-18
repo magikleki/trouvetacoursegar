@@ -441,6 +441,14 @@
       <button class="see-all-btn" onclick="showPage('resultats')">Voir tous les résultats</button>
     </div>
   </div>
+
+  <div class="section" id="homeClubsSection" style="display:none;">
+    <div class="block-label" style="font-size:17px;"><span class="bar"></span>🏃 Clubs du Gard</div>
+    <div class="club-grid-flex" id="homeClubsGrid"></div>
+    <div style="text-align:center; margin-top:1.6rem;">
+      <button class="see-all-btn" onclick="showPage('club')">Tous les clubs</button>
+    </div>
+  </div>
 </div>
 
 <div id="page-calendrier" style="display:none;">
@@ -1370,14 +1378,38 @@
       </div>`;
   }
 
+  let clubsPromise = null;
   async function loadClubs() {
     if (clubsLoaded) { renderClubs(); return; }
-    const res = await fetch("/api/clubs");
-    const data = await res.json();
-    allClubs = res.ok ? (data.clubs || []) : [];
-    clubsLoaded = true;
-    renderClubs();
-    document.getElementById("fClubSearch").addEventListener("input", renderClubs);
+    // Mémoïsée comme loadCourses/loadResultatsCountForStats : la nouvelle
+    // section clubs de l'accueil peut déclencher ce chargement en même temps
+    // qu'une visite de la page Clubs, sans dupliquer la requête.
+    if (!clubsPromise) {
+      clubsPromise = fetch("/api/clubs")
+        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+        .then(({ ok, data }) => {
+          allClubs = ok ? (data.clubs || []) : [];
+          clubsLoaded = true;
+          renderClubs();
+          document.getElementById("fClubSearch").addEventListener("input", renderClubs);
+        });
+    }
+    return clubsPromise;
+  }
+
+  function buildClubCardHtml(club) {
+    const logoHtml = club.logo
+      ? `<img src="${club.logo}" alt="Logo ${club.nom}" />`
+      : `<span style="font-weight:800; font-size:15px; color:var(--muted);">${initials(club.nom)}</span>`;
+    const target = club.site || club.reseaux;
+    return `
+      <div class="club-card-v2" onclick="${target ? `window.open('${target}', '_blank', 'noopener')` : ""}" style="${target ? "cursor:pointer;" : ""}">
+        <div class="club-logo-box">${logoHtml}</div>
+        <div class="club-card-v2-body">
+          <div class="club-card-v2-name">${club.nom}</div>
+          <div class="club-card-v2-loc">${club.commune || ""}${club.discipline ? " · " + club.discipline : ""}</div>
+        </div>
+      </div>`;
   }
 
   function renderClubs() {
@@ -1387,20 +1419,53 @@
     const filtered = allClubs.filter(club => !q || club.nom.toLowerCase().includes(q) || (club.commune || "").toLowerCase().includes(q));
     if (!filtered.length) { container.innerHTML = `<div class="state-message">Aucun club ne correspond.</div>`; return; }
 
-    container.innerHTML = `<div class="club-grid-flex">${filtered.map(club => {
-      const logoHtml = club.logo
-        ? `<img src="${club.logo}" alt="Logo ${club.nom}" />`
-        : `<span style="font-weight:800; font-size:15px; color:var(--muted);">${initials(club.nom)}</span>`;
-      const target = club.site || club.reseaux;
-      return `
-        <div class="club-card-v2" onclick="${target ? `window.open('${target}', '_blank', 'noopener')` : ""}" style="${target ? "cursor:pointer;" : ""}">
-          <div class="club-logo-box">${logoHtml}</div>
-          <div class="club-card-v2-body">
-            <div class="club-card-v2-name">${club.nom}</div>
-            <div class="club-card-v2-loc">${club.commune || ""}${club.discipline ? " · " + club.discipline : ""}</div>
-          </div>
-        </div>`;
-    }).join("")}</div>`;
+    container.innerHTML = `<div class="club-grid-flex">${filtered.map(buildClubCardHtml).join("")}</div>`;
+  }
+
+  function normalizeText(str) {
+    return (str || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  }
+
+  // Sélection des 4 clubs mis en avant sur l'accueil : le club de Vergèze,
+  // Courir à Vauvert, puis 2 tirés au hasard parmi les autres. Si l'un des
+  // deux clubs nommés n'existe pas (nom Airtable différent), on comble avec
+  // d'autres clubs aléatoires plutôt que d'afficher une section trouée.
+  const HOME_CLUBS_COUNT = 4;
+  function pickHomeClubs() {
+    const picked = [];
+    const usedIds = new Set();
+
+    const vergeze = allClubs.find(c => normalizeText(c.commune).includes("vergeze") || normalizeText(c.nom).includes("vergeze"));
+    if (vergeze) { picked.push(vergeze); usedIds.add(vergeze.id); }
+
+    const courirVauvert = allClubs.find(c => !usedIds.has(c.id) && normalizeText(c.nom).includes("courir") && normalizeText(c.nom).includes("vauvert"));
+    if (courirVauvert) { picked.push(courirVauvert); usedIds.add(courirVauvert.id); }
+
+    const remaining = allClubs.filter(c => !usedIds.has(c.id));
+    if (picked.length < HOME_CLUBS_COUNT && remaining.length) {
+      const shuffled = [...remaining].sort(() => Math.random() - 0.5);
+      picked.push(...shuffled.slice(0, HOME_CLUBS_COUNT - picked.length));
+    }
+
+    return picked;
+  }
+
+  async function renderHomeClubs() {
+    const section = document.getElementById("homeClubsSection");
+    const grid = document.getElementById("homeClubsGrid");
+    if (!section || !grid) return;
+
+    await loadClubs();
+
+    const picked = pickHomeClubs();
+    if (!picked.length) {
+      section.style.display = "none";
+      grid.innerHTML = "";
+      return;
+    }
+
+    grid.innerHTML = picked.map(buildClubCardHtml).join("");
+    section.style.display = "";
   }
 
   // Regroupe allResultats par course (nb de coureurs, distances), triées de
@@ -1895,6 +1960,7 @@
   loadCourses();
   loadResultatsCountForStats();
   renderHomeResults();
+  renderHomeClubs();
 </script>
 
 </body>
