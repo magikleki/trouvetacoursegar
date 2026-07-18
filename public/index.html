@@ -30,7 +30,8 @@
   .topnav a:hover { color: var(--ink); }
   @media (min-width: 780px) { .topnav { display: flex; } }
 
-  /* Les 3 boutons de navigation principaux (Clubs, Résultats, Wall of Fame) :
+  /* Les 4 boutons de navigation principaux (Calendrier, Résultats, Tableau
+     d'Honneur, Clubs) :
      même design, bien visibles, nettement plus marqués que le 4e lien. */
   .nav-main { display: flex; align-items: center; gap: 8px; }
   .nav-main a.nav-btn { background: var(--accent-tint); color: var(--accent-deep); font-weight: 800; font-size: 13px; padding: 9px 18px; border-radius: 999px; transition: background .15s ease, color .15s ease, box-shadow .15s ease; }
@@ -338,9 +339,10 @@
   </div>
   <div class="topnav">
     <div class="nav-main">
-      <a class="nav-btn" onclick="showPage('club')">Clubs</a>
+      <a class="nav-btn" onclick="showPage('accueil')">Calendrier</a>
       <a class="nav-btn" onclick="showPage('resultats')">Résultats</a>
-      <a class="nav-btn" onclick="showPage('challenge')">Wall of Fame</a>
+      <a class="nav-btn" onclick="showPage('challenge')">Tableau d'Honneur</a>
+      <a class="nav-btn" onclick="showPage('club')">Clubs</a>
     </div>
     <div class="nav-report">
       <a>Signaler une erreur</a>
@@ -462,21 +464,6 @@
   </div>
 </div>
 
-<div id="page-club-fiche" style="display:none;">
-  <div class="fiche-wrap" id="clubFicheContent"></div>
-</div>
-
-<div id="page-runclub" style="display:none;">
-  <div class="section">
-    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Run Club</span></div>
-    <div class="empty-state">
-      <div class="ic">👟</div>
-      <div class="big">Trouve ton Run Club — bientôt disponible</div>
-      <p>Les rassemblements de coureurs (type "tous les lundis 19h") arrivent bientôt.</p>
-    </div>
-  </div>
-</div>
-
 <div id="page-resultats" style="display:none;">
   <div class="fiche-wrap">
     <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Résultats</span></div>
@@ -498,22 +485,11 @@
 
 <div id="page-challenge" style="display:none;">
   <div class="section">
-    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Wall of Fame</span></div>
+    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Tableau d'Honneur</span></div>
     <div class="empty-state">
       <div class="ic">🏆</div>
-      <div class="big">Wall of Fame — bientôt disponible</div>
+      <div class="big">Tableau d'Honneur — bientôt disponible</div>
       <p>Le classement des coureurs les plus assidus du Gard arrivera une fois assez de résultats collectés.</p>
-    </div>
-  </div>
-</div>
-
-<div id="page-boutique" style="display:none;">
-  <div class="section">
-    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Boutique</span></div>
-    <div class="empty-state">
-      <div class="ic">🛍️</div>
-      <div class="big">Boutique — à venir prochainement</div>
-      <p>Dossards, t-shirts et goodies "Trouve ta Course" pour le Gard.</p>
     </div>
   </div>
 </div>
@@ -528,12 +504,11 @@
       <div class="footer-col">
         <h4>Navigation</h4>
         <ul>
-          <li><a onclick="showPage('club')">Clubs</a></li>
-          <li><a onclick="showPage('runclub')">Run Club</a></li>
+          <li><a onclick="showPage('accueil')">Calendrier</a></li>
           <li><a onclick="showPage('resultats')">Résultats</a></li>
-          <li><a onclick="showPage('challenge')">Challenge</a></li>
-          <li><a onclick="showPage('boutique')">Boutique</a></li>
-          <li><a href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Proposer une course / Signaler une erreur</a></li>
+          <li><a onclick="showPage('challenge')">Tableau d'Honneur</a></li>
+          <li><a onclick="showPage('club')">Clubs</a></li>
+          <li><a href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Signaler une erreur</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -553,7 +528,7 @@
   let clubsLoaded = false;
   let resultatsLoaded = false;
 
-  const pageIds = ['accueil','fiche','club','club-fiche','runclub','resultats','leaderboard','challenge','boutique'];
+  const pageIds = ['accueil','fiche','club','resultats','leaderboard','challenge'];
   function showPage(p) {
     pageIds.forEach(id => {
       const el = document.getElementById('page-' + id);
