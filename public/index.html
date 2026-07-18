@@ -133,6 +133,7 @@
   .ccard .thumb .badges-bottom { position: absolute; bottom: 9px; left: 9px; display: flex; gap: 5px; flex-wrap: wrap; right: 9px; }
   .pill { font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; color: #fff; white-space: nowrap; }
   .pill.dark { background: rgba(0,0,0,0.55); color: #fff; }
+  .pill-distance { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
   .ccard .body { position: absolute; bottom: 0; left: 0; right: 0; height: 32%; padding: 10px 12px; overflow: hidden; }
   .ccard .date { font-size: 10.5px; font-weight: 700; color: var(--accent-deep); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
   .ccard .title { font-weight: 800; font-size: 13.5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1122,14 +1123,19 @@
     if (!resultatsLoaded) await loadResultatsCountForStats();
 
     const grouped = {};
+    const distancesByCourse = {};
     allResultats.forEach(r => {
       if (!r.courseId) return;
       grouped[r.courseId] = (grouped[r.courseId] || 0) + 1;
+      if (r.distance) {
+        if (!distancesByCourse[r.courseId]) distancesByCourse[r.courseId] = [];
+        if (!distancesByCourse[r.courseId].includes(r.distance)) distancesByCourse[r.courseId].push(r.distance);
+      }
     });
 
     const entries = Object.keys(grouped).map(courseId => {
       const course = allCourses.find(c => c.id === courseId);
-      return { courseId, count: grouped[courseId], course };
+      return { courseId, count: grouped[courseId], course, distances: distancesByCourse[courseId] || [] };
     }).filter(e => e.course);
 
     window.__resultatsEntries = entries;
@@ -1153,12 +1159,13 @@
     }
 
     container.innerHTML = `<div class="course-grid" style="grid-template-columns:1fr;">${entries.map(e => `
-      <div class="side-card side-card-clickable" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; aspect-ratio:auto;" onclick="openLeaderboard('${e.courseId}')">
-        <div>
+      <div class="side-card side-card-clickable" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:12px; aspect-ratio:auto;" onclick="openLeaderboard('${e.courseId}')">
+        <div style="min-width:0;">
           <div style="font-weight:800; font-size:14px;">${e.course.nom}</div>
-          <div style="font-size:12px; color:var(--muted);">${e.course.commune || ""}, Gard</div>
+          <div style="font-size:12px; color:var(--muted); margin-bottom:${e.distances.length ? "7px" : "0"};">${e.course.commune || ""}, Gard</div>
+          ${e.distances.length ? `<div style="display:flex; gap:5px; flex-wrap:wrap;">${e.distances.map(d => `<span class="pill-distance">${d}</span>`).join("")}</div>` : ""}
         </div>
-        <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep);">${e.count} coureurs</span>
+        <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep); flex-shrink:0;">${e.count} coureurs</span>
       </div>`).join("")}</div>`;
   }
 
