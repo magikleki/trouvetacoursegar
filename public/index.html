@@ -1012,11 +1012,29 @@
     container.innerHTML = html;
   }
 
+  // Le tableau complet des résultats (toutes courses confondues) est
+  // nécessaire à plusieurs endroits (podiums, page Résultats, fiche course,
+  // classement détaillé). On ne le télécharge qu'une seule fois par visite :
+  // resultatsPromise mémorise la requête en cours pour que tous les appels
+  // suivants réutilisent le même résultat au lieu de retélécharger toute la
+  // table Airtable à chaque clic.
+  let resultatsPromise = null;
   async function loadResultatsCountForStats() {
-    const res = await fetch("/api/resultats");
-    const data = await res.json();
-    allResultats = res.ok ? (data.resultats || []) : [];
-    resultatsLoaded = true;
+    if (!resultatsPromise) {
+      resultatsPromise = fetch("/api/resultats")
+        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+        .then(({ ok, data }) => {
+          allResultats = ok ? (data.resultats || []) : [];
+          resultatsLoaded = true;
+          return allResultats;
+        })
+        .catch(() => {
+          allResultats = [];
+          resultatsLoaded = true;
+          return allResultats;
+        });
+    }
+    return resultatsPromise;
   }
 
   function socialButtonHtml(url) {
@@ -1122,9 +1140,8 @@
 
   async function updateFicheResultsCount(courseId) {
     try {
-      const res = await fetch(`/api/resultats?courseId=${encodeURIComponent(courseId)}`);
-      const data = await res.json();
-      const resultats = res.ok ? (data.resultats || []) : [];
+      await loadResultatsCountForStats();
+      const resultats = allResultats.filter(r => r.courseId === courseId);
       const el = document.getElementById("ficheCoureursCount");
       if (el) el.textContent = resultats.length || "—";
       window.__ficheResultatsCache = resultats;
@@ -1341,9 +1358,8 @@
 
   async function openLeaderboard(courseId) {
     const course = allCourses.find(c => c.id === courseId);
-    const res = await fetch(`/api/resultats?courseId=${encodeURIComponent(courseId)}`);
-    const data = await res.json();
-    const resultats = res.ok ? (data.resultats || []) : [];
+    await loadResultatsCountForStats();
+    const resultats = allResultats.filter(r => r.courseId === courseId);
     const edition = course ? ((new Date(course.date)).getFullYear() || new Date().getFullYear()) : new Date().getFullYear();
 
     const distances = sortDistanceLabels([...new Set(resultats.map(r => r.distance).filter(Boolean))]);
