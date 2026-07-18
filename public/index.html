@@ -354,6 +354,9 @@
   .lb-subtab.active { background: var(--card); color: var(--accent-deep); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .lb-subtab .count { font-weight: 700; opacity: .65; margin-left: 4px; font-size: 0.92em; }
   .lb-search { border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; font-size: 12.5px; }
+  .lb-count-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .lb-count-row .lb-count-label { font-size: 12px; color: var(--muted); font-weight: 700; }
+  .lb-search-slot { max-width: 280px; width: 100%; flex: 0 1 280px; }
 
   .lb-expand-link { display: inline-block; margin-top: 10px; padding: 6px 10px; border: none; background: none; border-radius: 8px; font-size: 11.5px; font-weight: 600; color: var(--muted); cursor: pointer; text-decoration: none; transition: background .15s ease, color .15s ease; }
   .lb-expand-link:hover { background: var(--bg); color: var(--accent-deep); }
@@ -1507,12 +1510,7 @@
     document.getElementById("leaderboardContent").innerHTML = `
       <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb" onclick="showPage('resultats')">Résultats</span><span class="sep">/</span><span class="crumb current">${course ? course.nom : ""}</span></div>
       <h1 style="margin:6px 0 4px;">Résultats — ${course ? course.nom : ""}</h1>
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
-        <div class="loc" style="margin-bottom:0;">${course ? course.commune : ""}, Gard · ${resultats.length} coureurs classés</div>
-        <div style="max-width:280px; width:100%; flex:0 1 280px;">
-          <input class="lb-search" id="lbSearch" placeholder="Chercher un coureur..." oninput="renderLeaderboardTable()" style="width:100%;" />
-        </div>
-      </div>
+      <div class="loc" style="margin-bottom:10px;">${course ? course.commune : ""}, Gard · ${resultats.length} coureurs classés</div>
       <div style="margin-bottom:1.3rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
         <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep);">Édition ${edition}</span>
         ${course && course.challenge ? `<span class="pill" style="background:var(--bg); color:var(--muted); border:1px solid var(--border);">🏆 ${course.challenge}</span>` : ""}
@@ -1599,8 +1597,23 @@
     });
   }
 
+  function escapeHtmlAttr(str) {
+    return String(str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
   function renderLeaderboardTable() {
-    const q = (document.getElementById('lbSearch')?.value || '').trim().toLowerCase();
+    // On capture la valeur brute + la position du curseur avant de
+    // régénérer le HTML : le champ de recherche est recréé à chaque rendu
+    // (il vit dans la zone régénérée, au niveau de la ligne "N coureurs
+    // classés"), donc on restaure focus/curseur juste après pour que la
+    // frappe ne soit jamais interrompue à l'écran.
+    const prevInput = document.getElementById('lbSearch');
+    const rawValue = prevInput ? prevInput.value : '';
+    const hadFocus = prevInput === document.activeElement;
+    const selStart = prevInput ? prevInput.selectionStart : null;
+    const selEnd = prevInput ? prevInput.selectionEnd : null;
+    const q = rawValue.trim().toLowerCase();
+
     const allRows = window.__leaderboardData || [];
     const distances = window.__leaderboardDistances || [];
     const wrap = document.getElementById('lbTableWrap');
@@ -1620,12 +1633,13 @@
       { key: 'homme', label: 'Homme' },
     ];
 
+    // Chaque bloc retourne ses 3 morceaux séparément (onglets, ligne de
+    // décompte, tableau) plutôt qu'un seul bloc HTML : la ligne de décompte
+    // doit toujours s'afficher (avec la recherche à côté), même quand la
+    // recherche en cours ne donne aucun résultat.
     const renderSoloBlock = (distance, distanceRows) => {
       let rows = distanceRows;
       if (q) rows = rows.filter(r => `${r.prenom} ${r.nom}`.toLowerCase().includes(q));
-      if (!rows.length) {
-        return `<div class="state-message">Aucun coureur ne correspond.</div>`;
-      }
 
       // Scratch = classement général déjà existant, inchangé. Femme/Homme
       // reprennent ce même ordre (déjà trié par classement général) filtré
@@ -1647,9 +1661,11 @@
       const shown = expanded ? activeRows : activeRows.slice(0, 10);
       const remaining = activeRows.length - shown.length;
 
-      const tabsHtml = `<div class="lb-subtabs">${GENDER_TABS.map(g => `
+      const subtabsHtml = `<div class="lb-subtabs">${GENDER_TABS.map(g => `
         <button class="lb-subtab ${g.key === activeGender ? 'active' : ''}" onclick="switchLeaderboardGender('${distance}', '${g.key}')">${g.label}<span class="count">${genderRows[g.key].length}</span></button>
       `).join("")}</div>`;
+
+      const countLabel = `${activeRows.length} coureur${activeRows.length > 1 ? "s" : ""} classé${activeRows.length > 1 ? "s" : ""}`;
 
       const tableHtml = !activeRows.length
         ? `<div class="state-message">Aucun coureur ne correspond.</div>`
@@ -1671,16 +1687,11 @@
           ${remaining > 0 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Voir les ${remaining} coureur${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""} ↓</button>` : ""}
           ${expanded && activeRows.length > 10 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Réduire ↑</button>` : ""}`;
 
-      return `
-        <div style="margin-bottom:1.8rem;">
-          ${tabsHtml}
-          <div style="font-size:12px; color:var(--muted); font-weight:700; margin-bottom:10px;">${activeRows.length} coureur${activeRows.length > 1 ? "s" : ""} classé${activeRows.length > 1 ? "s" : ""}</div>
-          ${tableHtml}
-        </div>`;
+      return { subtabsHtml, countLabel, tableHtml };
     };
 
     const renderDuoBlock = (distance, groups) => {
-      let teams = groups.map(g => ({
+      let allTeams = groups.map(g => ({
         classementGeneral: g[0].classementGeneral,
         classementCategorie: g[0].classementCategorie,
         temps: g[0].temps,
@@ -1689,62 +1700,63 @@
         club: g[0].club,
         coureurs: g,
       }));
-      teams.sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999));
+      allTeams.sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999));
 
-      if (q) teams = teams.filter(t => t.coureurs.some(c => `${c.prenom} ${c.nom}`.toLowerCase().includes(q)));
-      if (!teams.length) {
-        return `<div class="state-message">Aucune équipe ne correspond.</div>`;
-      }
+      const filteredTeamsAll = q
+        ? allTeams.filter(t => t.coureurs.some(c => `${c.prenom} ${c.nom}`.toLowerCase().includes(q)))
+        : allTeams;
 
-      const categories = sortCategories([...new Set(teams.map(t => extractCategoryLabel(t.classementCategorie)))]);
+      // Les catégories viennent de la liste complète (non filtrée) pour que
+      // les onglets restent affichés même si la recherche en cours ne
+      // donne aucun résultat dans une catégorie.
+      const categories = sortCategories([...new Set(allTeams.map(t => extractCategoryLabel(t.classementCategorie)))]);
       if (!window.__leaderboardActiveCategory) window.__leaderboardActiveCategory = {};
       let activeCategory = window.__leaderboardActiveCategory[distance];
       if (!activeCategory || !categories.includes(activeCategory)) {
         activeCategory = categories[0];
         window.__leaderboardActiveCategory[distance] = activeCategory;
       }
-      const renderCategoryTable = (catLabel) => {
-        const filteredTeams = teams.filter(t => extractCategoryLabel(t.classementCategorie) === catLabel)
-          .sort((a, b) => (extractCategoryRank(a.classementCategorie) ?? 9999) - (extractCategoryRank(b.classementCategorie) ?? 9999));
-        if (!filteredTeams.length) return `<div class="state-message">Aucune équipe ne correspond.</div>`;
 
-        const expandKey = distance + '__' + catLabel;
-        const expanded = !!window.__leaderboardExpanded[expandKey];
-        const shown = expanded ? filteredTeams : filteredTeams.slice(0, 10);
-        const remaining = filteredTeams.length - shown.length;
+      const filteredTeams = filteredTeamsAll.filter(t => extractCategoryLabel(t.classementCategorie) === activeCategory)
+        .sort((a, b) => (extractCategoryRank(a.classementCategorie) ?? 9999) - (extractCategoryRank(b.classementCategorie) ?? 9999));
 
-        return `
-          <div style="margin-bottom:1.8rem;">
-            <div style="font-size:12px; color:var(--muted); font-weight:700; margin-bottom:10px;">${filteredTeams.length} équipe${filteredTeams.length > 1 ? "s" : ""} classée${filteredTeams.length > 1 ? "s" : ""}</div>
-            <div class="lb-table">
-              <div class="lb-row-full lb-row-duo head"><span>Rang</span><span>Scratch</span><span>Doss.</span><span>Coureurs</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Équipe</span></div>
-              ${shown.map(t => {
-                const catRank = extractCategoryRank(t.classementCategorie);
-                return `
-                <div class="lb-row-full lb-row-duo">
-                  <span class="${lbRankClass(catRank)}">${catRank ?? "—"}</span>
-                  <span class="lb-scratch">${t.classementGeneral ?? "—"}</span>
-                  <span class="lb-dossard">${t.dossard || "—"}</span>
-                  <span class="lb-name">${t.coureurs.map(c => `${c.prenom} ${c.nom}`).join(" &amp; ")}</span>
-                  <span>${t.coureurs.map(c => c.sexe || "—").join("/")}</span>
-                  <span>${t.classementCategorie || "—"}</span>
-                  <span class="lb-time">${t.temps || "—"}</span>
-                  <span class="lb-vitesse">${t.vitesse || "—"}</span>
-                  <span class="lb-club-cell">${t.club || "—"}</span>
-                </div>`;
-              }).join("")}
-            </div>
-            ${remaining > 0 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Voir les ${remaining} équipe${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""} ↓</button>` : ""}
-            ${expanded && filteredTeams.length > 10 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Réduire ↑</button>` : ""}
-          </div>`;
-      };
+      const expandKey = distance + '__' + activeCategory;
+      const expanded = !!window.__leaderboardExpanded[expandKey];
+      const shown = expanded ? filteredTeams : filteredTeams.slice(0, 10);
+      const remaining = filteredTeams.length - shown.length;
 
-      let catHtml = `<div class="lb-subtabs">${categories.map(cat => {
-        const count = teams.filter(t => extractCategoryLabel(t.classementCategorie) === cat).length;
+      const subtabsHtml = `<div class="lb-subtabs">${categories.map(cat => {
+        const count = filteredTeamsAll.filter(t => extractCategoryLabel(t.classementCategorie) === cat).length;
         return `<button class="lb-subtab ${cat === activeCategory ? 'active' : ''}" onclick="switchLeaderboardCategory('${distance}', '${cat.replace(/'/g, "\\'")}')">${cat}<span class="count">${count}</span></button>`;
       }).join("")}</div>`;
-      catHtml += renderCategoryTable(activeCategory);
-      return catHtml;
+
+      const countLabel = `${filteredTeams.length} équipe${filteredTeams.length > 1 ? "s" : ""} classée${filteredTeams.length > 1 ? "s" : ""}`;
+
+      const tableHtml = !filteredTeams.length
+        ? `<div class="state-message">Aucune équipe ne correspond.</div>`
+        : `
+          <div class="lb-table">
+            <div class="lb-row-full lb-row-duo head"><span>Rang</span><span>Scratch</span><span>Doss.</span><span>Coureurs</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Équipe</span></div>
+            ${shown.map(t => {
+              const catRank = extractCategoryRank(t.classementCategorie);
+              return `
+              <div class="lb-row-full lb-row-duo">
+                <span class="${lbRankClass(catRank)}">${catRank ?? "—"}</span>
+                <span class="lb-scratch">${t.classementGeneral ?? "—"}</span>
+                <span class="lb-dossard">${t.dossard || "—"}</span>
+                <span class="lb-name">${t.coureurs.map(c => `${c.prenom} ${c.nom}`).join(" &amp; ")}</span>
+                <span>${t.coureurs.map(c => c.sexe || "—").join("/")}</span>
+                <span>${t.classementCategorie || "—"}</span>
+                <span class="lb-time">${t.temps || "—"}</span>
+                <span class="lb-vitesse">${t.vitesse || "—"}</span>
+                <span class="lb-club-cell">${t.club || "—"}</span>
+              </div>`;
+            }).join("")}
+          </div>
+          ${remaining > 0 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Voir les ${remaining} équipe${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""} ↓</button>` : ""}
+          ${expanded && filteredTeams.length > 10 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Réduire ↑</button>` : ""}`;
+
+      return { subtabsHtml, countLabel, tableHtml };
     };
 
     const renderDistanceBlock = (distance) => {
@@ -1754,16 +1766,36 @@
       return isDuo ? renderDuoBlock(distance, groups) : renderSoloBlock(distance, distanceRows);
     };
 
-    let html = '';
-
     // Les onglets de distance s'affichent toujours de la même façon, qu'il y
     // ait une seule distance ou plusieurs, pour un rendu cohérent partout.
-    html += `<div class="lb-tabs">${distances.map(d => {
+    const distanceTabsHtml = `<div class="lb-tabs">${distances.map(d => {
       return `<button class="lb-tab ${d === activeDistance ? 'active' : ''}" onclick="switchLeaderboardTab('${d}')">${d}</button>`;
     }).join("")}</div>`;
-    html += renderDistanceBlock(activeDistance);
 
-    wrap.innerHTML = html || `<div class="state-message">Aucun coureur ne correspond.</div>`;
+    const block = renderDistanceBlock(activeDistance);
+
+    wrap.innerHTML = `
+      <div style="margin-bottom:1.8rem;">
+        ${distanceTabsHtml}
+        ${block.subtabsHtml}
+        <div class="lb-count-row">
+          <div class="lb-count-label">${block.countLabel}</div>
+          <div class="lb-search-slot">
+            <input class="lb-search" id="lbSearch" placeholder="Chercher un coureur..." oninput="renderLeaderboardTable()" value="${escapeHtmlAttr(rawValue)}" style="width:100%;" />
+          </div>
+        </div>
+        ${block.tableHtml}
+      </div>`;
+
+    if (hadFocus) {
+      const newInput = document.getElementById('lbSearch');
+      if (newInput) {
+        newInput.focus();
+        if (selStart !== null && selEnd !== null) {
+          try { newInput.setSelectionRange(selStart, selEnd); } catch (e) {}
+        }
+      }
+    }
   }
 
   history.replaceState({ page: 'accueil' }, '', location.pathname + location.search);
