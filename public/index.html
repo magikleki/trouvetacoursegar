@@ -2158,11 +2158,55 @@
 
   const HONNEUR_YEAR = new Date().getFullYear();
 
+  // Normalisation tolérante pour comparer des saisies libres : accents,
+  // casse, ponctuation ET espaces sont entièrement neutralisés (forme
+  // compacte). "S.P.A.C" ≡ "SPAC" ≡ "Spac", "Courir à Beaucaire" ≡
+  // "COURIR A BEAUCAIRE" ≡ "courir-a-beaucaire".
   function honneurNorm(s) {
-    return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/œ/g, "oe").toLowerCase().trim().replace(/\s+/g, " ");
+    return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/œ/g, "oe").replace(/[^a-z0-9]+/g, "");
   }
+  // Identité coureur = nom + prénom seuls : le club, saisi librement à
+  // l'inscription, varie d'une course à l'autre (voire absent) et éclatait
+  // les fiches. Le club affiché devient un "club de référence" calculé
+  // (le plus fréquent parmi ses résultats, après rattachement aux alias).
   function coureurKeyOf(r) {
-    return honneurNorm(r.prenom) + "|" + honneurNorm(r.nom) + "|" + honneurNorm(r.club);
+    return honneurNorm(r.prenom) + "|" + honneurNorm(r.nom);
+  }
+
+  // Rattachement des clubs saisis librement au club officiel de l'annuaire.
+  // Pour chaque club Airtable, on reconnaît automatiquement : son nom
+  // complet, son nom sans le sigle entre parenthèses, le sigle seul, et
+  // chaque variante de la colonne "Alias" (séparées par des ";"), le tout
+  // passé par honneurNorm. "Alès Cévennes Athlétisme (AC2A)" couvre donc
+  // "AC2A", "ac2a", "ales cevennes athletisme"… sans configuration.
+  let clubAliasMap = null;
+  function buildClubAliasMap() {
+    clubAliasMap = {};
+    allClubs.forEach(c => {
+      const entries = new Set();
+      const nom = (c.nom || "").trim();
+      if (!nom) return;
+      entries.add(nom);
+      const m = nom.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+      if (m) { entries.add(m[1]); entries.add(m[2]); }
+      String(c.alias || "").split(";").forEach(a => { if (a.trim()) entries.add(a.trim()); });
+      entries.forEach(e => {
+        const k = honneurNorm(e);
+        if (k) clubAliasMap[k] = nom;
+      });
+    });
+  }
+  function canonicalClubName(raw) {
+    const trimmed = String(raw || "").trim();
+    if (!trimmed) return "";
+    if (!clubAliasMap) {
+      // Tant que l'annuaire n'est pas chargé, on ne fige pas une table
+      // vide : on renvoie la saisie brute, la table sera construite au
+      // premier appel une fois les clubs disponibles.
+      if (!clubsLoaded) return trimmed;
+      buildClubAliasMap();
+    }
+    return clubAliasMap[honneurNorm(trimmed)] || trimmed;
   }
   function escJsArg(s) {
     return String(s || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
@@ -2207,7 +2251,7 @@
 
       const key = coureurKeyOf(r);
       if (!runners[key]) {
-        runners[key] = { key, prenom: r.prenom, nom: r.nom, club: r.club, sexe: r.sexe, races: [], km: 0 };
+        runners[key] = { key, prenom: r.prenom, nom: r.nom, club: "", clubCounts: {}, sexe: r.sexe, races: [], km: 0 };
       }
       const runner = runners[key];
       const kmValue = distanceNumValue(r.distance);
@@ -2223,13 +2267,19 @@
         classementCategorie: r.classementCategorie,
       });
 
-      const clubName = (r.club || "").trim();
-      if (clubName && !duoKeys.has(r.courseId + "|" + r.distance)) {
+      // Le champ club des épreuves duo contient un nom d'équipe, pas un
+      // club : on l'ignore aussi bien pour le club de référence du coureur
+      // que pour le classement des clubs.
+      const isDuoRow = duoKeys.has(r.courseId + "|" + r.distance);
+      const clubName = canonicalClubName(r.club);
+      if (clubName && !isDuoRow) {
+        runner.clubCounts[clubName] = (runner.clubCounts[clubName] || 0) + 1;
+
         const ck = honneurNorm(clubName);
         if (!clubs[ck]) clubs[ck] = { key: ck, nom: clubName, participations: 0, coureurs: new Set(), runnerKeys: new Set(), km: 0, courseCounts: {}, podiums: 0, p1: 0, p2: 0, p3: 0 };
         const club = clubs[ck];
         club.participations++;
-        club.coureurs.add(honneurNorm(r.prenom) + "|" + honneurNorm(r.nom));
+        club.coureurs.add(key);
         club.runnerKeys.add(key);
         if (kmCounted) club.km += kmValue;
         club.courseCounts[r.courseId] = (club.courseCounts[r.courseId] || 0) + 1;
@@ -2243,7 +2293,12 @@
     });
 
     const runnerList = Object.values(runners);
-    runnerList.forEach(r => { r.races.sort((a, b) => new Date(b.date) - new Date(a.date)); });
+    runnerList.forEach(r => {
+      r.races.sort((a, b) => new Date(b.date) - new Date(a.date));
+      // Club de référence : celui qui revient le plus souvent dans ses
+      // résultats de l'année (après rattachement des alias).
+      r.club = Object.keys(r.clubCounts).sort((a, b) => r.clubCounts[b] - r.clubCounts[a])[0] || "";
+    });
 
     const byRaces = [...runnerList].sort((a, b) => b.races.length - a.races.length || (a.nom + a.prenom).localeCompare(b.nom + b.prenom, "fr"));
     const byKm = runnerList.filter(r => r.km > 0).sort((a, b) => b.km - a.km || (a.nom + a.prenom).localeCompare(b.nom + b.prenom, "fr"));
@@ -2279,9 +2334,9 @@
   async function loadTableauHonneur() {
     const container = document.getElementById("challengeContent");
     document.getElementById("honneurYear").textContent = HONNEUR_YEAR;
-    if (!coursesLoaded || !resultatsLoaded) {
+    if (!coursesLoaded || !resultatsLoaded || !clubsLoaded) {
       container.innerHTML = `<div class="state-message">Chargement…</div>`;
-      await Promise.all([loadCourses(), loadResultatsCountForStats()]);
+      await Promise.all([loadCourses(), loadResultatsCountForStats(), loadClubs()]);
     }
     buildHonneurData();
     renderTableauHonneur();
@@ -2420,7 +2475,7 @@
   // résultats. Si le coureur n'a pas de fiche (résultat d'une autre année,
   // données incomplètes), le nom reste en texte simple.
   function coureurNameHtml(r) {
-    if (coursesLoaded && resultatsLoaded && !honneurData) buildHonneurData();
+    if (coursesLoaded && resultatsLoaded && clubsLoaded && !honneurData) buildHonneurData();
     const name = `${r.prenom} ${r.nom}`;
     const key = coureurKeyOf(r);
     if (honneurData && honneurData.runners[key]) {
@@ -2443,8 +2498,8 @@
   // -------- Fiche coureur --------
 
   async function openCoureur(key) {
-    if (!coursesLoaded || !resultatsLoaded) {
-      await Promise.all([loadCourses(), loadResultatsCountForStats()]);
+    if (!coursesLoaded || !resultatsLoaded || !clubsLoaded) {
+      await Promise.all([loadCourses(), loadResultatsCountForStats(), loadClubs()]);
     }
     if (!honneurData) buildHonneurData();
     const runner = honneurData.runners[key];
@@ -2511,8 +2566,8 @@
   // -------- Fiche club --------
 
   async function openClubFiche(clubKey) {
-    if (!coursesLoaded || !resultatsLoaded) {
-      await Promise.all([loadCourses(), loadResultatsCountForStats()]);
+    if (!coursesLoaded || !resultatsLoaded || !clubsLoaded) {
+      await Promise.all([loadCourses(), loadResultatsCountForStats(), loadClubs()]);
     }
     if (!honneurData) buildHonneurData();
     const club = honneurData.clubsByKey[clubKey];
@@ -2605,7 +2660,7 @@
     const section = document.getElementById("homeHonneurSection");
     const grid = document.getElementById("homeHonneurGrid");
     if (!section || !grid) return;
-    await Promise.all([loadCourses(), loadResultatsCountForStats()]);
+    await Promise.all([loadCourses(), loadResultatsCountForStats(), loadClubs()]);
     if (!honneurData) buildHonneurData();
 
     if (!honneurData.byRaces.length) {

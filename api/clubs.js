@@ -52,6 +52,10 @@ export default async function handler(request, response) {
       return {
         id: record.id,
         nom: record.fields["Nom du club"] || "",
+        // Variantes d'orthographe rencontrées dans les résultats, séparées
+        // par des ";" — maintenues à la main dans Airtable. Le front les
+        // utilise pour rattacher les saisies libres des coureurs au club.
+        alias: record.fields["Alias"] || "",
         commune: record.fields["Commune"] || "",
         departement: record.fields["Département"] || "",
         discipline: record.fields["Discipline(s)"] || "",
