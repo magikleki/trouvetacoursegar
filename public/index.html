@@ -252,13 +252,15 @@
   .lb-table-clickable { transition: border-color .15s ease, box-shadow .15s ease; }
   .lb-table-clickable:hover { border-color: var(--accent); box-shadow: 0 10px 20px -12px rgba(0,0,0,0.25); }
   .lb-row { display: grid; grid-template-columns: 36px 2fr 1fr; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 6px; }
-  .lb-row-full { display: grid; grid-template-columns: 44px 2fr 50px 1fr 90px 1.2fr; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 8px; }
+  .lb-row-full { display: grid; grid-template-columns: 40px 52px 2fr 46px 1fr 84px 84px 1.2fr; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 8px; }
   .lb-row-full.head { background: var(--bg); font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
   .lb-row-full:last-child { border-bottom: none; }
   .lb-club-cell { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-dossard { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .lb-vitesse { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
   @media (max-width: 640px) {
     .lb-row-full { grid-template-columns: 32px 1.5fr 70px; }
-    .lb-row-full span:nth-child(3), .lb-row-full span:nth-child(4), .lb-row-full span:nth-child(6) { display: none; }
+    .lb-row-full span:nth-child(2), .lb-row-full span:nth-child(4), .lb-row-full span:nth-child(5), .lb-row-full span:nth-child(7), .lb-row-full span:nth-child(8) { display: none; }
   }
   .lb-row:last-child { border-bottom: none; }
   .lb-row.head { background: var(--bg); font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
@@ -266,14 +268,16 @@
   .lb-pos.top3 { background: var(--accent); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; }
   .lb-name { font-weight: 700; }
   .lb-club { font-size: 10.5px; color: var(--muted); }
-  .lb-time { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+  .lb-time { font-weight: 800; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
 
   .lb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px; }
-  .lb-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.2rem; }
-  .lb-tab { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; transition: border-color .15s ease, background .15s ease, color .15s ease; }
-  .lb-tab:hover { border-color: var(--accent); }
-  .lb-tab.active { background: var(--ink); color: #fff; border-color: var(--ink); }
-  .lb-tab .count { opacity: .65; font-weight: 600; margin-left: 4px; }
+  .lb-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.3rem; }
+  .lb-tab { background: var(--card); border: 1.5px solid var(--accent); border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 700; color: var(--accent-deep); cursor: pointer; transition: box-shadow .15s ease, background .15s ease, color .15s ease; }
+  .lb-tab:hover { box-shadow: 0 8px 18px -10px rgba(224,106,44,0.45); }
+  .lb-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .lb-tab.active:hover { box-shadow: 0 8px 18px -10px rgba(224,106,44,0.6); }
+  .lb-tab .count { background: var(--accent-tint); color: var(--accent-deep); font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-left: 7px; font-size: 0.82em; }
+  .lb-tab.active .count { background: rgba(255,255,255,0.28); color: #fff; }
   .lb-search { border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; font-size: 12.5px; }
 
   .lb-expand-link { display: inline-block; margin-top: 10px; padding: 6px 10px; border: none; background: none; border-radius: 8px; font-size: 11.5px; font-weight: 600; color: var(--muted); cursor: pointer; text-decoration: none; transition: background .15s ease, color .15s ease; }
@@ -1300,14 +1304,16 @@
         <div style="margin-bottom:1.8rem;">
           ${!multi ? `<div class="block-label"><span class="bar"></span>${distance} <span style="font-weight:500; color:var(--muted); font-size:13px; margin-left:6px;">${rows.length} coureur${rows.length > 1 ? "s" : ""} classé${rows.length > 1 ? "s" : ""}</span></div>` : `<div style="font-size:12px; color:var(--muted); font-weight:700; margin-bottom:10px;">${rows.length} coureur${rows.length > 1 ? "s" : ""} classé${rows.length > 1 ? "s" : ""}</div>`}
           <div class="lb-table">
-            <div class="lb-row-full head"><span>Rang</span><span>Coureur</span><span>Sexe</span><span>Catégorie</span><span>Temps</span><span>Club</span></div>
+            <div class="lb-row-full head"><span>Rang</span><span>Doss.</span><span>Coureur</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Club</span></div>
             ${shown.map(r => `
               <div class="lb-row-full">
                 <span class="lb-pos ${r.classementGeneral && r.classementGeneral <= 3 ? 'top3' : ''}">${r.classementGeneral ?? "—"}</span>
+                <span class="lb-dossard">${r.dossard || "—"}</span>
                 <span class="lb-name">${r.prenom} ${r.nom}</span>
                 <span>${r.sexe || "—"}</span>
                 <span>${r.classementCategorie || "—"}</span>
                 <span class="lb-time">${r.temps || "—"}</span>
+                <span class="lb-vitesse">${r.vitesse || "—"}</span>
                 <span class="lb-club-cell">${r.club || "—"}</span>
               </div>`).join("")}
           </div>

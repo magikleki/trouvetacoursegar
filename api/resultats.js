@@ -51,6 +51,8 @@ export default async function handler(request, response) {
         classementCategorie: record.fields["Classement catégorie"] || "",
         sexe: record.fields["Sexe"] || "",
         departement: record.fields["Département"] || "",
+        dossard: record.fields["Dossard"] || "",
+        vitesse: record.fields["Vitesse"] || "",
       }));
 
     // Filtre par course fait ici (pas via formule Airtable) : ARRAYJOIN sur un
