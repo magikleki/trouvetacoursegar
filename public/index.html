@@ -1294,10 +1294,16 @@
 
     document.getElementById("leaderboardContent").innerHTML = `
       <div class="breadcrumb"><span class="crumb" onclick="showPage('resultats')">← Retour à Résultats</span></div>
-      <h1 style="margin:6px 0 4px;">Résultats — ${course ? course.nom : ""} <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep); vertical-align:middle;">Édition ${edition}</span>${course && course.challenge ? ` <span class="pill" style="background:var(--bg); color:var(--muted); border:1px solid var(--border); vertical-align:middle;">🏆 ${course.challenge}</span>` : ""}</h1>
-      <div class="loc" style="margin-bottom:1.3rem;">${course ? course.commune : ""}, Gard · ${resultats.length} coureurs classés</div>
-      <div style="margin-bottom:1.3rem; max-width:320px;">
-        <input class="lb-search" id="lbSearch" placeholder="Chercher un coureur..." oninput="renderLeaderboardTable()" style="width:100%;" />
+      <h1 style="margin:6px 0 4px;">Résultats — ${course ? course.nom : ""}</h1>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+        <div class="loc" style="margin-bottom:0;">${course ? course.commune : ""}, Gard · ${resultats.length} coureurs classés</div>
+        <div style="max-width:280px; width:100%; flex:0 1 280px;">
+          <input class="lb-search" id="lbSearch" placeholder="Chercher un coureur..." oninput="renderLeaderboardTable()" style="width:100%;" />
+        </div>
+      </div>
+      <div style="margin-bottom:1.3rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep);">Édition ${edition}</span>
+        ${course && course.challenge ? `<span class="pill" style="background:var(--bg); color:var(--muted); border:1px solid var(--border);">🏆 ${course.challenge}</span>` : ""}
       </div>
       <div id="lbTableWrap"></div>
     `;
