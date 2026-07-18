@@ -117,7 +117,9 @@
      s'affiche identique partout. */
   .podium-winner { display: flex; align-items: center; gap: 5px; min-width: 0; flex: 1 1 0; line-height: 1.5; }
   .podium-winner .icon { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; line-height: 1; }
-  .podium-winner .sexe-badge { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 8px; font-weight: 800; line-height: 1; flex-shrink: 0; }
+  .podium-winner .sexe-badge { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; color: #fff; font-size: 8px; font-weight: 800; line-height: 1; flex-shrink: 0; }
+  .podium-winner .sexe-badge.h { background: #2E6FCE; }
+  .podium-winner .sexe-badge.f { background: #D6417A; }
   .podium-winner .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .podium-winners .sep { color: var(--border); font-weight: 400; flex-shrink: 0; overflow: visible; }
   /* Sur mobile, la largeur manque pour afficher les 2 gagnant·e·s côte à
@@ -1183,7 +1185,12 @@
     const tc = typeClass(c.type);
     const distances = splitDistances(c.distances);
     let distanceRowHtml = "";
-    if (c.statut === "Non confirmé") {
+    if (isRelaisDuCoeur(c)) {
+      // Format particulier (course + vélo en boucles alternées) : le texte
+      // brut des distances ne rentre pas proprement dans les pastilles de
+      // la vignette, on la laisse vide plutôt que d'afficher un texte tronqué.
+      distanceRowHtml = "";
+    } else if (c.statut === "Non confirmé") {
       distanceRowHtml = `<div class="ccard-distances"><span class="pill-unconfirmed">Non confirmée</span></div>`;
     } else if (tc !== "Backyard" && tc !== "Ekiden" && distances.length) {
       const shown = distances.slice(0, 2);
@@ -1711,9 +1718,9 @@
           <div class="podium-row">
             <span class="pill dark" style="background:var(--ink);">${distance}</span>
             <div class="podium-winners">
-              ${winnerH ? `<span class="podium-winner"><span class="icon">🏆<span class="sexe-badge">H</span></span><span class="name">${winnerH.prenom} ${winnerH.nom}</span></span>` : ""}
+              ${winnerH ? `<span class="podium-winner"><span class="icon">🏆<span class="sexe-badge h">H</span></span><span class="name">${winnerH.prenom} ${winnerH.nom}</span></span>` : ""}
               ${winnerH && winnerF ? `<span class="sep">·</span>` : ""}
-              ${winnerF ? `<span class="podium-winner"><span class="icon">🏆<span class="sexe-badge">F</span></span><span class="name">${winnerF.prenom} ${winnerF.nom}</span></span>` : ""}
+              ${winnerF ? `<span class="podium-winner"><span class="icon">🏆<span class="sexe-badge f">F</span></span><span class="name">${winnerF.prenom} ${winnerF.nom}</span></span>` : ""}
             </div>
           </div>`;
       }).join("");
@@ -2057,7 +2064,7 @@
         <div class="lb-count-row">
           <div class="lb-count-label">${block.countLabel}</div>
           <div class="lb-search-slot">
-            <input class="lb-search" id="lbSearch" placeholder="Chercher un coureur..." oninput="renderLeaderboardTable()" value="${escapeHtmlAttr(rawValue)}" style="width:100%;" />
+            <input class="lb-search" id="lbSearch" placeholder="Chercher un(e) coureur(se)..." oninput="renderLeaderboardTable()" value="${escapeHtmlAttr(rawValue)}" style="width:100%;" />
           </div>
         </div>
         ${block.tableHtml}
