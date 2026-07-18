@@ -16,10 +16,6 @@ export default async function handler(request, response) {
 
   try {
     let airtableUrl = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`;
-    if (courseId) {
-      const formula = `SEARCH("${courseId}", ARRAYJOIN({Course}))`;
-      airtableUrl += `&filterByFormula=${encodeURIComponent(formula)}`;
-    }
 
     let allRecords = [];
     let offset;
@@ -41,7 +37,7 @@ export default async function handler(request, response) {
       offset = data.offset;
     } while (offset);
 
-    const resultats = allRecords
+    let resultats = allRecords
       .filter((record) => record.fields && record.fields["Course"])
       .map((record) => ({
         id: record.id,
@@ -56,6 +52,13 @@ export default async function handler(request, response) {
         sexe: record.fields["Sexe"] || "",
         departement: record.fields["Département"] || "",
       }));
+
+    // Filtre par course fait ici (pas via formule Airtable) : ARRAYJOIN sur un
+    // champ lié renvoie le texte du champ principal de la course liée, pas son
+    // identifiant, donc une formule SEARCH/ARRAYJOIN ne peut pas matcher un recXXX.
+    if (courseId) {
+      resultats = resultats.filter((r) => r.courseId === courseId);
+    }
 
     resultats.sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999));
 
