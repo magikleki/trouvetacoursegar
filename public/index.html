@@ -268,11 +268,15 @@
   .lb-time { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
 
   .lb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px; }
-  .lb-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-  .lb-tab { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; transition: border-color .15s ease; }
+  .lb-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.2rem; }
+  .lb-tab { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; transition: border-color .15s ease, background .15s ease, color .15s ease; }
   .lb-tab:hover { border-color: var(--accent); }
   .lb-tab.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .lb-tab .count { opacity: .65; font-weight: 600; margin-left: 4px; }
   .lb-search { border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; font-size: 12.5px; }
+
+  .lb-expand-link { display: inline-block; margin-top: 10px; padding: 6px 10px; border: none; background: none; border-radius: 8px; font-size: 11.5px; font-weight: 600; color: var(--muted); cursor: pointer; text-decoration: none; transition: background .15s ease, color .15s ease; }
+  .lb-expand-link:hover { background: var(--bg); color: var(--accent-deep); }
 
   footer { background: var(--ink); color: rgba(255,255,255,0.85); margin-top: 1rem; padding: 2.2rem 1.2rem 1.4rem; }
   .footer-inner { max-width: 1160px; margin: 0 auto; }
@@ -1231,6 +1235,7 @@
     window.__leaderboardData = resultats;
     window.__leaderboardDistances = distances;
     window.__leaderboardExpanded = {};
+    window.__leaderboardActiveDistance = distances[0] || null;
 
     document.getElementById("leaderboardContent").innerHTML = `
       <div class="breadcrumb"><span class="crumb" onclick="showPage('resultats')">← Retour à Résultats</span></div>
@@ -1250,6 +1255,11 @@
     renderLeaderboardTable();
   }
 
+  function switchLeaderboardTab(distance) {
+    window.__leaderboardActiveDistance = distance;
+    renderLeaderboardTable();
+  }
+
   function renderLeaderboardTable() {
     const q = (document.getElementById('lbSearch')?.value || '').trim().toLowerCase();
     const allRows = window.__leaderboardData || [];
@@ -1259,19 +1269,27 @@
 
     if (!allRows.length) { wrap.innerHTML = `<div class="state-message">Aucun résultat disponible pour cette course.</div>`; return; }
 
-    let html = '';
-    distances.forEach(distance => {
+    const multi = distances.length > 1;
+    let activeDistance = window.__leaderboardActiveDistance;
+    if (!activeDistance || !distances.includes(activeDistance)) {
+      activeDistance = distances[0];
+      window.__leaderboardActiveDistance = activeDistance;
+    }
+
+    const renderDistanceBlock = (distance) => {
       let rows = allRows.filter(r => r.distance === distance);
       if (q) rows = rows.filter(r => `${r.prenom} ${r.nom}`.toLowerCase().includes(q));
-      if (!rows.length) return;
+      if (!rows.length) {
+        return `<div class="state-message">Aucun coureur ne correspond.</div>`;
+      }
 
       const expanded = !!window.__leaderboardExpanded[distance];
       const shown = expanded ? rows : rows.slice(0, 10);
       const remaining = rows.length - shown.length;
 
-      html += `
+      return `
         <div style="margin-bottom:1.8rem;">
-          <div class="block-label"><span class="bar"></span>${distance} <span style="font-weight:500; color:var(--muted); font-size:13px; margin-left:6px;">${rows.length} coureur${rows.length > 1 ? "s" : ""} classé${rows.length > 1 ? "s" : ""}</span></div>
+          ${!multi ? `<div class="block-label"><span class="bar"></span>${distance} <span style="font-weight:500; color:var(--muted); font-size:13px; margin-left:6px;">${rows.length} coureur${rows.length > 1 ? "s" : ""} classé${rows.length > 1 ? "s" : ""}</span></div>` : `<div style="font-size:12px; color:var(--muted); font-weight:700; margin-bottom:10px;">${rows.length} coureur${rows.length > 1 ? "s" : ""} classé${rows.length > 1 ? "s" : ""}</div>`}
           <div class="lb-table">
             <div class="lb-row-full head"><span>Rang</span><span>Coureur</span><span>Sexe</span><span>Catégorie</span><span>Temps</span><span>Club</span></div>
             ${shown.map(r => `
@@ -1284,10 +1302,22 @@
                 <span class="lb-club-cell">${r.club || "—"}</span>
               </div>`).join("")}
           </div>
-          ${remaining > 0 ? `<button class="date-clear-link" style="text-decoration:none; margin-top:10px; font-weight:800;" onclick="toggleLeaderboardExpand('${distance}')">Voir les ${remaining} coureur${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""} ↓</button>` : ""}
-          ${expanded && rows.length > 10 ? `<button class="date-clear-link" style="text-decoration:none; margin-top:10px; font-weight:800;" onclick="toggleLeaderboardExpand('${distance}')">Réduire ↑</button>` : ""}
+          ${remaining > 0 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${distance}')">Voir les ${remaining} coureur${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""} ↓</button>` : ""}
+          ${expanded && rows.length > 10 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${distance}')">Réduire ↑</button>` : ""}
         </div>`;
-    });
+    };
+
+    let html = '';
+
+    if (multi) {
+      html += `<div class="lb-tabs">${distances.map(d => {
+        const count = allRows.filter(r => r.distance === d).length;
+        return `<button class="lb-tab ${d === activeDistance ? 'active' : ''}" onclick="switchLeaderboardTab('${d}')">${d}<span class="count">${count}</span></button>`;
+      }).join("")}</div>`;
+      html += renderDistanceBlock(activeDistance);
+    } else {
+      distances.forEach(distance => { html += renderDistanceBlock(distance); });
+    }
 
     wrap.innerHTML = html || `<div class="state-message">Aucun coureur ne correspond.</div>`;
   }
