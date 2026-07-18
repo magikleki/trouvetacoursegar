@@ -372,6 +372,8 @@
   .lb-pos.rank-2 { background: #A7A9AC; }
   .lb-pos.rank-3 { background: #B5651D; }
   .lb-name { font-weight: 700; }
+  .lb-name-link { color: inherit; cursor: pointer; }
+  .lb-name-link:hover { color: var(--accent-deep); text-decoration: underline; }
   .lb-club { font-size: 10.5px; color: var(--muted); }
   .lb-time { font-weight: 800; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
 
@@ -400,6 +402,12 @@
   .honneur-sub { font-size: 10.5px; color: var(--muted); font-weight: 600; }
   .honneur-more { display: block; width: 100%; margin-top: 12px; background: none; border: 1px solid var(--border); border-radius: 10px; padding: 11px; font-size: 12.5px; font-weight: 800; color: var(--muted); cursor: pointer; transition: border-color .15s ease, color .15s ease; }
   .honneur-more:hover { border-color: var(--accent); color: var(--accent-deep); }
+
+  /* Accueil : aperçu du Tableau d'Honneur (top 3 par catégorie) */
+  .home-honneur-row { display: flex; align-items: center; gap: 8px; cursor: pointer; border-radius: 8px; padding: 3px 4px; transition: background .12s ease; }
+  .home-honneur-row:hover { background: var(--accent-tint); }
+  .home-honneur-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 700; }
+  .home-honneur-row .val { font-weight: 800; color: var(--accent-deep); font-size: 12px; white-space: nowrap; }
 
   /* Fiche club : liste des courses où le club était représenté */
   .club-list-row { display: grid; grid-template-columns: 92px 1fr auto; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; align-items: center; }
@@ -509,6 +517,18 @@
     </div>
     <div style="text-align:center; margin-top:1.6rem;">
       <button class="see-all-btn" onclick="showPage('resultats')">Voir tous les résultats</button>
+    </div>
+  </div>
+
+  <div class="section" id="homeHonneurSection">
+    <div class="block-label" style="font-size:17px;"><span class="bar"></span>🏆 Tableau d'Honneur</div>
+    <div class="podium-grid" id="homeHonneurGrid">
+      <div class="podium-card-skeleton"><div class="skeleton-line" style="height:16px; width:55%;"></div><div class="skeleton-line" style="height:26px; width:100%; margin-top:10px;"></div><div class="skeleton-line" style="height:26px; width:100%;"></div><div class="skeleton-line" style="height:26px; width:100%;"></div><div class="skeleton-line" style="height:38px; width:100%; margin-top:auto; border-radius:10px;"></div></div>
+      <div class="podium-card-skeleton"><div class="skeleton-line" style="height:16px; width:55%;"></div><div class="skeleton-line" style="height:26px; width:100%; margin-top:10px;"></div><div class="skeleton-line" style="height:26px; width:100%;"></div><div class="skeleton-line" style="height:26px; width:100%;"></div><div class="skeleton-line" style="height:38px; width:100%; margin-top:auto; border-radius:10px;"></div></div>
+      <div class="podium-card-skeleton"><div class="skeleton-line" style="height:16px; width:55%;"></div><div class="skeleton-line" style="height:26px; width:100%; margin-top:10px;"></div><div class="skeleton-line" style="height:26px; width:100%;"></div><div class="skeleton-line" style="height:26px; width:100%;"></div><div class="skeleton-line" style="height:38px; width:100%; margin-top:auto; border-radius:10px;"></div></div>
+    </div>
+    <div style="text-align:center; margin-top:1.6rem;">
+      <button class="see-all-btn" onclick="showPage('challenge')">Voir le Tableau d'Honneur</button>
     </div>
   </div>
 
@@ -1764,9 +1784,9 @@
           <div class="podium-row">
             <span class="pill dark" style="background:var(--ink);">${distance}</span>
             <div class="podium-winners">
-              ${winnerH ? `<span class="podium-winner"><span class="icon">🏆<span class="sexe-badge h">H</span></span><span class="name">${winnerH.prenom} ${winnerH.nom}</span></span>` : ""}
+              ${winnerH ? `<span class="podium-winner"><span class="icon">🏆<span class="sexe-badge h">H</span></span><span class="name">${coureurNameHtml(winnerH)}</span></span>` : ""}
               ${winnerH && winnerF ? `<span class="sep">·</span>` : ""}
-              ${winnerF ? `<span class="podium-winner"><span class="icon">🏆<span class="sexe-badge f">F</span></span><span class="name">${winnerF.prenom} ${winnerF.nom}</span></span>` : ""}
+              ${winnerF ? `<span class="podium-winner"><span class="icon">🏆<span class="sexe-badge f">F</span></span><span class="name">${coureurNameHtml(winnerF)}</span></span>` : ""}
             </div>
           </div>`;
       }).join("");
@@ -2005,7 +2025,7 @@
               <div class="lb-row-full">
                 <span class="${lbRankClass(activeGender === 'scratch' ? r.classementGeneral : r.__rang)}">${activeGender === 'scratch' ? (r.classementGeneral ?? "—") : r.__rang}</span>
                 <span class="lb-dossard">${r.dossard || "—"}</span>
-                <span class="lb-name">${r.prenom} ${r.nom}</span>
+                <span class="lb-name">${coureurNameHtml(r)}</span>
                 <span>${r.sexe || "—"}</span>
                 <span>${r.classementCategorie || "—"}</span>
                 <span class="lb-time">${r.temps || "—"}</span>
@@ -2073,7 +2093,7 @@
                 <span class="${lbRankClass(catRank)}">${catRank ?? "—"}</span>
                 <span class="lb-scratch">${t.classementGeneral ?? "—"}</span>
                 <span class="lb-dossard">${t.dossard || "—"}</span>
-                <span class="lb-name">${t.coureurs.map(c => `${c.prenom} ${c.nom}`).join(" &amp; ")}</span>
+                <span class="lb-name">${t.coureurs.map(c => coureurNameHtml(c)).join(" &amp; ")}</span>
                 <span>${t.coureurs.map(c => c.sexe || "—").join("/")}</span>
                 <span>${t.classementCategorie || "—"}</span>
                 <span class="lb-time">${t.temps || "—"}</span>
@@ -2229,22 +2249,25 @@
     const byKm = runnerList.filter(r => r.km > 0).sort((a, b) => b.km - a.km || (a.nom + a.prenom).localeCompare(b.nom + b.prenom, "fr"));
     const clubList = Object.values(clubs).sort((a, b) => b.participations - a.participations || a.nom.localeCompare(b.nom, "fr"));
 
-    // Rang avec ex-aequo (1, 2, 2, 4…)
-    function assignRanks(list, valueOf) {
+    // Rang avec ex-aequo (1, 2, 2, 4…). Chaque classement écrit son rang
+    // dans une propriété distincte : byRaces et byKm contiennent les MÊMES
+    // objets coureurs, donc une propriété partagée serait écrasée par le
+    // dernier classement calculé (l'onglet Courses affichait les rangs km).
+    function assignRanks(list, valueOf, prop) {
       let prev = null, prevRank = 0;
       list.forEach((item, i) => {
         const v = valueOf(item);
-        item._rank = (prev !== null && v === prev) ? prevRank : i + 1;
-        prev = v; prevRank = item._rank;
+        item[prop] = (prev !== null && v === prev) ? prevRank : i + 1;
+        prev = v; prevRank = item[prop];
       });
     }
-    assignRanks(byRaces, r => r.races.length);
-    assignRanks(byKm, r => Math.round(r.km * 10));
-    assignRanks(clubList, c => c.participations);
+    assignRanks(byRaces, r => r.races.length, '_rankRaces');
+    assignRanks(byKm, r => Math.round(r.km * 10), '_rankKm');
+    assignRanks(clubList, c => c.participations, '_rank');
 
     const rankByRaces = {}, rankByKm = {};
-    byRaces.forEach(r => { rankByRaces[r.key] = r._rank; });
-    byKm.forEach(r => { rankByKm[r.key] = r._rank; });
+    byRaces.forEach(r => { rankByRaces[r.key] = r._rankRaces; });
+    byKm.forEach(r => { rankByKm[r.key] = r._rankKm; });
 
     const clubsByKey = {};
     clubList.forEach(c => { clubsByKey[c.key] = c; });
@@ -2271,6 +2294,10 @@
   function switchHonneurTab(tab) {
     honneurTab = tab;
     honneurExpanded = false;
+    // La recherche ne se transfère pas d'un onglet à l'autre (un nom de
+    // coureur n'a pas de sens dans l'onglet Clubs, et inversement).
+    const inp = document.getElementById('honneurSearch');
+    if (inp) inp.value = '';
     renderTableauHonneur();
   }
   function expandHonneur() {
@@ -2296,6 +2323,17 @@
       return;
     }
 
+    // La recherche re-rend tout le bloc à chaque frappe : on capture l'état
+    // du champ (valeur, sélection, focus) avant le innerHTML et on le
+    // restaure après, sinon le champ recréé perdrait le focus (même
+    // technique que la recherche du classement de course).
+    const prevInput = document.getElementById('honneurSearch');
+    const rawValue = prevInput ? prevInput.value : '';
+    const hadFocus = prevInput === document.activeElement;
+    const selStart = prevInput ? prevInput.selectionStart : null;
+    const selEnd = prevInput ? prevInput.selectionEnd : null;
+    const q = honneurNorm(rawValue.trim());
+
     const tabs = [
       { id: 'courses', label: '🏁 Courses' },
       { id: 'km', label: '📏 Kilomètres' },
@@ -2305,9 +2343,12 @@
       `<button class="lb-tab ${honneurTab === t.id ? 'active' : ''}" onclick="switchHonneurTab('${t.id}')">${t.label}</button>`
     ).join("")}</div>`;
 
-    let rowsSource, header, rowHtml;
+    let rowsSource, header, rowHtml, countLabel, placeholder;
     if (honneurTab === 'clubs') {
       rowsSource = clubs;
+      placeholder = "Chercher un club...";
+      countLabel = `${clubs.length} club${clubs.length > 1 ? "s" : ""} classé${clubs.length > 1 ? "s" : ""}`;
+      if (q) rowsSource = rowsSource.filter(c => honneurNorm(c.nom).includes(q));
       header = `<div class="lb-row head"><span>#</span><span>Club</span><span style="text-align:right;">Participations</span></div>`;
       rowHtml = c => `
         <div class="lb-row clickable" onclick="openClubFiche('${escJsArg(c.key)}')">
@@ -2317,35 +2358,75 @@
         </div>`;
     } else if (honneurTab === 'km') {
       rowsSource = byKm;
+      placeholder = "Chercher un(e) coureur(se)...";
+      countLabel = `${byKm.length} coureur·se·s classé·e·s`;
+      if (q) rowsSource = rowsSource.filter(r => honneurNorm(r.prenom + " " + r.nom + " " + r.nom + " " + r.prenom + " " + (r.club || "")).includes(q));
       header = `<div class="lb-row head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Km</span></div>`;
       rowHtml = r => `
         <div class="lb-row clickable" onclick="openCoureur('${escJsArg(r.key)}')">
-          ${honneurRankBadge(r._rank)}
+          ${honneurRankBadge(r._rankKm)}
           <span class="lb-name">${r.prenom} ${r.nom}${r.club ? `<div class="honneur-sub">${r.club}</div>` : ""}</span>
           <span class="honneur-value">${formatKm(r.km)} km</span>
         </div>`;
     } else {
       rowsSource = byRaces;
+      placeholder = "Chercher un(e) coureur(se)...";
+      countLabel = `${byRaces.length} coureur·se·s classé·e·s`;
+      if (q) rowsSource = rowsSource.filter(r => honneurNorm(r.prenom + " " + r.nom + " " + r.nom + " " + r.prenom + " " + (r.club || "")).includes(q));
       header = `<div class="lb-row head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Courses</span></div>`;
       rowHtml = r => `
         <div class="lb-row clickable" onclick="openCoureur('${escJsArg(r.key)}')">
-          ${honneurRankBadge(r._rank)}
+          ${honneurRankBadge(r._rankRaces)}
           <span class="lb-name">${r.prenom} ${r.nom}${r.club ? `<div class="honneur-sub">${r.club}</div>` : ""}</span>
           <span class="honneur-value">${r.races.length}</span>
         </div>`;
     }
 
-    const visible = honneurExpanded ? rowsSource : rowsSource.slice(0, HONNEUR_VISIBLE);
+    // Avec une recherche active, on montre tous les résultats filtrés (le
+    // rang affiché reste le rang global) ; sinon, top 25 + "Voir plus".
+    const visible = (q || honneurExpanded) ? rowsSource : rowsSource.slice(0, HONNEUR_VISIBLE);
     const moreCount = rowsSource.length - visible.length;
+    const bodyHtml = visible.length
+      ? visible.map(rowHtml).join("")
+      : `<div class="lb-row" style="grid-template-columns: 1fr;"><span style="color:var(--muted);">Aucun résultat pour cette recherche.</span></div>`;
     const noteHtml = honneurTab === 'km'
       ? `<p style="font-size:11.5px; color:var(--muted); margin:10px 2px 0;">Les formats particuliers (relais, courses en boucles) ne comptent pas dans le total de kilomètres.</p>`
       : "";
 
     container.innerHTML = `
       ${tabsHtml}
-      <div class="lb-table">${header}${visible.map(rowHtml).join("")}</div>
+      <div class="lb-count-row">
+        <div class="lb-count-label">${countLabel}</div>
+        <div class="lb-search-slot">
+          <input class="lb-search" id="honneurSearch" placeholder="${placeholder}" oninput="renderTableauHonneur()" value="${escapeHtmlAttr(rawValue)}" style="width:100%;" />
+        </div>
+      </div>
+      <div class="lb-table">${header}${bodyHtml}</div>
       ${moreCount > 0 ? `<button class="honneur-more" onclick="expandHonneur()">Voir les ${moreCount} suivant${moreCount > 1 ? "s" : ""}</button>` : ""}
       ${noteHtml}`;
+
+    if (hadFocus) {
+      const newInput = document.getElementById('honneurSearch');
+      if (newInput) {
+        newInput.focus();
+        if (selStart !== null && selEnd !== null) {
+          try { newInput.setSelectionRange(selStart, selEnd); } catch (e) {}
+        }
+      }
+    }
+  }
+
+  // Nom de coureur cliquable vers sa fiche, utilisé dans les tableaux de
+  // résultats. Si le coureur n'a pas de fiche (résultat d'une autre année,
+  // données incomplètes), le nom reste en texte simple.
+  function coureurNameHtml(r) {
+    if (coursesLoaded && resultatsLoaded && !honneurData) buildHonneurData();
+    const name = `${r.prenom} ${r.nom}`;
+    const key = coureurKeyOf(r);
+    if (honneurData && honneurData.runners[key]) {
+      return `<a class="lb-name-link" onclick="event.stopPropagation(); openCoureur('${escJsArg(key)}')">${name}</a>`;
+    }
+    return name;
   }
 
   // Détail des podiums (or/argent/bronze) partagé entre fiche coureur et
@@ -2517,11 +2598,54 @@
     showPage('clubfiche', { clubKey });
   }
 
+  // Aperçu du Tableau d'Honneur sur l'accueil : top 3 de chaque catégorie
+  // (courses, kilomètres, clubs), même principe de squelette que la section
+  // "Derniers résultats" pour réserver la place pendant le chargement.
+  async function renderHomeHonneur() {
+    const section = document.getElementById("homeHonneurSection");
+    const grid = document.getElementById("homeHonneurGrid");
+    if (!section || !grid) return;
+    await Promise.all([loadCourses(), loadResultatsCountForStats()]);
+    if (!honneurData) buildHonneurData();
+
+    if (!honneurData.byRaces.length) {
+      section.style.display = "none";
+      grid.innerHTML = "";
+      return;
+    }
+
+    const runnerRow = (r, rank, value) => `
+      <div class="home-honneur-row" onclick="openCoureur('${escJsArg(r.key)}')">
+        ${honneurRankBadge(rank)}
+        <span class="nm">${r.prenom} ${r.nom}</span>
+        <span class="val">${value}</span>
+      </div>`;
+    const clubRow = (c) => `
+      <div class="home-honneur-row" onclick="openClubFiche('${escJsArg(c.key)}')">
+        ${honneurRankBadge(c._rank)}
+        <span class="nm">${c.nom}</span>
+        <span class="val">${c.participations}</span>
+      </div>`;
+
+    const card = (title, rowsHtml) => `
+      <div class="podium-card">
+        <div class="podium-card-head"><div class="podium-card-title">${title}</div></div>
+        ${rowsHtml || `<div style="color:var(--muted); font-size:12px;">Pas encore de classement.</div>`}
+        <button class="podium-cta" onclick="showPage('challenge')">Voir le classement</button>
+      </div>`;
+
+    grid.innerHTML =
+      card(`🏁 Le plus de courses`, honneurData.byRaces.slice(0, 3).map(r => runnerRow(r, r._rankRaces, r.races.length + " course" + (r.races.length > 1 ? "s" : ""))).join("")) +
+      card(`📏 Le plus de kilomètres`, honneurData.byKm.slice(0, 3).map(r => runnerRow(r, r._rankKm, formatKm(r.km) + " km")).join("")) +
+      card(`👥 Clubs les plus représentés`, honneurData.clubs.slice(0, 3).map(clubRow).join(""));
+  }
+
   history.replaceState({ page: 'accueil' }, '', location.pathname + location.search);
   loadCourses();
   loadResultatsCountForStats();
   renderHomeResults();
   renderHomeClubs();
+  renderHomeHonneur();
 </script>
 
 </body>
