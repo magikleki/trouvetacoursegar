@@ -64,7 +64,11 @@ export default async function handler(request, response) {
 
     resultats.sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999));
 
-    response.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate");
+    // Cache court : voir commentaire équivalent dans api/courses.js. Les
+    // résultats sont parfois importés en continu pendant qu'une course a le
+    // statut "Infos: Incomplètes" ; un cache de 5 min affichait un nombre de
+    // coureurs périmé pendant toute la durée de l'import.
+    response.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate");
     return response.status(200).json({ resultats });
   } catch (error) {
     return response.status(500).json({ error: "Erreur serveur", details: error.message });
