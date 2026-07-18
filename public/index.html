@@ -39,6 +39,19 @@
   .search-box input { flex: 1; border: none; background: none; padding: 12px 16px; font-size: 14px; outline: none; min-width: 0; }
   .search-box button { background: var(--accent); color: #fff; border: none; border-radius: 999px; padding: 0 20px; font-weight: 700; font-size: 13px; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
   .search-box button:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -8px rgba(224,106,44,0.55); }
+  .podium-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 1rem; }
+  @media (min-width: 780px) { .podium-grid { grid-template-columns: repeat(3, 1fr); } }
+  .podium-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.1rem; display: flex; flex-direction: column; gap: 10px; }
+  .podium-card-title { font-weight: 800; font-size: 15px; }
+  .podium-card-meta { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin-top: 3px; }
+  .podium-row { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; overflow: hidden; }
+  .podium-row > .pill { flex-shrink: 0; }
+  .podium-winners { display: flex; gap: 6px; flex-wrap: nowrap; font-size: 12px; font-weight: 700; min-width: 0; flex: 1; }
+  .podium-winners span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .podium-winners span:not(.sep) { flex: 1 1 0; }
+  .podium-winners .sep { color: var(--border); font-weight: 400; flex-shrink: 0; overflow: visible; }
+  .podium-cta { margin-top: auto; background: none; border: 1px solid var(--border); border-radius: 10px; padding: 10px; font-size: 12.5px; font-weight: 800; color: var(--muted); cursor: pointer; transition: border-color .15s ease, color .15s ease; }
+  .podium-cta:hover { border-color: var(--accent); color: var(--accent-deep); }
   .hero-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 1.4rem; }
 
   .date-filter-btn { background: var(--card); border: 1.5px solid var(--accent); color: var(--accent-deep); border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: box-shadow .15s ease; }
@@ -409,6 +422,8 @@
   <div class="fiche-wrap">
     <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">← Accueil</span></div>
     <h1 style="margin:0 0 1.2rem;">Résultats des courses</h1>
+    <div id="podiumsContent"></div>
+    <div class="block-label" style="font-size:17px; margin-top:1.6rem;"><span class="bar"></span>Toutes les courses avec résultats</div>
     <div id="resultatsListContent"><div class="state-message">Chargement…</div></div>
   </div>
 </div>
@@ -1111,6 +1126,8 @@
       return { courseId, count: grouped[courseId], course };
     }).filter(e => e.course);
 
+    renderPodiums(entries);
+
     if (!entries.length) {
       container.innerHTML = `<div class="empty-state"><div class="ic">🏁</div><div class="big">Aucun résultat pour l'instant</div><p>Dès qu'une course sera traitée, son classement apparaîtra ici.</p></div>`;
       return;
@@ -1124,6 +1141,68 @@
         </div>
         <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep);">${e.count} coureurs</span>
       </div>`).join("")}</div>`;
+  }
+
+  function getLastWeekendRange() {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const day = today.getDay(); // 0=dim, 1=lun, ... 5=ven, 6=sam
+    // Décale au vendredi le plus récent (aujourd'hui inclus si on est déjà ven/sam/dim)
+    const daysSinceFriday = (day - 5 + 7) % 7;
+    const friday = new Date(today); friday.setDate(today.getDate() - daysSinceFriday);
+    const sunday = new Date(friday); sunday.setDate(friday.getDate() + 2); sunday.setHours(23, 59, 59, 999);
+    return { start: friday, end: sunday };
+  }
+
+  function formatPodiumDate(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }).replace(".", ".");
+  }
+
+  function renderPodiums(entries) {
+    const container = document.getElementById("podiumsContent");
+    const { start, end } = getLastWeekendRange();
+
+    const weekendEntries = entries.filter(e => {
+      const d = new Date(e.course.date);
+      return !isNaN(d) && d >= start && d <= end;
+    });
+
+    if (!weekendEntries.length) { container.innerHTML = ""; return; }
+
+    const cards = weekendEntries.map(e => {
+      const results = allResultats.filter(r => r.courseId === e.courseId);
+      const distances = [...new Set(results.map(r => r.distance).filter(Boolean))];
+
+      const rows = distances.map(distance => {
+        const distResults = results.filter(r => r.distance === distance);
+        const winnerH = distResults.filter(r => r.sexe === "H").sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999))[0];
+        const winnerF = distResults.filter(r => r.sexe === "F").sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999))[0];
+        return `
+          <div class="podium-row">
+            <span class="pill dark" style="background:var(--ink);">${distance}</span>
+            <div class="podium-winners">
+              ${winnerH ? `<span>🏆♂️ ${winnerH.prenom} ${winnerH.nom}</span>` : ""}
+              ${winnerH && winnerF ? `<span class="sep">·</span>` : ""}
+              ${winnerF ? `<span>🏆♀️ ${winnerF.prenom} ${winnerF.nom}</span>` : ""}
+            </div>
+          </div>`;
+      }).join("");
+
+      return `
+        <div class="podium-card">
+          <div class="podium-card-head">
+            <div class="podium-card-title">${e.course.nom}</div>
+            <div class="podium-card-meta">📅 ${formatPodiumDate(e.course.date)} · 📍 ${e.course.commune || ""}</div>
+          </div>
+          ${rows}
+          <button class="podium-cta" onclick="openLeaderboard('${e.courseId}')">Détails complets</button>
+        </div>`;
+    }).join("");
+
+    container.innerHTML = `
+      <div class="block-label" style="font-size:17px;"><span class="bar"></span>⚡ Podiums du week-end</div>
+      <div class="podium-grid">${cards}</div>`;
   }
 
   async function openLeaderboard(courseId) {
