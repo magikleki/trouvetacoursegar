@@ -108,12 +108,16 @@
   .podium-row > .pill { flex-shrink: 0; }
   .podium-winners { display: flex; gap: 6px; flex-wrap: nowrap; font-size: 12px; font-weight: 700; min-width: 0; flex: 1; }
   /* Chaque gagnant·e est un mini-flex icône + nom, pour que le trophée et
-     le symbole ♂/♀ (dont le rendu/la hauteur naturelle varie selon la
-     police et l'OS) restent alignés au centre l'un par rapport à l'autre
+     l'indicateur H/F restent alignés au centre l'un par rapport à l'autre
      et par rapport au nom, plutôt que de dépendre de l'alignement en ligne
-     par défaut du texte brut (qui les décale légèrement). */
+     par défaut du texte brut (qui les décale légèrement). On a remplacé
+     les symboles ♂/♀ par une pastille lettrée H/F : le rendu de ces
+     symboles Unicode varie trop selon la police système (iOS les rognait
+     légèrement), alors qu'une pastille en texte + CSS a une taille fixe et
+     s'affiche identique partout. */
   .podium-winner { display: flex; align-items: center; gap: 5px; min-width: 0; flex: 1 1 0; line-height: 1.5; }
-  .podium-winner .icon { display: inline-flex; align-items: center; flex-shrink: 0; line-height: 1; }
+  .podium-winner .icon { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; line-height: 1; }
+  .podium-winner .sexe-badge { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 8px; font-weight: 800; line-height: 1; flex-shrink: 0; }
   .podium-winner .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .podium-winners .sep { color: var(--border); font-weight: 400; flex-shrink: 0; overflow: visible; }
   /* Sur mobile, la largeur manque pour afficher les 2 gagnant·e·s côte à
@@ -1707,9 +1711,9 @@
           <div class="podium-row">
             <span class="pill dark" style="background:var(--ink);">${distance}</span>
             <div class="podium-winners">
-              ${winnerH ? `<span class="podium-winner"><span class="icon">🏆♂️</span><span class="name">${winnerH.prenom} ${winnerH.nom}</span></span>` : ""}
+              ${winnerH ? `<span class="podium-winner"><span class="icon">🏆<span class="sexe-badge">H</span></span><span class="name">${winnerH.prenom} ${winnerH.nom}</span></span>` : ""}
               ${winnerH && winnerF ? `<span class="sep">·</span>` : ""}
-              ${winnerF ? `<span class="podium-winner"><span class="icon">🏆♀️</span><span class="name">${winnerF.prenom} ${winnerF.nom}</span></span>` : ""}
+              ${winnerF ? `<span class="podium-winner"><span class="icon">🏆<span class="sexe-badge">F</span></span><span class="name">${winnerF.prenom} ${winnerF.nom}</span></span>` : ""}
             </div>
           </div>`;
       }).join("");
