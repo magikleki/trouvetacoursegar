@@ -1543,8 +1543,6 @@
         activeCategory = categories[0];
         window.__leaderboardActiveCategory[distance] = activeCategory;
       }
-      const multiCat = categories.length > 1;
-
       const renderCategoryTable = (catLabel) => {
         const filteredTeams = teams.filter(t => extractCategoryLabel(t.classementCategorie) === catLabel)
           .sort((a, b) => (extractCategoryRank(a.classementCategorie) ?? 9999) - (extractCategoryRank(b.classementCategorie) ?? 9999));
@@ -1557,7 +1555,7 @@
 
         return `
           <div style="margin-bottom:1.8rem;">
-            ${!multiCat ? `<div class="block-label"><span class="bar"></span>${catLabel} <span style="font-weight:500; color:var(--muted); font-size:13px; margin-left:6px;">${filteredTeams.length} équipe${filteredTeams.length > 1 ? "s" : ""} classée${filteredTeams.length > 1 ? "s" : ""}</span></div>` : `<div style="font-size:12px; color:var(--muted); font-weight:700; margin-bottom:10px;">${filteredTeams.length} équipe${filteredTeams.length > 1 ? "s" : ""} classée${filteredTeams.length > 1 ? "s" : ""}</div>`}
+            <div style="font-size:12px; color:var(--muted); font-weight:700; margin-bottom:10px;">${filteredTeams.length} équipe${filteredTeams.length > 1 ? "s" : ""} classée${filteredTeams.length > 1 ? "s" : ""}</div>
             <div class="lb-table">
               <div class="lb-row-full lb-row-duo head"><span>Rang</span><span>Scratch</span><span>Doss.</span><span>Coureurs</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Équipe</span></div>
               ${shown.map(t => {
@@ -1581,13 +1579,10 @@
           </div>`;
       };
 
-      let catHtml = '';
-      if (multiCat) {
-        catHtml += `<div class="lb-tabs">${categories.map(cat => {
-          const count = teams.filter(t => extractCategoryLabel(t.classementCategorie) === cat).length;
-          return `<button class="lb-tab ${cat === activeCategory ? 'active' : ''}" onclick="switchLeaderboardCategory('${distance}', '${cat.replace(/'/g, "\\'")}')">${cat}<span class="count">${count}</span></button>`;
-        }).join("")}</div>`;
-      }
+      let catHtml = `<div class="lb-subtabs">${categories.map(cat => {
+        const count = teams.filter(t => extractCategoryLabel(t.classementCategorie) === cat).length;
+        return `<button class="lb-subtab ${cat === activeCategory ? 'active' : ''}" onclick="switchLeaderboardCategory('${distance}', '${cat.replace(/'/g, "\\'")}')">${cat}<span class="count">${count}</span></button>`;
+      }).join("")}</div>`;
       catHtml += renderCategoryTable(activeCategory);
       return catHtml;
     };
