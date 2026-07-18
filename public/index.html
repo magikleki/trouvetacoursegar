@@ -1203,7 +1203,7 @@
         <div class="thumb thumb-${tc}">
           <div class="big-icon icon-${tc}"></div>
           ${posterHtml}
-          <div class="badges-top"><span class="pill type-${tc}">${c.type || "—"}</span>${c.challenge ? `<span class="pill dark" title="${c.challenge}">🏆</span>` : ""}</div>
+          <div class="badges-top"><span class="pill type-${tc}">${c.type || "—"}</span>${c.challenge ? `<span class="pill dark" title="${c.challenge}">🏆</span>` : ""}${isPastCourse(c) ? `<span class="pill dark">Passée</span>` : ""}</div>
         </div>
         <div class="body">
           <div class="date">${formatDayLabel(c.date)}</div>
@@ -1240,22 +1240,30 @@
 
     const query = document.getElementById('heroSearch').value.trim().toLowerCase();
 
+    // Quand un challenge est sélectionné, on veut aussi voir les courses
+    // passées qui en font partie (utile pour consulter tout le parcours
+    // d'un challenge, pas seulement ce qu'il reste à courir) : elles
+    // portent alors un badge "Passée" sur leur vignette. Sans filtre
+    // challenge, le calendrier reste limité aux courses à venir comme avant.
+    const hasChallengeFilter = appliedChallenges.size > 0;
+
     const filtered = allCourses.filter(c => {
-      if (isPastCourse(c)) return false;
+      const matchesChallenge = courseMatchesChallenges(c, appliedChallenges);
+      if (isPastCourse(c) && !(hasChallengeFilter && matchesChallenge)) return false;
       const d = new Date(c.date);
       let matchesDate = true;
       if (appliedStart) {
         const e = appliedEnd || appliedStart;
         matchesDate = d >= appliedStart && d <= new Date(e.getFullYear(), e.getMonth(), e.getDate(), 23, 59, 59);
       }
-      const matchesChallenge = courseMatchesChallenges(c, appliedChallenges);
       const matchesDistance = courseMatchesDistances(c, appliedDistances);
       const matchesType = courseMatchesTypes(c, appliedTypes);
       const matchesQuery = !query || c.nom.toLowerCase().includes(query) || (c.commune || "").toLowerCase().includes(query);
       return matchesDate && matchesChallenge && matchesDistance && matchesType && matchesQuery;
     });
 
-    let html = `<div class="result-count">${filtered.length} course${filtered.length > 1 ? "s" : ""} <span>à venir dans le Gard</span></div>`;
+    const countSuffix = hasChallengeFilter ? "dans le Gard" : "à venir dans le Gard";
+    let html = `<div class="result-count">${filtered.length} course${filtered.length > 1 ? "s" : ""} <span>${countSuffix}</span></div>`;
     html += `<div class="course-grid">`;
     filtered.forEach(c => { html += renderCourseCardHtml(c); });
     html += `</div>`;
