@@ -270,7 +270,10 @@
   .lb-row:last-child { border-bottom: none; }
   .lb-row.head { background: var(--bg); font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
   .lb-pos { font-weight: 800; color: var(--accent-deep); }
-  .lb-pos.top3 { background: var(--accent); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .lb-pos.rank-badge { color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .lb-pos.rank-1 { background: #D4AF37; }
+  .lb-pos.rank-2 { background: #A7A9AC; }
+  .lb-pos.rank-3 { background: #B5651D; }
   .lb-name { font-weight: 700; }
   .lb-club { font-size: 10.5px; color: var(--muted); }
   .lb-time { font-weight: 800; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
@@ -1355,6 +1358,15 @@
     return m ? parseInt(m[1], 10) : null;
   }
 
+  // Classe CSS du badge de rang : or/argent/bronze pour le podium (1/2/3),
+  // style neutre sinon.
+  function lbRankClass(rank) {
+    if (rank === 1) return 'lb-pos rank-badge rank-1';
+    if (rank === 2) return 'lb-pos rank-badge rank-2';
+    if (rank === 3) return 'lb-pos rank-badge rank-3';
+    return 'lb-pos';
+  }
+
   // Ordre d'affichage des onglets catégorie : Mixte, puis Femme, puis Homme, puis le reste
   const CATEGORY_TAB_ORDER = ["Mixte", "Femme", "Homme"];
   function sortCategories(categories) {
@@ -1402,7 +1414,7 @@
             <div class="lb-row-full head"><span>Rang</span><span>Doss.</span><span>Coureur</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Club</span></div>
             ${shown.map(r => `
               <div class="lb-row-full">
-                <span class="lb-pos ${r.classementGeneral && r.classementGeneral <= 3 ? 'top3' : ''}">${r.classementGeneral ?? "—"}</span>
+                <span class="${lbRankClass(r.classementGeneral)}">${r.classementGeneral ?? "—"}</span>
                 <span class="lb-dossard">${r.dossard || "—"}</span>
                 <span class="lb-name">${r.prenom} ${r.nom}</span>
                 <span>${r.sexe || "—"}</span>
@@ -1462,7 +1474,7 @@
                 const catRank = extractCategoryRank(t.classementCategorie);
                 return `
                 <div class="lb-row-full lb-row-duo">
-                  <span class="lb-pos ${catRank && catRank <= 3 ? 'top3' : ''}">${catRank ?? "—"}</span>
+                  <span class="${lbRankClass(catRank)}">${catRank ?? "—"}</span>
                   <span class="lb-scratch">${t.classementGeneral ?? "—"}</span>
                   <span class="lb-dossard">${t.dossard || "—"}</span>
                   <span class="lb-name">${t.coureurs.map(c => `${c.prenom} ${c.nom}`).join(" &amp; ")}</span>
