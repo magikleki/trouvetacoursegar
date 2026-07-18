@@ -423,7 +423,7 @@
     <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">← Accueil</span></div>
     <h1 style="margin:0 0 1.2rem;">Résultats des courses</h1>
     <div style="max-width:360px; margin-bottom:1.4rem;">
-      <input id="resultatsSearch" placeholder="Chercher une course ou un coureur..." oninput="filterResultats()" style="width:100%; border:1px solid var(--border); border-radius:999px; padding:9px 16px; font-size:13px;" />
+      <input id="resultatsSearch" placeholder="Chercher une course..." oninput="filterResultats()" style="width:100%; border:1px solid var(--border); border-radius:999px; padding:9px 16px; font-size:13px;" />
     </div>
     <div id="podiumsContent"></div>
     <div class="block-label" style="font-size:17px; margin-top:1.6rem;"><span class="bar"></span>Toutes les courses avec résultats</div>
@@ -1137,16 +1137,13 @@
     const allEntries = window.__resultatsEntries || [];
     const q = (document.getElementById('resultatsSearch')?.value || '').trim().toLowerCase();
 
-    const entries = !q ? allEntries : allEntries.filter(e => {
-      if (e.course.nom.toLowerCase().includes(q)) return true;
-      return allResultats.some(r => r.courseId === e.courseId && `${r.prenom} ${r.nom}`.toLowerCase().includes(q));
-    });
+    const entries = !q ? allEntries : allEntries.filter(e => e.course.nom.toLowerCase().includes(q));
 
     renderPodiums(entries);
 
     if (!entries.length) {
       container.innerHTML = q
-        ? `<div class="empty-state"><div class="ic">🔎</div><div class="big">Aucun résultat ne correspond</div><p>Essaie un autre nom de course ou de coureur.</p></div>`
+        ? `<div class="empty-state"><div class="ic">🔎</div><div class="big">Aucune course ne correspond</div><p>Essaie un autre nom de course.</p></div>`
         : `<div class="empty-state"><div class="ic">🏁</div><div class="big">Aucun résultat pour l'instant</div><p>Dès qu'une course sera traitée, son classement apparaîtra ici.</p></div>`;
       return;
     }
