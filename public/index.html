@@ -57,7 +57,7 @@
   .mobile-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; background: var(--card); border-bottom: 1px solid var(--border); box-shadow: 0 14px 28px -18px rgba(0,0,0,.28); padding: 6px 1.3rem 16px; max-height: calc(100vh - 60px); overflow-y: auto; }
   .mobile-menu.open { display: flex; }
   @media (min-width: 780px) { .mobile-menu { display: none !important; } }
-  .mobile-menu-link { padding: 13px 4px; font-weight: 800; font-size: 15px; color: var(--ink); border-bottom: 1px solid var(--border); cursor: pointer; }
+  .mobile-menu-link { padding: 13px 4px; font-weight: 800; font-size: 15px; color: var(--accent-deep); border-bottom: 1px solid var(--border); cursor: pointer; }
   .mobile-menu-sep { height: 1px; background: var(--border); margin: 10px 0 2px; }
   .mobile-menu-label { padding: 13px 4px; font-weight: 800; font-size: 15px; color: var(--ink); cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
   .mobile-menu-chevron { font-size: 11px; color: var(--muted); transition: transform .15s ease; }
@@ -107,15 +107,17 @@
   .podium-row { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; overflow: hidden; }
   .podium-row > .pill { flex-shrink: 0; }
   .podium-winners { display: flex; gap: 6px; flex-wrap: nowrap; font-size: 12px; font-weight: 700; min-width: 0; flex: 1; }
-  .podium-winners span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .podium-winners span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; line-height: 1.5; }
   .podium-winners span:not(.sep) { flex: 1 1 0; }
   .podium-winners .sep { color: var(--border); font-weight: 400; flex-shrink: 0; overflow: visible; }
   /* Sur mobile, la largeur manque pour afficher les 2 gagnant·e·s côte à
      côte sans les tronquer sévèrement : on les empile à la place, chacun
-     sur sa propre ligne pleine largeur. */
+     sur sa propre ligne pleine largeur. Le gap est un peu plus large que
+     3px pour laisser respirer l'emoji ♂️/♀️, dont le rendu est plus haut
+     que le texte et qui se retrouvait légèrement rogné sinon. */
   @media (max-width: 599px) {
     .podium-row { align-items: flex-start; }
-    .podium-winners { flex-direction: column; align-items: flex-start; gap: 3px; }
+    .podium-winners { flex-direction: column; align-items: flex-start; gap: 7px; }
     .podium-winners .sep { display: none; }
     .podium-winners span:not(.sep) { width: 100%; flex: none; }
   }
@@ -472,7 +474,7 @@
     <div class="block-label" style="font-size:17px;"><span class="bar"></span>🏃 Clubs du Gard</div>
     <div class="club-grid-flex" id="homeClubsGrid"></div>
     <div style="text-align:center; margin-top:1.6rem;">
-      <button class="see-all-btn" onclick="showPage('club')">Tous les clubs</button>
+      <button class="see-all-btn" onclick="showPage('club')">Voir tous les clubs</button>
     </div>
   </div>
 </div>
