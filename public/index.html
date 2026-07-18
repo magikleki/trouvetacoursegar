@@ -433,6 +433,14 @@
       <button class="see-all-btn" onclick="showPage('calendrier')">Voir toutes les courses à venir</button>
     </div>
   </div>
+
+  <div class="section" id="homeResultsSection" style="display:none;">
+    <div class="block-label" style="font-size:17px;"><span class="bar"></span>⚡ Derniers résultats</div>
+    <div class="podium-grid" id="homeResultsGrid"></div>
+    <div style="text-align:center; margin-top:1.6rem;">
+      <button class="see-all-btn" onclick="showPage('resultats')">Voir tous les résultats</button>
+    </div>
+  </div>
 </div>
 
 <div id="page-calendrier" style="display:none;">
@@ -1054,14 +1062,24 @@
     renderCalendrier();
   }
 
+  let coursesPromise = null;
   async function loadCourses() {
     if (coursesLoaded) return;
-    const res = await fetch("/api/courses");
-    const data = await res.json();
-    allCourses = res.ok ? (data.courses || []) : [];
-    coursesLoaded = true;
-    renderCalendrier();
-    renderHomePreview();
+    // Mémoïsée comme loadResultatsCountForStats : si plusieurs endroits
+    // appellent loadCourses() avant la fin du premier chargement (ex: la
+    // nouvelle section résultats de l'accueil), on partage la même requête
+    // au lieu de refetcher /api/courses en double.
+    if (!coursesPromise) {
+      coursesPromise = fetch("/api/courses")
+        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+        .then(({ ok, data }) => {
+          allCourses = ok ? (data.courses || []) : [];
+          coursesLoaded = true;
+          renderCalendrier();
+          renderHomePreview();
+        });
+    }
+    return coursesPromise;
   }
 
   document.getElementById('heroSearch').addEventListener('input', renderCalendrier);
@@ -1344,10 +1362,11 @@
     }).join("")}</div>`;
   }
 
-  async function loadResultatsList() {
-    if (!coursesLoaded) await loadCourses();
-    if (!resultatsLoaded) await loadResultatsCountForStats();
-
+  // Regroupe allResultats par course (nb de coureurs, distances), triées de
+  // la plus récente à la plus ancienne. Utilisé à la fois par la page
+  // Résultats (liste complète + podiums du week-end) et par la nouvelle
+  // section "Derniers résultats" de l'accueil.
+  function buildResultatsEntries() {
     const grouped = {};
     const distancesByCourse = {};
     allResultats.forEach(r => {
@@ -1377,7 +1396,14 @@
       return 0;
     });
 
-    window.__resultatsEntries = entries;
+    return entries;
+  }
+
+  async function loadResultatsList() {
+    if (!coursesLoaded) await loadCourses();
+    if (!resultatsLoaded) await loadResultatsCountForStats();
+
+    window.__resultatsEntries = buildResultatsEntries();
     filterResultats();
   }
 
@@ -1426,18 +1452,11 @@
     return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }).replace(".", ".");
   }
 
-  function renderPodiums(entries) {
-    const container = document.getElementById("podiumsContent");
-    const { start, end } = getLastWeekendRange();
-
-    const weekendEntries = entries.filter(e => {
-      const d = new Date(e.course.date);
-      return !isNaN(d) && d >= start && d <= end;
-    });
-
-    if (!weekendEntries.length) { container.innerHTML = ""; return; }
-
-    const cards = weekendEntries.map(e => {
+  // Construit le HTML des cartes "podium" (nom de la course, meta, gagnants
+  // par distance/catégorie) pour une liste d'entrées. Partagé entre les
+  // "Podiums du week-end" (page Résultats) et "Derniers résultats" (accueil).
+  function buildPodiumCardsHtml(entries) {
+    return entries.map(e => {
       const results = allResultats.filter(r => r.courseId === e.courseId);
       const distances = sortDistanceLabels([...new Set(results.map(r => r.distance).filter(Boolean))]);
 
@@ -1488,10 +1507,43 @@
           <button class="podium-cta" onclick="openLeaderboard('${e.courseId}')">Tous les résultats</button>
         </div>`;
     }).join("");
+  }
+
+  function renderPodiums(entries) {
+    const container = document.getElementById("podiumsContent");
+    const { start, end } = getLastWeekendRange();
+
+    const weekendEntries = entries.filter(e => {
+      const d = new Date(e.course.date);
+      return !isNaN(d) && d >= start && d <= end;
+    });
+
+    if (!weekendEntries.length) { container.innerHTML = ""; return; }
 
     container.innerHTML = `
       <div class="block-label" style="font-size:17px;"><span class="bar"></span>⚡ Podiums du week-end</div>
-      <div class="podium-grid">${cards}</div>`;
+      <div class="podium-grid">${buildPodiumCardsHtml(weekendEntries)}</div>`;
+  }
+
+  // Section "Derniers résultats" de l'accueil : mêmes cartes podium que sur
+  // la page Résultats, mais limitées aux 3 courses les plus récentes ayant
+  // des résultats enregistrés (indépendamment du week-end en cours).
+  async function renderHomeResults() {
+    const section = document.getElementById("homeResultsSection");
+    const grid = document.getElementById("homeResultsGrid");
+    if (!section || !grid) return;
+
+    await Promise.all([loadCourses(), loadResultatsCountForStats()]);
+
+    const entries = buildResultatsEntries().slice(0, 3);
+    if (!entries.length) {
+      section.style.display = "none";
+      grid.innerHTML = "";
+      return;
+    }
+
+    grid.innerHTML = buildPodiumCardsHtml(entries);
+    section.style.display = "";
   }
 
   async function openLeaderboard(courseId) {
@@ -1801,6 +1853,7 @@
   history.replaceState({ page: 'accueil' }, '', location.pathname + location.search);
   loadCourses();
   loadResultatsCountForStats();
+  renderHomeResults();
 </script>
 
 </body>
