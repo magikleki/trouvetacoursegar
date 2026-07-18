@@ -392,6 +392,33 @@
   .lb-subtab:hover { color: var(--accent-deep); }
   .lb-subtab.active { background: var(--card); color: var(--accent-deep); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .lb-subtab .count { font-weight: 700; opacity: .65; margin-left: 4px; font-size: 0.92em; }
+
+  /* Tableau d'Honneur : listes de classement (coureurs / km / clubs) */
+  .lb-row.clickable { cursor: pointer; transition: background .12s ease; }
+  .lb-row.clickable:hover { background: var(--accent-tint); }
+  .honneur-value { font-weight: 800; color: var(--accent-deep); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .honneur-sub { font-size: 10.5px; color: var(--muted); font-weight: 600; }
+  .honneur-more { display: block; width: 100%; margin-top: 12px; background: none; border: 1px solid var(--border); border-radius: 10px; padding: 11px; font-size: 12.5px; font-weight: 800; color: var(--muted); cursor: pointer; transition: border-color .15s ease, color .15s ease; }
+  .honneur-more:hover { border-color: var(--accent); color: var(--accent-deep); }
+
+  /* Fiche club : liste des courses où le club était représenté */
+  .club-list-row { display: grid; grid-template-columns: 92px 1fr auto; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; align-items: center; }
+  .club-list-row:last-child { border-bottom: none; }
+  .club-list-row.head { background: var(--bg); font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+  .club-list-row.clickable { cursor: pointer; transition: background .12s ease; }
+  .club-list-row.clickable:hover { background: var(--accent-tint); }
+  @media (max-width: 639px) { .club-list-row { grid-template-columns: 74px 1fr auto; } }
+
+  /* Fiche coureur : historique des courses de l'année */
+  .cr-row { display: grid; grid-template-columns: 92px 2fr 1fr 84px 100px; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; align-items: center; }
+  .cr-row:last-child { border-bottom: none; }
+  .cr-row.head { background: var(--bg); font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+  .cr-row.clickable { cursor: pointer; transition: background .12s ease; }
+  .cr-row.clickable:hover { background: var(--accent-tint); }
+  @media (max-width: 639px) {
+    .cr-row { grid-template-columns: 74px 1.6fr 78px; }
+    .cr-row span:nth-child(3), .cr-row span:nth-child(4) { display: none; }
+  }
   .lb-search { border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; font-size: 12.5px; }
   .lb-count-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
   .lb-count-row .lb-count-label { font-size: 12px; color: var(--muted); font-weight: 700; }
@@ -621,12 +648,18 @@
 <div id="page-challenge" style="display:none;">
   <div class="section">
     <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Tableau d'Honneur</span></div>
-    <div class="empty-state">
-      <div class="ic">🏆</div>
-      <div class="big">Tableau d'Honneur — bientôt disponible</div>
-      <p>Le classement des coureurs les plus assidus du Gard arrivera une fois assez de résultats collectés.</p>
-    </div>
+    <h1 style="margin:0 0 0.4rem;">Tableau d'Honneur <span id="honneurYear" style="color:var(--accent);"></span></h1>
+    <p style="color:var(--muted); font-size:13.5px; margin:0 0 1.4rem;">Les coureurs, coureuses et clubs les plus assidus de l'année sur les courses du Gard. Clique sur un nom pour voir sa fiche.</p>
+    <div id="challengeContent"></div>
   </div>
+</div>
+
+<div id="page-coureur" style="display:none;">
+  <div class="section" id="coureurContent"></div>
+</div>
+
+<div id="page-clubfiche" style="display:none;">
+  <div class="section" id="clubFicheContent"></div>
 </div>
 
 <footer>
@@ -665,7 +698,7 @@
   let clubsLoaded = false;
   let resultatsLoaded = false;
 
-  const pageIds = ['accueil','calendrier','fiche','club','resultats','leaderboard','challenge'];
+  const pageIds = ['accueil','calendrier','fiche','club','resultats','leaderboard','challenge','coureur','clubfiche'];
 
   // Navigation par historique : l'app ne changeait jamais history.state, donc
   // le bouton/geste "retour" (notamment sur iPhone) n'avait rien à dépiler et
@@ -682,6 +715,7 @@
     window.scrollTo(0, 0);
     if (p === 'club') loadClubs();
     if (p === 'resultats') loadResultatsList();
+    if (p === 'challenge') loadTableauHonneur();
 
     if (!isRestoringState) {
       const state = Object.assign({ page: p }, extra || {});
@@ -700,6 +734,10 @@
       } else if (state.page === 'leaderboard' && state.courseId) {
         if (!coursesLoaded) await loadCourses();
         await openLeaderboard(state.courseId);
+      } else if (state.page === 'coureur' && state.coureurKey) {
+        await openCoureur(state.coureurKey);
+      } else if (state.page === 'clubfiche' && state.clubKey) {
+        await openClubFiche(state.clubKey);
       } else {
         showPage(state.page);
       }
@@ -2087,6 +2125,396 @@
         }
       }
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Tableau d'Honneur
+  // -------------------------------------------------------------------------
+  // Classements annuels construits côté client à partir de la table complète
+  // des résultats (déjà téléchargée pour les podiums — aucun appel API
+  // supplémentaire). Un "coureur" est identifié par nom + prénom + club
+  // normalisés : il n'existe pas d'identifiant unique côté Airtable, donc
+  // deux homonymes parfaits du même club seraient fusionnés (limite connue).
+
+  const HONNEUR_YEAR = new Date().getFullYear();
+
+  function honneurNorm(s) {
+    return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/œ/g, "oe").toLowerCase().trim().replace(/\s+/g, " ");
+  }
+  function coureurKeyOf(r) {
+    return honneurNorm(r.prenom) + "|" + honneurNorm(r.nom) + "|" + honneurNorm(r.club);
+  }
+  function escJsArg(s) {
+    return String(s || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+  }
+
+  // Les formats spéciaux (relais, courses en boucles) n'ont pas de distance
+  // individuelle fiable dans Airtable : ils comptent dans le nombre de
+  // courses mais sont exclus du total de kilomètres.
+  function isSpecialFormatCourse(c) {
+    return !!c && (isBipBipEkiden(c) || isVerticalChallenge(c) || isRelaisDuCoeur(c));
+  }
+
+  let honneurData = null;
+
+  function buildHonneurData() {
+    const coursesById = {};
+    allCourses.forEach(c => { coursesById[c.id] = c; });
+
+    // Repère les épreuves duo/relais (équipes de 2) : leur champ "club"
+    // contient le nom d'équipe, pas un vrai club — on les écarte du
+    // classement des clubs pour ne pas y classer des noms d'équipe.
+    const byCourseDistance = {};
+    allResultats.forEach(r => {
+      const k = r.courseId + "|" + r.distance;
+      (byCourseDistance[k] = byCourseDistance[k] || []).push(r);
+    });
+    const duoKeys = new Set();
+    Object.keys(byCourseDistance).forEach(k => {
+      const groups = groupResultRows(byCourseDistance[k]);
+      if (groups.length > 0 && groups.every(g => g.length === 2)) duoKeys.add(k);
+    });
+
+    const runners = {};
+    const clubs = {};
+
+    allResultats.forEach(r => {
+      const course = coursesById[r.courseId];
+      if (!course) return;
+      const d = new Date(course.date);
+      if (isNaN(d) || d.getFullYear() !== HONNEUR_YEAR) return;
+      if (!(r.nom || r.prenom)) return;
+
+      const key = coureurKeyOf(r);
+      if (!runners[key]) {
+        runners[key] = { key, prenom: r.prenom, nom: r.nom, club: r.club, sexe: r.sexe, races: [], km: 0 };
+      }
+      const runner = runners[key];
+      const kmValue = distanceNumValue(r.distance);
+      const kmCounted = !isSpecialFormatCourse(course) && isFinite(kmValue);
+      if (kmCounted) runner.km += kmValue;
+      runner.races.push({
+        courseId: r.courseId,
+        courseNom: course.nom,
+        date: course.date,
+        distance: r.distance,
+        temps: r.temps,
+        classementGeneral: r.classementGeneral,
+        classementCategorie: r.classementCategorie,
+      });
+
+      const clubName = (r.club || "").trim();
+      if (clubName && !duoKeys.has(r.courseId + "|" + r.distance)) {
+        const ck = honneurNorm(clubName);
+        if (!clubs[ck]) clubs[ck] = { key: ck, nom: clubName, participations: 0, coureurs: new Set(), runnerKeys: new Set(), km: 0, courseCounts: {}, podiums: 0, p1: 0, p2: 0, p3: 0 };
+        const club = clubs[ck];
+        club.participations++;
+        club.coureurs.add(honneurNorm(r.prenom) + "|" + honneurNorm(r.nom));
+        club.runnerKeys.add(key);
+        if (kmCounted) club.km += kmValue;
+        club.courseCounts[r.courseId] = (club.courseCounts[r.courseId] || 0) + 1;
+        if (r.classementGeneral !== null && r.classementGeneral <= 3) {
+          club.podiums++;
+          if (r.classementGeneral === 1) club.p1++;
+          else if (r.classementGeneral === 2) club.p2++;
+          else club.p3++;
+        }
+      }
+    });
+
+    const runnerList = Object.values(runners);
+    runnerList.forEach(r => { r.races.sort((a, b) => new Date(b.date) - new Date(a.date)); });
+
+    const byRaces = [...runnerList].sort((a, b) => b.races.length - a.races.length || (a.nom + a.prenom).localeCompare(b.nom + b.prenom, "fr"));
+    const byKm = runnerList.filter(r => r.km > 0).sort((a, b) => b.km - a.km || (a.nom + a.prenom).localeCompare(b.nom + b.prenom, "fr"));
+    const clubList = Object.values(clubs).sort((a, b) => b.participations - a.participations || a.nom.localeCompare(b.nom, "fr"));
+
+    // Rang avec ex-aequo (1, 2, 2, 4…)
+    function assignRanks(list, valueOf) {
+      let prev = null, prevRank = 0;
+      list.forEach((item, i) => {
+        const v = valueOf(item);
+        item._rank = (prev !== null && v === prev) ? prevRank : i + 1;
+        prev = v; prevRank = item._rank;
+      });
+    }
+    assignRanks(byRaces, r => r.races.length);
+    assignRanks(byKm, r => Math.round(r.km * 10));
+    assignRanks(clubList, c => c.participations);
+
+    const rankByRaces = {}, rankByKm = {};
+    byRaces.forEach(r => { rankByRaces[r.key] = r._rank; });
+    byKm.forEach(r => { rankByKm[r.key] = r._rank; });
+
+    const clubsByKey = {};
+    clubList.forEach(c => { clubsByKey[c.key] = c; });
+
+    honneurData = { byRaces, byKm, clubs: clubList, runners, rankByRaces, rankByKm, clubsByKey };
+    return honneurData;
+  }
+
+  async function loadTableauHonneur() {
+    const container = document.getElementById("challengeContent");
+    document.getElementById("honneurYear").textContent = HONNEUR_YEAR;
+    if (!coursesLoaded || !resultatsLoaded) {
+      container.innerHTML = `<div class="state-message">Chargement…</div>`;
+      await Promise.all([loadCourses(), loadResultatsCountForStats()]);
+    }
+    buildHonneurData();
+    renderTableauHonneur();
+  }
+
+  let honneurTab = 'courses';
+  let honneurExpanded = false;
+  const HONNEUR_VISIBLE = 25;
+
+  function switchHonneurTab(tab) {
+    honneurTab = tab;
+    honneurExpanded = false;
+    renderTableauHonneur();
+  }
+  function expandHonneur() {
+    honneurExpanded = true;
+    renderTableauHonneur();
+  }
+
+  function formatKm(km) {
+    return (Math.round(km * 10) / 10).toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+  }
+
+  function honneurRankBadge(rank) {
+    return `<span class="${lbRankClass(rank)}">${rank}</span>`;
+  }
+
+  function renderTableauHonneur() {
+    const container = document.getElementById("challengeContent");
+    if (!honneurData) return;
+    const { byRaces, byKm, clubs } = honneurData;
+
+    if (!byRaces.length) {
+      container.innerHTML = `<div class="empty-state"><div class="ic">🏆</div><div class="big">Pas encore de résultats cette année</div><p>Les classements apparaîtront dès les premiers résultats enregistrés en ${HONNEUR_YEAR}.</p></div>`;
+      return;
+    }
+
+    const tabs = [
+      { id: 'courses', label: '🏁 Courses' },
+      { id: 'km', label: '📏 Kilomètres' },
+      { id: 'clubs', label: '👥 Clubs' },
+    ];
+    const tabsHtml = `<div class="lb-tabs">${tabs.map(t =>
+      `<button class="lb-tab ${honneurTab === t.id ? 'active' : ''}" onclick="switchHonneurTab('${t.id}')">${t.label}</button>`
+    ).join("")}</div>`;
+
+    let rowsSource, header, rowHtml;
+    if (honneurTab === 'clubs') {
+      rowsSource = clubs;
+      header = `<div class="lb-row head"><span>#</span><span>Club</span><span style="text-align:right;">Participations</span></div>`;
+      rowHtml = c => `
+        <div class="lb-row clickable" onclick="openClubFiche('${escJsArg(c.key)}')">
+          ${honneurRankBadge(c._rank)}
+          <span class="lb-name">${c.nom}<div class="honneur-sub">${c.coureurs.size} coureur${c.coureurs.size > 1 ? "s" : ""}</div></span>
+          <span class="honneur-value">${c.participations}</span>
+        </div>`;
+    } else if (honneurTab === 'km') {
+      rowsSource = byKm;
+      header = `<div class="lb-row head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Km</span></div>`;
+      rowHtml = r => `
+        <div class="lb-row clickable" onclick="openCoureur('${escJsArg(r.key)}')">
+          ${honneurRankBadge(r._rank)}
+          <span class="lb-name">${r.prenom} ${r.nom}${r.club ? `<div class="honneur-sub">${r.club}</div>` : ""}</span>
+          <span class="honneur-value">${formatKm(r.km)} km</span>
+        </div>`;
+    } else {
+      rowsSource = byRaces;
+      header = `<div class="lb-row head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Courses</span></div>`;
+      rowHtml = r => `
+        <div class="lb-row clickable" onclick="openCoureur('${escJsArg(r.key)}')">
+          ${honneurRankBadge(r._rank)}
+          <span class="lb-name">${r.prenom} ${r.nom}${r.club ? `<div class="honneur-sub">${r.club}</div>` : ""}</span>
+          <span class="honneur-value">${r.races.length}</span>
+        </div>`;
+    }
+
+    const visible = honneurExpanded ? rowsSource : rowsSource.slice(0, HONNEUR_VISIBLE);
+    const moreCount = rowsSource.length - visible.length;
+    const noteHtml = honneurTab === 'km'
+      ? `<p style="font-size:11.5px; color:var(--muted); margin:10px 2px 0;">Les formats particuliers (relais, courses en boucles) ne comptent pas dans le total de kilomètres.</p>`
+      : "";
+
+    container.innerHTML = `
+      ${tabsHtml}
+      <div class="lb-table">${header}${visible.map(rowHtml).join("")}</div>
+      ${moreCount > 0 ? `<button class="honneur-more" onclick="expandHonneur()">Voir les ${moreCount} suivant${moreCount > 1 ? "s" : ""}</button>` : ""}
+      ${noteHtml}`;
+  }
+
+  // Détail des podiums (or/argent/bronze) partagé entre fiche coureur et
+  // fiche club. Basé sur le classement général (scratch) de chaque résultat.
+  function podiumBreakdownHtml(p1, p2, p3) {
+    return `
+      <div class="stat-bar" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="stat-cell"><div class="l">🥇 1ère place</div><div class="v" style="color:#B8860B;">${p1}</div></div>
+        <div class="stat-cell"><div class="l">🥈 2e place</div><div class="v" style="color:#7D7F82;">${p2}</div></div>
+        <div class="stat-cell"><div class="l">🥉 3e place</div><div class="v" style="color:#B5651D;">${p3}</div></div>
+      </div>`;
+  }
+
+  // -------- Fiche coureur --------
+
+  async function openCoureur(key) {
+    if (!coursesLoaded || !resultatsLoaded) {
+      await Promise.all([loadCourses(), loadResultatsCountForStats()]);
+    }
+    if (!honneurData) buildHonneurData();
+    const runner = honneurData.runners[key];
+    const container = document.getElementById("coureurContent");
+
+    if (!runner) {
+      container.innerHTML = `
+        <div class="breadcrumb">
+          <span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span>
+          <span class="crumb" onclick="showPage('challenge')">Tableau d'Honneur</span><span class="sep">/</span>
+          <span class="crumb current">Fiche coureur</span>
+        </div>
+        <div class="empty-state"><div class="ic">🔎</div><div class="big">Fiche introuvable</div><p>Ce coureur n'a pas de résultats enregistrés en ${HONNEUR_YEAR}.</p></div>`;
+      showPage('coureur', { coureurKey: key });
+      return;
+    }
+
+    const races = runner.races;
+    const podiums = races.filter(r => r.classementGeneral !== null && r.classementGeneral <= 3).length;
+    const p1 = races.filter(r => r.classementGeneral === 1).length;
+    const p2 = races.filter(r => r.classementGeneral === 2).length;
+    const p3 = races.filter(r => r.classementGeneral === 3).length;
+    const best = races.reduce((acc, r) => (r.classementGeneral !== null && (acc === null || r.classementGeneral < acc)) ? r.classementGeneral : acc, null);
+    const rankRaces = honneurData.rankByRaces[key];
+    const rankKm = honneurData.rankByKm[key];
+
+    const raceRows = races.map(r => `
+      <div class="cr-row clickable" onclick="openLeaderboard('${r.courseId}')">
+        <span style="color:var(--accent-deep); font-weight:700; font-size:11px; text-transform:uppercase;">${formatPodiumDate(r.date)}</span>
+        <span class="lb-name">${r.courseNom}</span>
+        <span>${r.distance || "—"}</span>
+        <span class="lb-time">${r.temps || "—"}</span>
+        <span>${r.classementGeneral !== null ? `<strong>${r.classementGeneral}${r.classementGeneral === 1 ? "er" : "e"}</strong>${r.classementCategorie ? ` <span style="color:var(--muted); font-weight:600;">· ${r.classementCategorie}</span>` : ""}` : "—"}</span>
+      </div>`).join("");
+
+    container.innerHTML = `
+      <div class="breadcrumb">
+        <span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span>
+        <span class="crumb" onclick="showPage('challenge')">Tableau d'Honneur</span><span class="sep">/</span>
+        <span class="crumb current">${runner.prenom} ${runner.nom}</span>
+      </div>
+      <h1 style="margin:0 0 0.2rem;">${runner.prenom} ${runner.nom}</h1>
+      <p style="color:var(--muted); font-size:13.5px; margin:0 0 1.4rem;">${runner.club ? `<a style="color:var(--accent-deep); font-weight:700; cursor:pointer;" onclick="openClubFiche('${escJsArg(honneurNorm(runner.club))}')">${runner.club}</a> · ` : ""}Saison ${HONNEUR_YEAR}</p>
+      <div class="stat-bar">
+        <div class="stat-cell"><div class="l">Courses</div><div class="v accent">${races.length}</div></div>
+        <div class="stat-cell"><div class="l">Kilomètres</div><div class="v accent">${runner.km > 0 ? formatKm(runner.km) + " km" : "—"}</div></div>
+        <div class="stat-cell"><div class="l">Podiums scratch</div><div class="v">${podiums}</div></div>
+        <div class="stat-cell"><div class="l">Meilleur classement</div><div class="v">${best !== null ? best + (best === 1 ? "er" : "e") : "—"}</div></div>
+      </div>
+      ${podiumBreakdownHtml(p1, p2, p3)}
+      <div class="stat-bar" style="grid-template-columns: repeat(2, 1fr);">
+        <div class="stat-cell"><div class="l">Classement courses</div><div class="v">${rankRaces ? rankRaces + (rankRaces === 1 ? "er" : "e") + " / " + honneurData.byRaces.length : "—"}</div></div>
+        <div class="stat-cell"><div class="l">Classement kilomètres</div><div class="v">${rankKm ? rankKm + (rankKm === 1 ? "er" : "e") + " / " + honneurData.byKm.length : "—"}</div></div>
+      </div>
+      <div class="block-label" style="font-size:16px; margin-bottom:0.8rem;"><span class="bar"></span>Courses ${HONNEUR_YEAR}</div>
+      <div class="lb-table">
+        <div class="cr-row head"><span>Date</span><span>Course</span><span>Distance</span><span>Temps</span><span>Class.</span></div>
+        ${raceRows}
+      </div>`;
+
+    showPage('coureur', { coureurKey: key });
+  }
+
+  // -------- Fiche club --------
+
+  async function openClubFiche(clubKey) {
+    if (!coursesLoaded || !resultatsLoaded) {
+      await Promise.all([loadCourses(), loadResultatsCountForStats()]);
+    }
+    if (!honneurData) buildHonneurData();
+    const club = honneurData.clubsByKey[clubKey];
+    const container = document.getElementById("clubFicheContent");
+
+    if (!club) {
+      container.innerHTML = `
+        <div class="breadcrumb">
+          <span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span>
+          <span class="crumb" onclick="showPage('challenge')">Tableau d'Honneur</span><span class="sep">/</span>
+          <span class="crumb current">Fiche club</span>
+        </div>
+        <div class="empty-state"><div class="ic">🔎</div><div class="big">Fiche introuvable</div><p>Ce club n'a pas de résultats enregistrés en ${HONNEUR_YEAR}.</p></div>`;
+      showPage('clubfiche', { clubKey });
+      return;
+    }
+
+    const coursesById = {};
+    allCourses.forEach(c => { coursesById[c.id] = c; });
+
+    // Courses où le club était représenté, triées par nombre de coureurs
+    // du club puis par date (la plus récente d'abord).
+    const courseEntries = Object.keys(club.courseCounts).map(courseId => ({
+      courseId,
+      course: coursesById[courseId],
+      count: club.courseCounts[courseId],
+    })).filter(e => e.course);
+    courseEntries.sort((a, b) => b.count - a.count || new Date(b.course.date) - new Date(a.course.date));
+    const topCourse = courseEntries[0];
+
+    const nbCourses = courseEntries.length;
+    const avgPerCourse = nbCourses ? Math.round((club.participations / nbCourses) * 10) / 10 : 0;
+
+    // Coureurs du club (classés par nombre de courses, puis alphabétique),
+    // chacun cliquable vers sa fiche individuelle.
+    const clubRunners = [...club.runnerKeys].map(k => honneurData.runners[k]).filter(Boolean)
+      .sort((a, b) => b.races.length - a.races.length || (a.nom + a.prenom).localeCompare(b.nom + b.prenom, "fr"));
+
+    const runnerRows = clubRunners.map((r, i) => `
+      <div class="lb-row clickable" onclick="openCoureur('${escJsArg(r.key)}')">
+        <span class="lb-pos">${i + 1}</span>
+        <span class="lb-name">${r.prenom} ${r.nom}</span>
+        <span class="honneur-value">${r.races.length} course${r.races.length > 1 ? "s" : ""}</span>
+      </div>`).join("");
+
+    const courseRows = courseEntries.map(e => `
+      <div class="club-list-row clickable" onclick="openLeaderboard('${e.courseId}')">
+        <span style="color:var(--accent-deep); font-weight:700; font-size:11px; text-transform:uppercase;">${formatPodiumDate(e.course.date)}</span>
+        <span class="lb-name">${e.course.nom}</span>
+        <span class="honneur-value">${e.count} coureur${e.count > 1 ? "s" : ""}</span>
+      </div>`).join("");
+
+    container.innerHTML = `
+      <div class="breadcrumb">
+        <span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span>
+        <span class="crumb" onclick="showPage('challenge')">Tableau d'Honneur</span><span class="sep">/</span>
+        <span class="crumb current">${club.nom}</span>
+      </div>
+      <h1 style="margin:0 0 0.2rem;">${club.nom}</h1>
+      <p style="color:var(--muted); font-size:13.5px; margin:0 0 1.4rem;">Saison ${HONNEUR_YEAR}${honneurData.clubs.indexOf(club) !== -1 ? " · " + club._rank + (club._rank === 1 ? "er" : "e") + " club le plus représenté" : ""}</p>
+      <div class="stat-bar">
+        <div class="stat-cell"><div class="l">Coureurs</div><div class="v accent">${club.coureurs.size}</div></div>
+        <div class="stat-cell"><div class="l">Participations</div><div class="v accent">${club.participations}</div></div>
+        <div class="stat-cell"><div class="l">Kilomètres cumulés</div><div class="v">${club.km > 0 ? formatKm(club.km) + " km" : "—"}</div></div>
+        <div class="stat-cell"><div class="l">Podiums scratch</div><div class="v">${club.podiums}</div></div>
+      </div>
+      ${podiumBreakdownHtml(club.p1, club.p2, club.p3)}
+      <div class="stat-bar" style="grid-template-columns: repeat(2, 1fr);">
+        <div class="stat-cell"><div class="l">Coureurs / course (moyenne)</div><div class="v">${avgPerCourse}</div></div>
+        <div class="stat-cell"><div class="l">Course la plus représentée</div><div class="v" style="font-size:14px;">${topCourse ? `${topCourse.course.nom} <span style="color:var(--muted); font-weight:600;">(${topCourse.count})</span>` : "—"}</div></div>
+      </div>
+      <div class="block-label" style="font-size:16px; margin-bottom:0.8rem;"><span class="bar"></span>Courses ${HONNEUR_YEAR} <span style="color:var(--muted); font-weight:600; font-size:12px; margin-left:6px;">${nbCourses} course${nbCourses > 1 ? "s" : ""}</span></div>
+      <div class="lb-table" style="margin-bottom:1.6rem;">
+        <div class="club-list-row head"><span>Date</span><span>Course</span><span>Coureurs</span></div>
+        ${courseRows}
+      </div>
+      <div class="block-label" style="font-size:16px; margin-bottom:0.8rem;"><span class="bar"></span>Coureurs du club</div>
+      <div class="lb-table">
+        <div class="lb-row head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Courses</span></div>
+        ${runnerRows}
+      </div>`;
+
+    showPage('clubfiche', { clubKey });
   }
 
   history.replaceState({ page: 'accueil' }, '', location.pathname + location.search);
