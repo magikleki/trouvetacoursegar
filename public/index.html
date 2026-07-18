@@ -21,13 +21,28 @@
 
   .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.3rem; background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
   .brand { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 15px; cursor: pointer; }
-  .brand .dot { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid var(--accent); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .brand .dot::after { content:""; width:6px; height:6px; border-radius:50%; background: var(--accent); }
   .brand span.hi { color: var(--accent); }
-  .topnav { display: none; gap: 22px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .topnav { display: none; align-items: center; gap: 22px; font-size: 13px; font-weight: 600; color: var(--muted); }
   .topnav a { cursor: pointer; }
   .topnav a:hover { color: var(--ink); }
   @media (min-width: 780px) { .topnav { display: flex; } }
+
+  /* Les 3 boutons de navigation principaux (Clubs, Résultats, Wall of Fame) :
+     même design, bien visibles, nettement plus marqués que le 4e lien. */
+  .nav-main { display: flex; align-items: center; gap: 8px; }
+  .nav-main a.nav-btn { background: var(--accent-tint); color: var(--accent-deep); font-weight: 800; font-size: 13px; padding: 9px 18px; border-radius: 999px; transition: background .15s ease, color .15s ease, box-shadow .15s ease; }
+  .nav-main a.nav-btn:hover { background: var(--accent); color: #fff; box-shadow: 0 8px 18px -10px rgba(224,106,44,0.5); }
+
+  /* 4e lien : "Informations manquantes / erronées", volontairement discret
+     et séparé du groupe des 3 boutons principaux, avec un sous-menu au survol. */
+  .nav-report { position: relative; margin-left: 8px; padding-left: 18px; border-left: 1px solid var(--border); }
+  .nav-report > a { color: var(--muted); font-weight: 600; cursor: pointer; }
+  .nav-report:hover > a { color: var(--ink); }
+  .nav-report-menu { display: none; position: absolute; top: 100%; right: 0; padding-top: 10px; z-index: 20; }
+  .nav-report:hover .nav-report-menu { display: block; }
+  .nav-report-menu-inner { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 14px 28px -18px rgba(0,0,0,.28); padding: 6px; min-width: 240px; }
+  .nav-report-menu-inner a { display: block; padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; cursor: pointer; }
+  .nav-report-menu-inner a:hover { background: var(--accent-tint); color: var(--accent-deep); }
 
   .hero { text-align: center; padding: 2.6rem 1.2rem 1.6rem; background: linear-gradient(180deg, var(--accent-tint) 0%, var(--bg) 100%); }
   .hero .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; color: var(--accent-deep); text-transform: uppercase; margin-bottom: 0.8rem; }
@@ -172,7 +187,7 @@
   .icon-Backyard::after { content:"🔄"; }
 
   .fiche-wrap { max-width: 1100px; margin: 0 auto; padding: 1.6rem 1.2rem 3rem; }
-  .breadcrumb { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 1.2rem; cursor: pointer; }
+  .breadcrumb { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .04em; margin-bottom: 1.2rem; cursor: pointer; }
   .breadcrumb .crumb { cursor: pointer; padding: 2px 3px; border-radius: 4px; transition: background .15s ease, color .15s ease; }
   .breadcrumb .crumb:hover { background: var(--accent-tint); color: var(--accent-deep); }
   .breadcrumb .crumb.current { color: var(--ink); cursor: default; }
@@ -286,6 +301,15 @@
   .lb-tab.active:hover { box-shadow: 0 8px 18px -10px rgba(224,106,44,0.6); }
   .lb-tab .count { background: var(--accent-tint); color: var(--accent-deep); font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-left: 7px; font-size: 0.82em; }
   .lb-tab.active .count { background: rgba(255,255,255,0.28); color: #fff; }
+
+  /* Sous-onglets Scratch/Femme/Homme : volontairement plus discrets que les
+     onglets de distance ci-dessus, pour ne pas créer deux niveaux d'onglets
+     de même poids visuel. */
+  .lb-subtabs { display: flex; gap: 2px; margin-bottom: 1rem; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 3px; width: fit-content; }
+  .lb-subtab { background: none; border: none; border-radius: 999px; padding: 5px 13px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; transition: background .15s ease, color .15s ease; }
+  .lb-subtab:hover { color: var(--accent-deep); }
+  .lb-subtab.active { background: var(--card); color: var(--accent-deep); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .lb-subtab .count { font-weight: 700; opacity: .65; margin-left: 4px; font-size: 0.92em; }
   .lb-search { border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; font-size: 12.5px; }
 
   .lb-expand-link { display: inline-block; margin-top: 10px; padding: 6px 10px; border: none; background: none; border-radius: 8px; font-size: 11.5px; font-weight: 600; color: var(--muted); cursor: pointer; text-decoration: none; transition: background .15s ease, color .15s ease; }
@@ -305,12 +329,22 @@
 <body>
 
 <div class="topbar">
-  <div class="brand" onclick="showPage('accueil')"><span class="dot"></span> TROUVE TA <span class="hi">COURSE</span></div>
+  <div class="brand" onclick="showPage('accueil')">TROUVE TA <span class="hi">COURSE</span></div>
   <div class="topnav">
-    <a onclick="showPage('club')">Clubs</a>
-    <a onclick="showPage('resultats')">Résultats</a>
-    <a onclick="showPage('challenge')">Challenge</a>
-    <a href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Proposer une course / Signaler une erreur</a>
+    <div class="nav-main">
+      <a class="nav-btn" onclick="showPage('club')">Clubs</a>
+      <a class="nav-btn" onclick="showPage('resultats')">Résultats</a>
+      <a class="nav-btn" onclick="showPage('challenge')">Wall of Fame</a>
+    </div>
+    <div class="nav-report">
+      <a>Informations manquantes / erronées</a>
+      <div class="nav-report-menu">
+        <div class="nav-report-menu-inner">
+          <a href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Proposer une course manquante</a>
+          <a href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">Proposer un club manquant</a>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -411,7 +445,7 @@
 
 <div id="page-club" style="display:none;">
   <div class="section">
-    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">← Accueil</span></div>
+    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Clubs</span></div>
     <h1 style="margin:0 0 1.2rem;">Trouve ton Club</h1>
     <div style="max-width:320px; margin-bottom:1.4rem;">
       <input id="fClubSearch" placeholder="Club, ville..." style="width:100%; border:1px solid var(--border); border-radius:999px; padding:9px 16px; font-size:13px;" />
@@ -426,7 +460,7 @@
 
 <div id="page-runclub" style="display:none;">
   <div class="section">
-    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">← Accueil</span></div>
+    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Run Club</span></div>
     <div class="empty-state">
       <div class="ic">👟</div>
       <div class="big">Trouve ton Run Club — bientôt disponible</div>
@@ -437,7 +471,7 @@
 
 <div id="page-resultats" style="display:none;">
   <div class="fiche-wrap">
-    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">← Accueil</span></div>
+    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Résultats</span></div>
     <h1 style="margin:0 0 1.2rem;">Résultats des courses</h1>
     <div id="podiumsContent"></div>
     <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-top:1.6rem; margin-bottom:0.9rem;">
@@ -456,10 +490,10 @@
 
 <div id="page-challenge" style="display:none;">
   <div class="section">
-    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">← Accueil</span></div>
+    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Wall of Fame</span></div>
     <div class="empty-state">
       <div class="ic">🏆</div>
-      <div class="big">Challenge Trouve ta Course — bientôt disponible</div>
+      <div class="big">Wall of Fame — bientôt disponible</div>
       <p>Le classement des coureurs les plus assidus du Gard arrivera une fois assez de résultats collectés.</p>
     </div>
   </div>
@@ -467,7 +501,7 @@
 
 <div id="page-boutique" style="display:none;">
   <div class="section">
-    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">← Accueil</span></div>
+    <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb current">Boutique</span></div>
     <div class="empty-state">
       <div class="ic">🛍️</div>
       <div class="big">Boutique — à venir prochainement</div>
@@ -523,6 +557,19 @@
   }
 
   function typeClass(type) { return (type || "").replace(/\s+/g, ""); }
+
+  // Valeur numérique d'un libellé de distance ("12 km" -> 12), pour pouvoir
+  // trier du plus petit au plus grand partout où les distances s'affichent.
+  function distanceNumValue(str) {
+    const m = String(str || "").match(/[\d]+(?:[.,]\d+)?/);
+    return m ? parseFloat(m[0].replace(",", ".")) : Infinity;
+  }
+  function sortDistanceLabels(arr) {
+    return [...arr].sort((a, b) => distanceNumValue(a) - distanceNumValue(b));
+  }
+  function splitDistances(str) {
+    return sortDistanceLabels((str || "").split(/,\s+/).map(s => s.trim()).filter(Boolean));
+  }
 
   function formatDayLabel(dateStr) {
     const d = new Date(dateStr);
@@ -931,7 +978,7 @@
     html += `<div class="course-grid">`;
     filtered.forEach(c => {
       const tc = typeClass(c.type);
-      const distances = (c.distances || "").split(/,\s+/).map(s => s.trim()).filter(Boolean);
+      const distances = splitDistances(c.distances);
       const distBadges = c.statut === "Non confirmé"
         ? `<span class="pill dark" style="background:rgba(178,59,59,0.85);">Non confirmée</span>`
         : (tc === "Backyard" || tc === "Ekiden") ? "" :
@@ -976,7 +1023,7 @@
     const c = allCourses.find(x => x.id === id);
     if (!c) return;
     const tc = typeClass(c.type);
-    const distances = (c.distances || "").split(/,\s+/).map(s => s.trim()).filter(Boolean);
+    const distances = splitDistances(c.distances);
     const mapQuery = encodeURIComponent(`${c.commune}, France`);
     const edition = (new Date(c.date)).getFullYear() || new Date().getFullYear();
     const posterHtml = c.affiche
@@ -998,7 +1045,7 @@
 
           <div class="stat-bar" style="grid-template-columns: repeat(3, 1fr);">
             <div class="stat-cell"><div class="l">Date</div><div class="v">${formatDayLabel(c.date)}</div></div>
-            <div class="stat-cell"><div class="l">Distances</div><div class="v accent">${c.distances || "Non communiqué"}</div></div>
+            <div class="stat-cell"><div class="l">Distances</div><div class="v accent">${distances.length ? distances.join(", ") : "Non communiqué"}</div></div>
             <div class="stat-cell"><div class="l">Départ</div><div class="v">${c.heure || "Non communiqué"}</div></div>
           </div>
 
@@ -1040,7 +1087,7 @@
 
           <div class="side-card">
             <div class="block-label" style="margin-bottom:0.4rem;"><span class="bar"></span>Infos pratiques</div>
-            <div class="info-row"><span class="l">Distances</span><span class="v">${c.distances || "Non communiqué"}</span></div>
+            <div class="info-row"><span class="l">Distances</span><span class="v">${distances.length ? distances.join(", ") : "Non communiqué"}</span></div>
             <div class="info-row"><span class="l">Lieu</span><span class="v">${c.commune || "Non communiqué"}</span></div>
             <div class="info-row"><span class="l">Département</span><span class="v">Gard (30)</span></div>
             ${c.challenge ? `<div class="info-row"><span class="l">Label</span><span class="v">${c.challenge}</span></div>` : ""}
@@ -1149,7 +1196,7 @@
 
     const entries = Object.keys(grouped).map(courseId => {
       const course = allCourses.find(c => c.id === courseId);
-      return { courseId, count: grouped[courseId], course, distances: distancesByCourse[courseId] || [] };
+      return { courseId, count: grouped[courseId], course, distances: sortDistanceLabels(distancesByCourse[courseId] || []) };
     }).filter(e => e.course);
 
     // Tri de la plus récente à la plus ancienne. Les courses sans date
@@ -1229,7 +1276,7 @@
 
     const cards = weekendEntries.map(e => {
       const results = allResultats.filter(r => r.courseId === e.courseId);
-      const distances = [...new Set(results.map(r => r.distance).filter(Boolean))];
+      const distances = sortDistanceLabels([...new Set(results.map(r => r.distance).filter(Boolean))]);
 
       const rows = distances.map(distance => {
         const distResults = results.filter(r => r.distance === distance);
@@ -1291,14 +1338,15 @@
     const resultats = res.ok ? (data.resultats || []) : [];
     const edition = course ? ((new Date(course.date)).getFullYear() || new Date().getFullYear()) : new Date().getFullYear();
 
-    const distances = [...new Set(resultats.map(r => r.distance).filter(Boolean))];
+    const distances = sortDistanceLabels([...new Set(resultats.map(r => r.distance).filter(Boolean))]);
     window.__leaderboardData = resultats;
     window.__leaderboardDistances = distances;
     window.__leaderboardExpanded = {};
     window.__leaderboardActiveDistance = distances[0] || null;
+    window.__leaderboardActiveGender = {};
 
     document.getElementById("leaderboardContent").innerHTML = `
-      <div class="breadcrumb"><span class="crumb" onclick="showPage('resultats')">← Retour à Résultats</span></div>
+      <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb" onclick="showPage('resultats')">Résultats</span><span class="sep">/</span><span class="crumb current">${course ? course.nom : ""}</span></div>
       <h1 style="margin:6px 0 4px;">Résultats — ${course ? course.nom : ""}</h1>
       <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
         <div class="loc" style="margin-bottom:0;">${course ? course.commune : ""}, Gard · ${resultats.length} coureurs classés</div>
@@ -1329,6 +1377,16 @@
   function switchLeaderboardCategory(distance, category) {
     if (!window.__leaderboardActiveCategory) window.__leaderboardActiveCategory = {};
     window.__leaderboardActiveCategory[distance] = category;
+    renderLeaderboardTable();
+  }
+
+  // Onglets Scratch / Femme / Homme pour les distances courues en solo.
+  function isFemaleResult(r) { return /^f/i.test((r.sexe || '').trim()); }
+  function isMaleResult(r) { return /^[hm]/i.test((r.sexe || '').trim()); }
+
+  function switchLeaderboardGender(distance, gender) {
+    if (!window.__leaderboardActiveGender) window.__leaderboardActiveGender = {};
+    window.__leaderboardActiveGender[distance] = gender;
     renderLeaderboardTable();
   }
 
@@ -1398,6 +1456,12 @@
       window.__leaderboardActiveDistance = activeDistance;
     }
 
+    const GENDER_TABS = [
+      { key: 'scratch', label: 'Scratch' },
+      { key: 'femme', label: 'Femme' },
+      { key: 'homme', label: 'Homme' },
+    ];
+
     const renderSoloBlock = (distance, distanceRows) => {
       let rows = distanceRows;
       if (q) rows = rows.filter(r => `${r.prenom} ${r.nom}`.toLowerCase().includes(q));
@@ -1405,18 +1469,38 @@
         return `<div class="state-message">Aucun coureur ne correspond.</div>`;
       }
 
-      const expanded = !!window.__leaderboardExpanded[distance];
-      const shown = expanded ? rows : rows.slice(0, 10);
-      const remaining = rows.length - shown.length;
+      // Scratch = classement général déjà existant, inchangé. Femme/Homme
+      // reprennent ce même ordre (déjà trié par classement général) filtré
+      // par sexe, avec un rang recalculé au sein de la catégorie.
+      const genderRows = {
+        scratch: rows,
+        femme: rows.filter(isFemaleResult).map((r, i) => ({ ...r, __rang: i + 1 })),
+        homme: rows.filter(isMaleResult).map((r, i) => ({ ...r, __rang: i + 1 })),
+      };
 
-      return `
-        <div style="margin-bottom:1.8rem;">
-          ${!multi ? `<div class="block-label"><span class="bar"></span>${distance} <span style="font-weight:500; color:var(--muted); font-size:13px; margin-left:6px;">${rows.length} coureur${rows.length > 1 ? "s" : ""} classé${rows.length > 1 ? "s" : ""}</span></div>` : `<div style="font-size:12px; color:var(--muted); font-weight:700; margin-bottom:10px;">${rows.length} coureur${rows.length > 1 ? "s" : ""} classé${rows.length > 1 ? "s" : ""}</div>`}
+      if (!window.__leaderboardActiveGender) window.__leaderboardActiveGender = {};
+      let activeGender = window.__leaderboardActiveGender[distance] || 'scratch';
+      if (!GENDER_TABS.some(g => g.key === activeGender)) activeGender = 'scratch';
+      window.__leaderboardActiveGender[distance] = activeGender;
+
+      const activeRows = genderRows[activeGender];
+      const expandKey = distance + '__' + activeGender;
+      const expanded = !!window.__leaderboardExpanded[expandKey];
+      const shown = expanded ? activeRows : activeRows.slice(0, 10);
+      const remaining = activeRows.length - shown.length;
+
+      const tabsHtml = `<div class="lb-subtabs">${GENDER_TABS.map(g => `
+        <button class="lb-subtab ${g.key === activeGender ? 'active' : ''}" onclick="switchLeaderboardGender('${distance}', '${g.key}')">${g.label}<span class="count">${genderRows[g.key].length}</span></button>
+      `).join("")}</div>`;
+
+      const tableHtml = !activeRows.length
+        ? `<div class="state-message">Aucun coureur ne correspond.</div>`
+        : `
           <div class="lb-table">
             <div class="lb-row-full head"><span>Rang</span><span>Doss.</span><span>Coureur</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Club</span></div>
             ${shown.map(r => `
               <div class="lb-row-full">
-                <span class="${lbRankClass(r.classementGeneral)}">${r.classementGeneral ?? "—"}</span>
+                <span class="${lbRankClass(activeGender === 'scratch' ? r.classementGeneral : r.__rang)}">${activeGender === 'scratch' ? (r.classementGeneral ?? "—") : r.__rang}</span>
                 <span class="lb-dossard">${r.dossard || "—"}</span>
                 <span class="lb-name">${r.prenom} ${r.nom}</span>
                 <span>${r.sexe || "—"}</span>
@@ -1426,8 +1510,14 @@
                 <span class="lb-club-cell">${r.club || "—"}</span>
               </div>`).join("")}
           </div>
-          ${remaining > 0 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${distance}')">Voir les ${remaining} coureur${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""} ↓</button>` : ""}
-          ${expanded && rows.length > 10 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${distance}')">Réduire ↑</button>` : ""}
+          ${remaining > 0 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Voir les ${remaining} coureur${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""} ↓</button>` : ""}
+          ${expanded && activeRows.length > 10 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Réduire ↑</button>` : ""}`;
+
+      return `
+        <div style="margin-bottom:1.8rem;">
+          ${tabsHtml}
+          ${!multi ? `<div class="block-label"><span class="bar"></span>${distance} <span style="font-weight:500; color:var(--muted); font-size:13px; margin-left:6px;">${activeRows.length} coureur${activeRows.length > 1 ? "s" : ""} classé${activeRows.length > 1 ? "s" : ""}</span></div>` : `<div style="font-size:12px; color:var(--muted); font-weight:700; margin-bottom:10px;">${activeRows.length} coureur${activeRows.length > 1 ? "s" : ""} classé${activeRows.length > 1 ? "s" : ""}</div>`}
+          ${tableHtml}
         </div>`;
     };
 
@@ -1515,8 +1605,7 @@
 
     if (multi) {
       html += `<div class="lb-tabs">${distances.map(d => {
-        const count = allRows.filter(r => r.distance === d).length;
-        return `<button class="lb-tab ${d === activeDistance ? 'active' : ''}" onclick="switchLeaderboardTab('${d}')">${d}<span class="count">${count}</span></button>`;
+        return `<button class="lb-tab ${d === activeDistance ? 'active' : ''}" onclick="switchLeaderboardTab('${d}')">${d}</button>`;
       }).join("")}</div>`;
       html += renderDistanceBlock(activeDistance);
     } else {
