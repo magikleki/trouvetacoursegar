@@ -1203,6 +1203,49 @@
     return `<a class="btn-facebook" href="${url}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="15" height="15" fill="#1877F2"><path d="M22 12a10 10 0 1 0-11.5 9.9v-7H7.9V12h2.6V9.8c0-2.6 1.5-4 3.9-4 1.1 0 2.3.2 2.3.2v2.5h-1.3c-1.3 0-1.7.8-1.7 1.6V12h2.9l-.5 2.9h-2.4v7A10 10 0 0 0 22 12z"/></svg> Facebook</a>`;
   }
 
+  // Cas particulier : le Bip Bip Ekiden de Petite Camargue se court par
+  // relais de distances inégales (pas de simple liste de distances), donc
+  // sa section "Parcours" affiche le détail des relais/boucles plutôt que
+  // les distances brutes. Matching tolérant (casse/accents) car le nom
+  // exact vient d'Airtable.
+  function isBipBipEkiden(c) {
+    const norm = (c.nom || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    return norm.includes("bip bip") && norm.includes("ekiden");
+  }
+
+  const BIP_BIP_EKIDEN_RELAIS = [
+    { relais: "Relais 1", distance: "5,585 km", boucles: "1 boucle" },
+    { relais: "Relais 2", distance: "10,460 km", boucles: "2 boucles" },
+    { relais: "Relais 3", distance: "5,230 km", boucles: "1 boucle" },
+    { relais: "Relais 4", distance: "10,460 km", boucles: "2 boucles" },
+    { relais: "Relais 5", distance: "5,230 km", boucles: "1 boucle" },
+    { relais: "Relais 6", distance: "5,230 km", boucles: "1 boucle" },
+  ];
+
+  function renderParcoursHtml(c, distances) {
+    if (isBipBipEkiden(c)) {
+      return `
+        <p style="font-size:13px; color:var(--muted); line-height:1.6; margin:0 0 12px;">
+          L'épreuve par équipe de 6 relayeurs (possibilité d'être 4 ou 5 dans une équipe à condition que l'un ou l'autre effectue 2 relais ou plus), sur la distance du marathon, soit 42,195 km, sur un parcours d'une boucle de 5,275 km.
+        </p>
+        <div class="course-table">
+          ${BIP_BIP_EKIDEN_RELAIS.map(r => `<div class="row"><strong>${r.relais}</strong><span>${r.distance} · ${r.boucles}</span></div>`).join("")}
+        </div>`;
+    }
+    return `
+      <div class="course-table">
+        ${distances.length ? distances.map(d => `<div class="row"><strong>${d}</strong><span></span></div>`).join("") : `<div class="row"><strong>Distance non communiquée</strong></div>`}
+      </div>`;
+  }
+
+  // Affichage du champ "Distances" en tête de fiche : cas particulier pour
+  // le Bip Bip Ekiden (mêmes raisons que renderParcoursHtml), sinon la
+  // liste brute venant d'Airtable.
+  function getDistancesDisplayText(c, distances) {
+    if (isBipBipEkiden(c)) return "42,195km relais de 6, 42,195km solo";
+    return distances.length ? distances.join(", ") : "Non communiqué";
+  }
+
   function openFiche(id) {
     const c = allCourses.find(x => x.id === id);
     if (!c) return;
@@ -1229,7 +1272,7 @@
 
           <div class="stat-bar" style="grid-template-columns: repeat(3, 1fr);">
             <div class="stat-cell"><div class="l">Date</div><div class="v">${formatDayLabel(c.date)}</div></div>
-            <div class="stat-cell"><div class="l">Distances</div><div class="v accent">${distances.length ? distances.join(", ") : "Non communiqué"}</div></div>
+            <div class="stat-cell"><div class="l">Distances</div><div class="v accent">${getDistancesDisplayText(c, distances)}</div></div>
             <div class="stat-cell"><div class="l">Départ</div><div class="v">${c.heure || "Non communiqué"}</div></div>
           </div>
 
@@ -1250,9 +1293,7 @@
       <div class="two-col">
         <div>
           <div class="block-label"><span class="bar"></span>Parcours</div>
-          <div class="course-table">
-            ${distances.length ? distances.map(d => `<div class="row"><strong>${d}</strong><span></span></div>`).join("") : `<div class="row"><strong>Distance non communiquée</strong></div>`}
-          </div>
+          ${renderParcoursHtml(c, distances)}
 
           <div class="block-label" style="margin-top:1.6rem;"><span class="bar"></span>Résultats</div>
           <button class="btn-toggle-results" onclick="toggleFicheResults('${c.id}')">
@@ -1271,7 +1312,7 @@
 
           <div class="side-card">
             <div class="block-label" style="margin-bottom:0.4rem;"><span class="bar"></span>Infos pratiques</div>
-            <div class="info-row"><span class="l">Distances</span><span class="v">${distances.length ? distances.join(", ") : "Non communiqué"}</span></div>
+            <div class="info-row"><span class="l">Distances</span><span class="v">${getDistancesDisplayText(c, distances)}</span></div>
             <div class="info-row"><span class="l">Lieu</span><span class="v">${c.commune || "Non communiqué"}</span></div>
             <div class="info-row"><span class="l">Département</span><span class="v">Gard (30)</span></div>
             ${c.challenge ? `<div class="info-row"><span class="l">Label</span><span class="v">${c.challenge}</span></div>` : ""}
