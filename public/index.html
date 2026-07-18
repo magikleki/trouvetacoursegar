@@ -1230,6 +1230,29 @@
     { relais: "Relais 6", distance: "5,230 km", boucles: "1 boucle" },
   ];
 
+  // Cas particulier : le 24h Vertical Challenge de Vénéjan se court sur une
+  // boucle unique déclinée en plusieurs formats horaires (pas une liste de
+  // distances), donc son affichage Distances/Parcours est remplacé par ces
+  // 2 lignes plutôt que le texte brut d'Airtable.
+  function isVerticalChallenge(c) {
+    const norm = (c.nom || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    return norm.includes("vertical challenge");
+  }
+
+  const VERTICAL_CHALLENGE_LINES = ["Boucle de 1,39 km", "Format 3h, Format 6h, Format 12h"];
+
+  // Cas particulier : le Relais du Cœur combine une portion course à pied
+  // et une portion vélo en boucles alternées (pas une simple liste de
+  // distances), donc son affichage Distances/Parcours est remplacé par ces
+  // 3 lignes plutôt que le texte brut d'Airtable. Matching tolérant à la
+  // ligature « œ » (Cœur / Coeur selon la saisie Airtable).
+  function isRelaisDuCoeur(c) {
+    const norm = (c.nom || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/œ/g, "oe");
+    return norm.includes("relais du coeur");
+  }
+
+  const RELAIS_DU_COEUR_LINES = ["Course : 2,9 km", "Vélo : 6,5 km", "Format boucles alternées"];
+
   function renderParcoursHtml(c, distances) {
     if (isBipBipEkiden(c)) {
       return `
@@ -1240,17 +1263,31 @@
           ${BIP_BIP_EKIDEN_RELAIS.map(r => `<div class="row"><strong>${r.relais}</strong><span>${r.distance} · ${r.boucles}</span></div>`).join("")}
         </div>`;
     }
+    if (isVerticalChallenge(c)) {
+      return `
+        <div class="course-table">
+          ${VERTICAL_CHALLENGE_LINES.map(l => `<div class="row"><strong>${l}</strong><span></span></div>`).join("")}
+        </div>`;
+    }
+    if (isRelaisDuCoeur(c)) {
+      return `
+        <div class="course-table">
+          ${RELAIS_DU_COEUR_LINES.map(l => `<div class="row"><strong>${l}</strong><span></span></div>`).join("")}
+        </div>`;
+    }
     return `
       <div class="course-table">
         ${distances.length ? distances.map(d => `<div class="row"><strong>${d}</strong><span></span></div>`).join("") : `<div class="row"><strong>Distance non communiquée</strong></div>`}
       </div>`;
   }
 
-  // Affichage du champ "Distances" en tête de fiche : cas particulier pour
-  // le Bip Bip Ekiden (mêmes raisons que renderParcoursHtml), sinon la
-  // liste brute venant d'Airtable.
+  // Affichage du champ "Distances" en tête de fiche : cas particuliers pour
+  // le Bip Bip Ekiden, le 24h Vertical Challenge et le Relais du Cœur (mêmes
+  // raisons que renderParcoursHtml), sinon la liste brute venant d'Airtable.
   function getDistancesDisplayText(c, distances) {
     if (isBipBipEkiden(c)) return "42,195km relais de 6, 42,195km solo";
+    if (isVerticalChallenge(c)) return VERTICAL_CHALLENGE_LINES.join("<br>");
+    if (isRelaisDuCoeur(c)) return RELAIS_DU_COEUR_LINES.join("<br>");
     return distances.length ? distances.join(", ") : "Non communiqué";
   }
 
