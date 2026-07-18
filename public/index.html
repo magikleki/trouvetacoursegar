@@ -1398,12 +1398,12 @@
       <div class="side-card side-card-clickable" style="cursor:pointer; aspect-ratio:auto;" onclick="openLeaderboard('${e.courseId}')">
         <div class="result-date-label">${formatDayLabel(e.course.date)}</div>
         <div style="font-weight:800; font-size:14px;">${e.course.nom}</div>
+        ${e.course.challenge ? `<div class="challenge-tag" title="${e.course.challenge}">🏆<span class="txt">${e.course.challenge}</span></div>` : ""}
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:6px;">
           ${e.distances.map(d => `<span class="pill-distance">${d}</span>`).join("")}
           <span class="pill" style="background:var(--accent-tint); color:var(--accent-deep);">${e.count} coureurs</span>
         </div>
         <div style="font-size:12px; color:var(--muted); margin-top:6px;">${e.course.commune || ""}, Gard</div>
-        ${e.course.challenge ? `<div class="challenge-tag" title="${e.course.challenge}">🏆<span class="txt">${e.course.challenge}</span></div>` : ""}
       </div>`).join("")}</div>`;
   }
 
