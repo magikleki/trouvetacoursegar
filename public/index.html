@@ -1997,34 +1997,54 @@
     if (s === 60) { m++; s = 0; }
     return m + ":" + String(s).padStart(2, "0") + " /km";
   }
-  // "1 SEH" -> { rang: 1, categorie: "SEH" } ; renvoie le texte brut en
-  // catégorie si le format ne correspond pas.
+  // Le format du champ "Classement catégorie" varie selon les fichiers de
+  // résultats importés : "1 SEH" (rang devant) ou "JUM 2e" / "Mixte 1er"
+  // (rang derrière). On gère les deux ; texte brut en catégorie sinon.
   function splitClassementCategorie(cc) {
-    const m = String(cc || "").trim().match(/^(\d+)\s*(?:er|ère|e)?\s+(.+)$/i);
+    const raw = String(cc || "").trim();
+    let m = raw.match(/^(\d+)\s*(?:er|ère|e)?\s+(.+)$/i);
     if (m) return { rang: parseInt(m[1], 10), categorie: m[2] };
-    return { rang: null, categorie: String(cc || "").trim() };
+    m = raw.match(/^(.+?)\s+(\d+)\s*(?:er|ère|e)?$/i);
+    if (m) return { rang: parseInt(m[2], 10), categorie: m[1] };
+    return { rang: null, categorie: raw };
   }
-  function openRunnerStatModal(resultId) {
+  // Le champ vitesse d'Airtable contient parfois déjà l'unité ("11.66
+  // km/h") : on ne la rajoute que si elle est absente.
+  function formatVitesse(v) {
+    const s = String(v || "").trim();
+    if (!s) return null;
+    return /km\s*\/?\s*h/i.test(s) ? s : s + " km/h";
+  }
+  // Nom cliquable vers la fiche coureur (la pop-up se ferme avant la
+  // navigation). Si le coureur n'a pas de fiche, nom en texte simple.
+  function runnerModalNameHtml(r) {
+    if (coursesLoaded && resultatsLoaded && clubsLoaded && !honneurData) buildHonneurData();
+    const key = coureurKeyOf(r);
+    const nm = displayRunnerName(r);
+    return (honneurData && honneurData.runners[key])
+      ? `<a class="lb-name-link" style="color:var(--accent-deep);" onclick="closeRunnerStatModal(); openCoureur('${escJsArg(key)}')">${nm}</a>`
+      : nm;
+  }
+  // isTeam = ligne d'une épreuve duo : la pop-up affiche alors l'équipe
+  // (les deux membres, chacun cliquable) et les stats communes.
+  function openRunnerStatModal(resultId, isTeam) {
     const r = allResultats.find(x => x.id === resultId);
     if (!r) return;
     const course = allCourses.find(c => c.id === r.courseId);
+    // En duo, les coéquipiers sont les lignes de la même course/distance
+    // partageant le même classement général (même logique que le tableau).
+    const team = (isTeam && r.classementGeneral !== null)
+      ? allResultats.filter(x => x.courseId === r.courseId && x.distance === r.distance && x.classementGeneral === r.classementGeneral)
+      : [r];
     const { rang, categorie } = splitClassementCategorie(r.classementCategorie);
     const sec = parseTempsSeconds(r.temps);
     const km = distanceNumValue(r.distance);
     const hasKm = isFinite(km) && km > 0 && sec !== null && sec > 0;
     const allure = hasKm ? formatAllure(sec / km) : null;
-    const vitesse = r.vitesse
-      ? r.vitesse + " km/h"
-      : (hasKm ? (Math.round((km / (sec / 3600)) * 10) / 10).toLocaleString("fr-FR") + " km/h" : null);
+    const vitesse = formatVitesse(r.vitesse)
+      || (hasKm ? (Math.round((km / (sec / 3600)) * 10) / 10).toLocaleString("fr-FR") + " km/h" : null);
 
-    // Nom cliquable vers la fiche coureur (la pop-up se ferme avant la
-    // navigation). Si le coureur n'a pas de fiche, nom en texte simple.
-    if (coursesLoaded && resultatsLoaded && clubsLoaded && !honneurData) buildHonneurData();
-    const runnerKey = coureurKeyOf(r);
-    const displayName = displayRunnerName(r);
-    document.getElementById("runnerStatName").innerHTML = (honneurData && honneurData.runners[runnerKey])
-      ? `<a class="lb-name-link" style="color:var(--accent-deep);" onclick="closeRunnerStatModal(); openCoureur('${escJsArg(runnerKey)}')">${displayName}</a>`
-      : displayName;
+    document.getElementById("runnerStatName").innerHTML = team.map(runnerModalNameHtml).join(" & ");
     document.getElementById("runnerStatContext").textContent = `${r.distance || ""}${course ? " — " + course.nom : ""}`;
     const rows = [
       ["Temps", r.temps || "—"],
@@ -2181,7 +2201,7 @@
             ${shown.map(t => {
               const catRank = extractCategoryRank(t.classementCategorie);
               return `
-              <div class="lb-row-full lb-row-duo">
+              <div class="lb-row-full lb-row-duo lb-row-tap" onclick="openRunnerStatModal('${t.coureurs[0].id}', true)">
                 <span class="${lbRankClass(catRank)}">${catRank ?? "—"}</span>
                 <span class="lb-scratch">${t.classementGeneral ?? "—"}</span>
                 <span class="lb-dossard">${t.dossard || "—"}</span>
