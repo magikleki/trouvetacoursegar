@@ -15,7 +15,25 @@ export default async function handler(request, response) {
   }
 
   try {
-    let airtableUrl = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100`;
+    // On ne demande à Airtable que les champs réellement utilisés par le
+    // site : le champ lookup "Nom de la course (from Course)" (inutilisé)
+    // est exclu, ce qui allège chaque page de la pagination.
+    const usedFields = [
+      "Distance / Épreuve",
+      "Course",
+      "Nom du coureur",
+      "Prénom du coureur",
+      "Club",
+      "Temps",
+      "Classement général",
+      "Classement catégorie",
+      "Sexe",
+      "Département",
+      "Dossard",
+      "Vitesse",
+    ];
+    const fieldsParam = usedFields.map((f) => `fields%5B%5D=${encodeURIComponent(f)}`).join("&");
+    let airtableUrl = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?pageSize=100&${fieldsParam}`;
 
     let allRecords = [];
     let offset;
@@ -64,11 +82,15 @@ export default async function handler(request, response) {
 
     resultats.sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999));
 
-    // Cache court : voir commentaire équivalent dans api/courses.js. Les
-    // résultats sont parfois importés en continu ; un cache de 5 min
-    // affichait un nombre de coureurs périmé pendant toute la durée de
-    // l'import.
-    response.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate");
+    // Stratégie de cache "stale-while-revalidate" : la réponse est
+    // considérée fraîche 60s, puis pendant 24h le CDN Vercel continue de
+    // servir INSTANTANÉMENT la version en cache tout en la rafraîchissant
+    // en arrière-plan. Sans valeur explicite après stale-while-revalidate,
+    // la directive était ignorée : passé 30s, chaque visiteur repayait la
+    // pagination complète d'Airtable (~66 requêtes séquentielles, 10-20s).
+    // Coût du compromis : des résultats fraîchement importés peuvent mettre
+    // ~1-2 min à apparaître, mais le site répond toujours immédiatement.
+    response.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=86400");
     return response.status(200).json({ resultats });
   } catch (error) {
     return response.status(500).json({ error: "Erreur serveur", details: error.message });

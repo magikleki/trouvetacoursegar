@@ -69,7 +69,9 @@ export default async function handler(request, response) {
     // Tri alphabétique par nom de club
     clubs.sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
 
-    response.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate");
+    // Frais 5 min, puis servi instantanément depuis le cache CDN pendant
+    // 24h avec rafraîchissement en arrière-plan (voir api/resultats.js).
+    response.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=86400");
     return response.status(200).json({ clubs });
   } catch (error) {
     return response.status(500).json({ error: "Erreur serveur", details: error.message });

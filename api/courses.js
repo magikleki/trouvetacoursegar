@@ -82,11 +82,10 @@ export default async function handler(request, response) {
       return 0;
     });
 
-    // Cache court : des résultats peuvent être importés à tout moment dans
-    // Airtable, y compris en cours de journée. Un cache trop long affichait
-    // des données figées (ex: un nombre de coureurs en dessous de la
-    // réalité) pendant plusieurs minutes après chaque mise à jour.
-    response.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate");
+    // Frais 60s, puis servi instantanément depuis le cache CDN pendant 24h
+    // avec rafraîchissement en arrière-plan (voir commentaire détaillé dans
+    // api/resultats.js). Les mises à jour apparaissent sous ~1-2 min.
+    response.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=86400");
     return response.status(200).json({ courses });
   } catch (error) {
     return response.status(500).json({ error: "Erreur serveur", details: error.message });
