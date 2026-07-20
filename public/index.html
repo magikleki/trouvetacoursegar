@@ -350,7 +350,7 @@
   .lb-table-clickable { transition: border-color .15s ease, box-shadow .15s ease; }
   .lb-table-clickable:hover { border-color: var(--accent); box-shadow: 0 10px 20px -12px rgba(0,0,0,0.25); }
   .lb-row { display: grid; grid-template-columns: 36px 2fr 1fr; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 6px; }
-  .lb-row-full { display: grid; grid-template-columns: 40px 52px 2fr 46px 1fr 84px 84px 1.2fr 34px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 8px; }
+  .lb-row-full { display: grid; grid-template-columns: 40px 52px 2fr 46px 1fr 84px 84px 1.2fr; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 8px; }
   .lb-row-full.head { background: var(--bg); font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
   .lb-row-full:last-child { border-bottom: none; }
   .lb-row-tap { cursor: pointer; transition: background .12s ease; }
@@ -359,11 +359,11 @@
   .lb-dossard { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
   .lb-vitesse { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
   .lb-scratch { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
-  .lb-row-full.lb-row-duo { grid-template-columns: 36px 56px 48px 2fr 42px 1fr 78px 78px 1.1fr 34px; }
+  .lb-row-full.lb-row-duo { grid-template-columns: 36px 56px 48px 2fr 42px 1fr 78px 78px 1.1fr; }
   @media (max-width: 640px) {
-    .lb-row-full:not(.lb-row-duo) { grid-template-columns: 32px 1.5fr 70px 30px; }
+    .lb-row-full:not(.lb-row-duo) { grid-template-columns: 32px 1.5fr 70px; }
     .lb-row-full:not(.lb-row-duo) span:nth-child(2), .lb-row-full:not(.lb-row-duo) span:nth-child(4), .lb-row-full:not(.lb-row-duo) span:nth-child(5), .lb-row-full:not(.lb-row-duo) span:nth-child(7), .lb-row-full:not(.lb-row-duo) span:nth-child(8) { display: none; }
-    .lb-row-full.lb-row-duo { grid-template-columns: 28px 1.5fr 70px 30px; }
+    .lb-row-full.lb-row-duo { grid-template-columns: 28px 1.5fr 70px; }
     .lb-row-full.lb-row-duo span:nth-child(2), .lb-row-full.lb-row-duo span:nth-child(3), .lb-row-full.lb-row-duo span:nth-child(5), .lb-row-full.lb-row-duo span:nth-child(6), .lb-row-full.lb-row-duo span:nth-child(8), .lb-row-full.lb-row-duo span:nth-child(9) { display: none; }
   }
   .lb-row:last-child { border-bottom: none; }
@@ -378,15 +378,6 @@
   .lb-name-link:hover { color: var(--accent-deep); text-decoration: underline; }
   .lb-club { font-size: 10.5px; color: var(--muted); }
   .lb-time { font-weight: 800; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
-  /* Bouton de partage : petite icône ronde en bout de ligne de résultat,
-     et déclinaisons plus grandes pour la pop-up et la fiche coureur. */
-  .share-mini { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); color: var(--muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color .15s ease, color .15s ease; padding: 0; }
-  .share-mini:hover { border-color: var(--accent); color: var(--accent-deep); }
-  .share-mini svg { width: 14px; height: 14px; }
-  .share-option { display: flex; align-items: center; gap: 12px; padding: 13px 6px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 14px; color: var(--ink); cursor: pointer; text-decoration: none; }
-  .share-option:last-child { border-bottom: none; }
-  .share-option:hover { color: var(--accent-deep); }
-  .share-option .ic { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 17px; color: #fff; flex-shrink: 0; }
 
   .lb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px; }
   .lb-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.3rem; }
@@ -749,20 +740,6 @@
     </div>
     <div id="runnerStatContext" style="font-size: 12px; color: var(--muted); font-weight: 700; margin-bottom: 1rem;"></div>
     <div id="runnerStatBody"></div>
-    <button class="podium-cta" style="width:100%; margin-top:14px;" id="runnerStatShareBtn">📤 Partager ce résultat</button>
-  </div>
-</div>
-
-<!-- Menu de partage (secours quand le menu natif du téléphone n'est pas
-     disponible, typiquement sur ordinateur) : Facebook, WhatsApp, SMS et
-     mail. -->
-<div class="date-modal-overlay" id="shareMenuOverlay" onclick="if(event.target===this) closeShareMenu()">
-  <div class="date-modal" style="max-width: 330px;">
-    <div class="date-modal-header" style="margin-bottom: 0.6rem;">
-      <div class="date-modal-title">Partager</div>
-      <button class="date-modal-close" onclick="closeShareMenu()">✕</button>
-    </div>
-    <div id="shareMenuOptions"></div>
   </div>
 </div>
 
@@ -1389,15 +1366,26 @@
   // nécessaire à plusieurs endroits (podiums, page Résultats, fiche course,
   // classement détaillé). On ne le télécharge qu'une seule fois par visite :
   // resultatsPromise mémorise la requête en cours pour que tous les appels
-  // suivants réutilisent le même résultat au lieu de retélécharger toute la
-  // table Airtable à chaque clic.
+  // suivants réutilisent le même résultat.
+  //
+  // Source des données : le fichier statique /data/resultats.json, généré
+  // et mis à jour avec l'outil /outil-resultats.html (les résultats ne
+  // vivent plus dans Airtable). Servi par le CDN, il se charge en quelques
+  // millisecondes là où la pagination Airtable prenait 10-20 s. Si le
+  // fichier n'existe pas encore (site pas encore migré), on retombe sur
+  // l'ancienne API Airtable /api/resultats pour ne rien casser.
   let resultatsPromise = null;
   async function loadResultatsCountForStats() {
     if (!resultatsPromise) {
-      resultatsPromise = fetch("/api/resultats")
-        .then(res => res.json().then(data => ({ ok: res.ok, data })))
-        .then(({ ok, data }) => {
-          allResultats = ok ? (data.resultats || []) : [];
+      resultatsPromise = fetch("/data/resultats.json")
+        .then(res => (res.ok ? res.json() : Promise.reject(new Error("archive JSON absente"))))
+        .catch(() =>
+          fetch("/api/resultats").then(res =>
+            res.ok ? res.json() : { resultats: [] }
+          )
+        )
+        .then(data => {
+          allResultats = (data && data.resultats) || [];
           resultatsLoaded = true;
           return allResultats;
         })
@@ -1883,10 +1871,9 @@
     const grid = document.getElementById("homeResultsGrid");
     if (!section || !grid) return;
     // La section reste visible avec un squelette (voir markup) pendant ce
-    // await : /api/resultats est l'appel le plus lent du chargement initial
-    // (il paginate toute la table Airtable "Résultats"), donc sans ce
-    // squelette la section apparaissait d'un coup après coup, poussant le
-    // bloc Clubs plus bas.
+    // await. Depuis la migration vers /data/resultats.json le chargement
+    // est quasi instantané, mais le squelette reste utile sur connexion
+    // lente (et en cas de repli vers l'ancienne API Airtable).
     await Promise.all([loadCourses(), loadResultatsCountForStats()]);
 
     const entries = buildResultatsEntries().slice(0, 3);
@@ -2020,114 +2007,34 @@
     if (s === 60) { m++; s = 0; }
     return m + ":" + String(s).padStart(2, "0") + " /km";
   }
-  // Le format du champ "Classement catégorie" varie selon les fichiers de
-  // résultats importés : "1 SEH" (rang devant) ou "JUM 2e" / "Mixte 1er"
-  // (rang derrière). On gère les deux ; texte brut en catégorie sinon.
+  // "1 SEH" -> { rang: 1, categorie: "SEH" } ; renvoie le texte brut en
+  // catégorie si le format ne correspond pas.
   function splitClassementCategorie(cc) {
-    const raw = String(cc || "").trim();
-    let m = raw.match(/^(\d+)\s*(?:er|ère|e)?\s+(.+)$/i);
+    const m = String(cc || "").trim().match(/^(\d+)\s*(?:er|ère|e)?\s+(.+)$/i);
     if (m) return { rang: parseInt(m[1], 10), categorie: m[2] };
-    m = raw.match(/^(.+?)\s+(\d+)\s*(?:er|ère|e)?$/i);
-    if (m) return { rang: parseInt(m[2], 10), categorie: m[1] };
-    return { rang: null, categorie: raw };
+    return { rang: null, categorie: String(cc || "").trim() };
   }
-  // Le champ vitesse d'Airtable contient parfois déjà l'unité ("11.66
-  // km/h") : on ne la rajoute que si elle est absente.
-  function formatVitesse(v) {
-    const s = String(v || "").trim();
-    if (!s) return null;
-    return /km\s*\/?\s*h/i.test(s) ? s : s + " km/h";
-  }
-  // ---- Partage (Facebook, WhatsApp, SMS, mail) ----
-  // Sur mobile, navigator.share ouvre le menu de partage natif du téléphone
-  // (qui propose directement WhatsApp, Messages, Mail, Facebook…). Sur les
-  // navigateurs sans cette API (ordinateur surtout), un petit menu de
-  // secours propose les mêmes canaux via leurs liens de partage.
-  function shareContent(title, text) {
-    const url = location.origin + location.pathname;
-    if (navigator.share) {
-      navigator.share({ title, text, url }).catch(() => {});
-      return;
-    }
-    const full = encodeURIComponent(text + "\n" + url);
-    const options = [
-      { label: "Facebook", ic: "f", bg: "#1877F2", href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, blank: true },
-      { label: "WhatsApp", ic: "✆", bg: "#25D366", href: `https://wa.me/?text=${full}`, blank: true },
-      { label: "Message (SMS)", ic: "💬", bg: "#34C759", href: `sms:?&body=${full}`, blank: false },
-      { label: "Mail", ic: "✉", bg: "#8E8E93", href: `mailto:?subject=${encodeURIComponent(title)}&body=${full}`, blank: false },
-    ];
-    document.getElementById("shareMenuOptions").innerHTML = options.map(o => `
-      <a class="share-option" href="${o.href}"${o.blank ? ' target="_blank" rel="noopener"' : ''} onclick="closeShareMenu()">
-        <span class="ic" style="background:${o.bg};">${o.ic}</span>${o.label}
-      </a>`).join("");
-    document.getElementById("shareMenuOverlay").classList.add("open");
-  }
-  function closeShareMenu() {
-    document.getElementById("shareMenuOverlay").classList.remove("open");
-  }
-
-  // Texte de partage d'un résultat (individuel ou équipe duo).
-  function shareResult(resultId, isTeam) {
+  function openRunnerStatModal(resultId) {
     const r = allResultats.find(x => x.id === resultId);
     if (!r) return;
     const course = allCourses.find(c => c.id === r.courseId);
-    const team = (isTeam && r.classementGeneral !== null)
-      ? allResultats.filter(x => x.courseId === r.courseId && x.distance === r.distance && x.classementGeneral === r.classementGeneral)
-      : [r];
-    const names = team.map(displayRunnerName).join(" & ");
-    const rangTxt = r.classementGeneral !== null ? `${r.classementGeneral}${r.classementGeneral === 1 ? "er" : "e"}` : "";
-    const bits = [];
-    if (rangTxt) bits.push(rangTxt);
-    if (r.distance) bits.push(`sur ${r.distance}`);
-    if (r.temps) bits.push(`en ${r.temps}`);
-    const text = `🏃 ${names} — ${bits.join(" ")}${course ? ` · ${course.nom}` : ""} !\nTous les résultats sur Trouve ta Course :`;
-    shareContent(`Résultat — ${names}`, text);
-  }
-
-  // Texte de partage d'une fiche coureur (bilan de saison).
-  function shareRunner(key) {
-    const runner = honneurData && honneurData.runners[key];
-    if (!runner) return;
-    const name = displayRunnerName(runner);
-    const bits = [`${runner.races.length} course${runner.races.length > 1 ? "s" : ""}`];
-    if (runner.km > 0) bits.push(`${formatKm(runner.km)} km`);
-    if (runner.podiums > 0) bits.push(`${runner.podiums} podium${runner.podiums > 1 ? "s" : ""}`);
-    const text = `🏃 La saison ${HONNEUR_YEAR} de ${name} : ${bits.join(", ")} !\nSa fiche complète sur Trouve ta Course :`;
-    shareContent(`Saison ${HONNEUR_YEAR} — ${name}`, text);
-  }
-
-  const SHARE_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 19v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>`;
-
-  // Nom cliquable vers la fiche coureur (la pop-up se ferme avant la
-  // navigation). Si le coureur n'a pas de fiche, nom en texte simple.
-  function runnerModalNameHtml(r) {
-    if (coursesLoaded && resultatsLoaded && clubsLoaded && !honneurData) buildHonneurData();
-    const key = coureurKeyOf(r);
-    const nm = displayRunnerName(r);
-    return (honneurData && honneurData.runners[key])
-      ? `<a class="lb-name-link" style="color:var(--accent-deep);" onclick="closeRunnerStatModal(); openCoureur('${escJsArg(key)}')">${nm}</a>`
-      : nm;
-  }
-  // isTeam = ligne d'une épreuve duo : la pop-up affiche alors l'équipe
-  // (les deux membres, chacun cliquable) et les stats communes.
-  function openRunnerStatModal(resultId, isTeam) {
-    const r = allResultats.find(x => x.id === resultId);
-    if (!r) return;
-    const course = allCourses.find(c => c.id === r.courseId);
-    // En duo, les coéquipiers sont les lignes de la même course/distance
-    // partageant le même classement général (même logique que le tableau).
-    const team = (isTeam && r.classementGeneral !== null)
-      ? allResultats.filter(x => x.courseId === r.courseId && x.distance === r.distance && x.classementGeneral === r.classementGeneral)
-      : [r];
     const { rang, categorie } = splitClassementCategorie(r.classementCategorie);
     const sec = parseTempsSeconds(r.temps);
     const km = distanceNumValue(r.distance);
     const hasKm = isFinite(km) && km > 0 && sec !== null && sec > 0;
     const allure = hasKm ? formatAllure(sec / km) : null;
-    const vitesse = formatVitesse(r.vitesse)
-      || (hasKm ? (Math.round((km / (sec / 3600)) * 10) / 10).toLocaleString("fr-FR") + " km/h" : null);
+    const vitesse = r.vitesse
+      ? r.vitesse + " km/h"
+      : (hasKm ? (Math.round((km / (sec / 3600)) * 10) / 10).toLocaleString("fr-FR") + " km/h" : null);
 
-    document.getElementById("runnerStatName").innerHTML = team.map(runnerModalNameHtml).join(" & ");
+    // Nom cliquable vers la fiche coureur (la pop-up se ferme avant la
+    // navigation). Si le coureur n'a pas de fiche, nom en texte simple.
+    if (coursesLoaded && resultatsLoaded && clubsLoaded && !honneurData) buildHonneurData();
+    const runnerKey = coureurKeyOf(r);
+    const displayName = displayRunnerName(r);
+    document.getElementById("runnerStatName").innerHTML = (honneurData && honneurData.runners[runnerKey])
+      ? `<a class="lb-name-link" style="color:var(--accent-deep);" onclick="closeRunnerStatModal(); openCoureur('${escJsArg(runnerKey)}')">${displayName}</a>`
+      : displayName;
     document.getElementById("runnerStatContext").textContent = `${r.distance || ""}${course ? " — " + course.nom : ""}`;
     const rows = [
       ["Temps", r.temps || "—"],
@@ -2139,7 +2046,6 @@
     ];
     document.getElementById("runnerStatBody").innerHTML = rows.map(([l, v]) =>
       `<div class="info-row"><span class="l">${l}</span><span class="v">${v}</span></div>`).join("");
-    document.getElementById("runnerStatShareBtn").onclick = () => shareResult(resultId, !!isTeam);
     document.getElementById("runnerStatModalOverlay").classList.add("open");
   }
   function closeRunnerStatModal() {
@@ -2216,7 +2122,7 @@
         ? `<div class="state-message">Aucun coureur ne correspond.</div>`
         : `
           <div class="lb-table">
-            <div class="lb-row-full head"><span>Rang</span><span>Doss.</span><span>Coureur</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Club</span><span></span></div>
+            <div class="lb-row-full head"><span>Rang</span><span>Doss.</span><span>Coureur</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Club</span></div>
             ${shown.map(r => `
               <div class="lb-row-full lb-row-tap" onclick="openRunnerStatModal('${r.id}')">
                 <span class="${lbRankClass(activeGender === 'scratch' ? r.classementGeneral : r.__rang)}">${activeGender === 'scratch' ? (r.classementGeneral ?? "—") : r.__rang}</span>
@@ -2227,7 +2133,6 @@
                 <span class="lb-time">${r.temps || "—"}</span>
                 <span class="lb-vitesse">${r.vitesse || "—"}</span>
                 <span class="lb-club-cell">${r.club || "—"}</span>
-                <button class="share-mini" onclick="event.stopPropagation(); shareResult('${r.id}')" aria-label="Partager ce résultat">${SHARE_ICON_SVG}</button>
               </div>`).join("")}
           </div>
           ${remaining > 0 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Voir les ${remaining} coureur${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""} ↓</button>` : ""}
@@ -2282,11 +2187,11 @@
         ? `<div class="state-message">Aucune équipe ne correspond.</div>`
         : `
           <div class="lb-table">
-            <div class="lb-row-full lb-row-duo head"><span>Rang</span><span>Scratch</span><span>Doss.</span><span>Coureurs</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Équipe</span><span></span></div>
+            <div class="lb-row-full lb-row-duo head"><span>Rang</span><span>Scratch</span><span>Doss.</span><span>Coureurs</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Équipe</span></div>
             ${shown.map(t => {
               const catRank = extractCategoryRank(t.classementCategorie);
               return `
-              <div class="lb-row-full lb-row-duo lb-row-tap" onclick="openRunnerStatModal('${t.coureurs[0].id}', true)">
+              <div class="lb-row-full lb-row-duo">
                 <span class="${lbRankClass(catRank)}">${catRank ?? "—"}</span>
                 <span class="lb-scratch">${t.classementGeneral ?? "—"}</span>
                 <span class="lb-dossard">${t.dossard || "—"}</span>
@@ -2296,7 +2201,6 @@
                 <span class="lb-time">${t.temps || "—"}</span>
                 <span class="lb-vitesse">${t.vitesse || "—"}</span>
                 <span class="lb-club-cell">${t.club || "—"}</span>
-                <button class="share-mini" onclick="event.stopPropagation(); shareResult('${t.coureurs[0].id}', true)" aria-label="Partager ce résultat">${SHARE_ICON_SVG}</button>
               </div>`;
             }).join("")}
           </div>
@@ -2846,10 +2750,7 @@
         <span class="crumb" onclick="showPage('challenge')">Tableau d'Honneur</span><span class="sep">/</span>
         <span class="crumb current">${displayRunnerName(runner)}</span>
       </div>
-      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
-        <h1 style="margin:0 0 0.2rem;">${displayRunnerName(runner)}</h1>
-        <button class="share-mini" style="width:36px; height:36px; flex-shrink:0; margin-top:6px;" onclick="shareRunner('${escJsArg(key)}')" aria-label="Partager cette fiche">${SHARE_ICON_SVG}</button>
-      </div>
+      <h1 style="margin:0 0 0.2rem;">${displayRunnerName(runner)}</h1>
       <p style="color:var(--muted); font-size:13.5px; margin:0 0 1.4rem;">${runner.club ? `<a style="color:var(--accent-deep); font-weight:700; cursor:pointer;" onclick="openClubFiche('${escJsArg(honneurNorm(runner.club))}')">${runner.club}</a> · ` : ""}Saison ${HONNEUR_YEAR}</p>
       <div class="stat-bar">
         <div class="stat-cell"><div class="l">Courses</div><div class="v accent">${races.length}</div></div>
