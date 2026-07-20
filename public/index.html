@@ -396,8 +396,16 @@
   .lb-subtab .count { font-weight: 700; opacity: .65; margin-left: 4px; font-size: 0.92em; }
 
   /* Tableau d'Honneur : listes de classement (coureurs / km / clubs) */
-  .lb-row.clickable { cursor: pointer; transition: background .12s ease; }
-  .lb-row.clickable:hover { background: var(--accent-tint); }
+  .lb-row.clickable, .lb-row-medals.clickable { cursor: pointer; transition: background .12s ease; }
+  .lb-row.clickable:hover, .lb-row-medals.clickable:hover { background: var(--accent-tint); }
+  /* Onglet Médailles : rang | nom | or | argent | bronze */
+  .lb-row-medals { display: grid; grid-template-columns: 36px 2fr 44px 44px 44px; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 6px; }
+  .lb-row-medals:last-child { border-bottom: none; }
+  .lb-row-medals.head { background: var(--bg); font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+  .lb-row-medals.head span:nth-child(n+3) { text-align: center; }
+  .medal-val { text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .medal-val.empty { color: var(--border); font-weight: 600; }
+  @media (max-width: 479px) { .lb-row-medals { grid-template-columns: 30px 1.5fr 34px 34px 34px; } }
   .honneur-value { font-weight: 800; color: var(--accent-deep); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .honneur-sub { font-size: 10.5px; color: var(--muted); font-weight: 600; }
   .honneur-more { display: block; width: 100%; margin-top: 12px; background: none; border: 1px solid var(--border); border-radius: 10px; padding: 11px; font-size: 12.5px; font-weight: 800; color: var(--muted); cursor: pointer; transition: border-color .15s ease, color .15s ease; }
@@ -2251,12 +2259,18 @@
 
       const key = coureurKeyOf(r);
       if (!runners[key]) {
-        runners[key] = { key, prenom: r.prenom, nom: r.nom, club: "", clubCounts: {}, sexe: r.sexe, races: [], km: 0 };
+        runners[key] = { key, prenom: r.prenom, nom: r.nom, club: "", clubCounts: {}, sexe: r.sexe, races: [], km: 0, podiums: 0, p1: 0, p2: 0, p3: 0 };
       }
       const runner = runners[key];
       const kmValue = distanceNumValue(r.distance);
       const kmCounted = !isSpecialFormatCourse(course) && isFinite(kmValue);
       if (kmCounted) runner.km += kmValue;
+      if (r.classementGeneral !== null && r.classementGeneral <= 3) {
+        runner.podiums++;
+        if (r.classementGeneral === 1) runner.p1++;
+        else if (r.classementGeneral === 2) runner.p2++;
+        else runner.p3++;
+      }
       runner.races.push({
         courseId: r.courseId,
         courseNom: course.nom,
@@ -2320,6 +2334,25 @@
     assignRanks(byKm, r => Math.round(r.km * 10), '_rankKm');
     assignRanks(clubList, c => c.participations, '_rank');
 
+    // Tableaux des médailles (coureurs et clubs) : classement façon tableau
+    // olympique — d'abord l'or, puis l'argent, puis le bronze.
+    const medalValue = x => x.p1 * 1000000 + x.p2 * 1000 + x.p3;
+    const byMedals = runnerList.filter(r => r.podiums > 0)
+      .sort((a, b) => medalValue(b) - medalValue(a) || (a.nom + a.prenom).localeCompare(b.nom + b.prenom, "fr"));
+    assignRanks(byMedals, medalValue, '_rankMedals');
+    const clubsByMedals = clubList.filter(c => c.podiums > 0)
+      .sort((a, b) => medalValue(b) - medalValue(a) || a.nom.localeCompare(b.nom, "fr"));
+    assignRanks(clubsByMedals, medalValue, '_rankMedals');
+
+    // Versions clubs des classements "nombre de courses" (courses
+    // distinctes où le club était représenté) et "nombre de kilomètres"
+    // (km cumulés par tous ses coureurs).
+    clubList.forEach(c => { c.nbCourses = Object.keys(c.courseCounts).length; });
+    const clubsByCourses = [...clubList].sort((a, b) => b.nbCourses - a.nbCourses || a.nom.localeCompare(b.nom, "fr"));
+    assignRanks(clubsByCourses, c => c.nbCourses, '_rankRaces');
+    const clubsByKm = clubList.filter(c => c.km > 0).sort((a, b) => b.km - a.km || a.nom.localeCompare(b.nom, "fr"));
+    assignRanks(clubsByKm, c => Math.round(c.km * 10), '_rankKm');
+
     const rankByRaces = {}, rankByKm = {};
     byRaces.forEach(r => { rankByRaces[r.key] = r._rankRaces; });
     byKm.forEach(r => { rankByKm[r.key] = r._rankKm; });
@@ -2327,7 +2360,7 @@
     const clubsByKey = {};
     clubList.forEach(c => { clubsByKey[c.key] = c; });
 
-    honneurData = { byRaces, byKm, clubs: clubList, runners, rankByRaces, rankByKm, clubsByKey };
+    honneurData = { byRaces, byKm, byMedals, clubsByMedals, clubsByCourses, clubsByKm, clubs: clubList, runners, rankByRaces, rankByKm, clubsByKey };
     return honneurData;
   }
 
@@ -2351,6 +2384,18 @@
     honneurExpanded = false;
     // La recherche ne se transfère pas d'un onglet à l'autre (un nom de
     // coureur n'a pas de sens dans l'onglet Clubs, et inversement).
+    const inp = document.getElementById('honneurSearch');
+    if (inp) inp.value = '';
+    renderTableauHonneur();
+  }
+
+  // Sous-onglet Coureur(se)s / Clubs, mémorisé par onglet principal :
+  // revenir sur "Nombre de courses" retrouve le sous-onglet qu'on y avait
+  // laissé, indépendamment de celui des autres onglets.
+  const honneurSub = { courses: 'coureurs', km: 'coureurs', medailles: 'coureurs' };
+  function switchHonneurSub(sub) {
+    honneurSub[honneurTab] = sub;
+    honneurExpanded = false;
     const inp = document.getElementById('honneurSearch');
     if (inp) inp.value = '';
     renderTableauHonneur();
@@ -2390,8 +2435,9 @@
     const q = honneurNorm(rawValue.trim());
 
     const tabs = [
-      { id: 'courses', label: '🏁 Courses' },
-      { id: 'km', label: '📏 Kilomètres' },
+      { id: 'courses', label: '🏁 Nombre de courses' },
+      { id: 'km', label: '📏 Nombre de kilomètres' },
+      { id: 'medailles', label: '🏅 Médailles' },
       { id: 'clubs', label: '👥 Clubs' },
     ];
     const tabsHtml = `<div class="lb-tabs">${tabs.map(t =>
@@ -2399,42 +2445,96 @@
     ).join("")}</div>`;
 
     let rowsSource, header, rowHtml, countLabel, placeholder;
-    if (honneurTab === 'clubs') {
-      rowsSource = clubs;
+    let subTabsHtml = "";
+
+    // Filtres de recherche et gabarits de lignes partagés entre onglets.
+    const filterRunners = list => q ? list.filter(r => honneurNorm(r.prenom + " " + r.nom + " " + r.nom + " " + r.prenom + " " + (r.club || "")).includes(q)) : list;
+    const filterClubs = list => q ? list.filter(c => honneurNorm(c.nom).includes(q)) : list;
+    const runnerRowHtml = (rankProp, valueOf) => r => `
+      <div class="lb-row clickable" onclick="openCoureur('${escJsArg(r.key)}')">
+        ${honneurRankBadge(r[rankProp])}
+        <span class="lb-name">${r.prenom} ${r.nom}${r.club ? `<div class="honneur-sub">${r.club}</div>` : ""}</span>
+        <span class="honneur-value">${valueOf(r)}</span>
+      </div>`;
+    const clubRowHtml = (rankProp, valueOf, subOf) => c => `
+      <div class="lb-row clickable" onclick="openClubFiche('${escJsArg(c.key)}')">
+        ${honneurRankBadge(c[rankProp])}
+        <span class="lb-name">${c.nom}${subOf ? `<div class="honneur-sub">${subOf(c)}</div>` : ""}</span>
+        <span class="honneur-value">${valueOf(c)}</span>
+      </div>`;
+    // Sous-onglets Coureur(se)s / Clubs des onglets courses, km et médailles.
+    const isClubsSub = honneurSub[honneurTab] === 'clubs';
+    const buildSubTabs = (runnerCount, clubCount) => `<div class="lb-subtabs">
+      <button class="lb-subtab ${!isClubsSub ? 'active' : ''}" onclick="switchHonneurSub('coureurs')">Coureur(se)s<span class="count">${runnerCount}</span></button>
+      <button class="lb-subtab ${isClubsSub ? 'active' : ''}" onclick="switchHonneurSub('clubs')">Clubs<span class="count">${clubCount}</span></button>
+    </div>`;
+
+    if (honneurTab === 'medailles') {
+      const { byMedals, clubsByMedals } = honneurData;
+      subTabsHtml = buildSubTabs(byMedals.length, clubsByMedals.length);
+      const medalCell = (n, color) => `<span class="medal-val${n ? '' : ' empty'}"${n ? ` style="color:${color};"` : ''}>${n || '—'}</span>`;
+      const medalCells = x => `${medalCell(x.p1, '#B8860B')}${medalCell(x.p2, '#7D7F82')}${medalCell(x.p3, '#B5651D')}`;
+      if (isClubsSub) {
+        rowsSource = filterClubs(clubsByMedals);
+        placeholder = "Chercher un club...";
+        countLabel = `${clubsByMedals.length} club${clubsByMedals.length > 1 ? "s" : ""} médaillé${clubsByMedals.length > 1 ? "s" : ""}`;
+        header = `<div class="lb-row-medals head"><span>#</span><span>Club</span><span>🥇</span><span>🥈</span><span>🥉</span></div>`;
+        rowHtml = c => `
+          <div class="lb-row-medals clickable" onclick="openClubFiche('${escJsArg(c.key)}')">
+            ${honneurRankBadge(c._rankMedals)}
+            <span class="lb-name">${c.nom}</span>
+            ${medalCells(c)}
+          </div>`;
+      } else {
+        rowsSource = filterRunners(byMedals);
+        placeholder = "Chercher un(e) coureur(se)...";
+        countLabel = `${byMedals.length} coureur·se·s médaillé·e·s`;
+        header = `<div class="lb-row-medals head"><span>#</span><span>Coureur·se</span><span>🥇</span><span>🥈</span><span>🥉</span></div>`;
+        rowHtml = r => `
+          <div class="lb-row-medals clickable" onclick="openCoureur('${escJsArg(r.key)}')">
+            ${honneurRankBadge(r._rankMedals)}
+            <span class="lb-name">${r.prenom} ${r.nom}${r.club ? `<div class="honneur-sub">${r.club}</div>` : ""}</span>
+            ${medalCells(r)}
+          </div>`;
+      }
+    } else if (honneurTab === 'clubs') {
+      rowsSource = filterClubs(clubs);
       placeholder = "Chercher un club...";
       countLabel = `${clubs.length} club${clubs.length > 1 ? "s" : ""} classé${clubs.length > 1 ? "s" : ""}`;
-      if (q) rowsSource = rowsSource.filter(c => honneurNorm(c.nom).includes(q));
       header = `<div class="lb-row head"><span>#</span><span>Club</span><span style="text-align:right;">Participations</span></div>`;
-      rowHtml = c => `
-        <div class="lb-row clickable" onclick="openClubFiche('${escJsArg(c.key)}')">
-          ${honneurRankBadge(c._rank)}
-          <span class="lb-name">${c.nom}<div class="honneur-sub">${c.coureurs.size} coureur${c.coureurs.size > 1 ? "s" : ""}</div></span>
-          <span class="honneur-value">${c.participations}</span>
-        </div>`;
+      rowHtml = clubRowHtml('_rank', c => c.participations, c => `${c.coureurs.size} coureur${c.coureurs.size > 1 ? "s" : ""}`);
     } else if (honneurTab === 'km') {
-      rowsSource = byKm;
-      placeholder = "Chercher un(e) coureur(se)...";
-      countLabel = `${byKm.length} coureur·se·s classé·e·s`;
-      if (q) rowsSource = rowsSource.filter(r => honneurNorm(r.prenom + " " + r.nom + " " + r.nom + " " + r.prenom + " " + (r.club || "")).includes(q));
-      header = `<div class="lb-row head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Km</span></div>`;
-      rowHtml = r => `
-        <div class="lb-row clickable" onclick="openCoureur('${escJsArg(r.key)}')">
-          ${honneurRankBadge(r._rankKm)}
-          <span class="lb-name">${r.prenom} ${r.nom}${r.club ? `<div class="honneur-sub">${r.club}</div>` : ""}</span>
-          <span class="honneur-value">${formatKm(r.km)} km</span>
-        </div>`;
+      const { clubsByKm } = honneurData;
+      subTabsHtml = buildSubTabs(byKm.length, clubsByKm.length);
+      if (isClubsSub) {
+        rowsSource = filterClubs(clubsByKm);
+        placeholder = "Chercher un club...";
+        countLabel = `${clubsByKm.length} club${clubsByKm.length > 1 ? "s" : ""} classé${clubsByKm.length > 1 ? "s" : ""}`;
+        header = `<div class="lb-row head"><span>#</span><span>Club</span><span style="text-align:right;">Km</span></div>`;
+        rowHtml = clubRowHtml('_rankKm', c => formatKm(c.km) + " km", c => `${c.coureurs.size} coureur${c.coureurs.size > 1 ? "s" : ""}`);
+      } else {
+        rowsSource = filterRunners(byKm);
+        placeholder = "Chercher un(e) coureur(se)...";
+        countLabel = `${byKm.length} coureur·se·s classé·e·s`;
+        header = `<div class="lb-row head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Km</span></div>`;
+        rowHtml = runnerRowHtml('_rankKm', r => formatKm(r.km) + " km");
+      }
     } else {
-      rowsSource = byRaces;
-      placeholder = "Chercher un(e) coureur(se)...";
-      countLabel = `${byRaces.length} coureur·se·s classé·e·s`;
-      if (q) rowsSource = rowsSource.filter(r => honneurNorm(r.prenom + " " + r.nom + " " + r.nom + " " + r.prenom + " " + (r.club || "")).includes(q));
-      header = `<div class="lb-row head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Courses</span></div>`;
-      rowHtml = r => `
-        <div class="lb-row clickable" onclick="openCoureur('${escJsArg(r.key)}')">
-          ${honneurRankBadge(r._rankRaces)}
-          <span class="lb-name">${r.prenom} ${r.nom}${r.club ? `<div class="honneur-sub">${r.club}</div>` : ""}</span>
-          <span class="honneur-value">${r.races.length}</span>
-        </div>`;
+      const { clubsByCourses } = honneurData;
+      subTabsHtml = buildSubTabs(byRaces.length, clubsByCourses.length);
+      if (isClubsSub) {
+        rowsSource = filterClubs(clubsByCourses);
+        placeholder = "Chercher un club...";
+        countLabel = `${clubsByCourses.length} club${clubsByCourses.length > 1 ? "s" : ""} classé${clubsByCourses.length > 1 ? "s" : ""}`;
+        header = `<div class="lb-row head"><span>#</span><span>Club</span><span style="text-align:right;">Courses</span></div>`;
+        rowHtml = clubRowHtml('_rankRaces', c => c.nbCourses, c => `${c.coureurs.size} coureur${c.coureurs.size > 1 ? "s" : ""}`);
+      } else {
+        rowsSource = filterRunners(byRaces);
+        placeholder = "Chercher un(e) coureur(se)...";
+        countLabel = `${byRaces.length} coureur·se·s classé·e·s`;
+        header = `<div class="lb-row head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Courses</span></div>`;
+        rowHtml = runnerRowHtml('_rankRaces', r => r.races.length);
+      }
     }
 
     // Avec une recherche active, on montre tous les résultats filtrés (le
@@ -2450,6 +2550,7 @@
 
     container.innerHTML = `
       ${tabsHtml}
+      ${subTabsHtml}
       <div class="lb-count-row">
         <div class="lb-count-label">${countLabel}</div>
         <div class="lb-search-slot">
