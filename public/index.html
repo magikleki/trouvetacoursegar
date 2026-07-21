@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Trouve ta Course — Calendrier running du Gard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root {
     --bg: #F7F5F0;
@@ -150,6 +152,19 @@
   .date-reset-btn { background: none; border: none; color: var(--muted); font-size: 13px; font-weight: 700; cursor: pointer; padding: 9px 8px; }
   .date-reset-btn:hover { color: var(--accent-deep); }
   .type-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+  /* --- Carte modale --- */
+  .map-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(29,27,22,0.5); z-index: 100; align-items: center; justify-content: center; padding: 0.6rem; }
+  .map-modal-overlay.open { display: flex; }
+  .map-modal { background: var(--card); border-radius: 22px; width: 100%; max-width: 900px; height: 88vh; display: flex; flex-direction: column; overflow: hidden; }
+  .map-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.2rem 0.6rem; }
+  .map-modal-title { font-size: 18px; font-weight: 800; }
+  .map-modal-close { background: var(--bg); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 14px; color: var(--muted); cursor: pointer; }
+  .map-modal-close:hover { background: var(--accent-tint); color: var(--accent-deep); }
+  #mapContainer { flex: 1; border-radius: 0 0 22px 22px; }
+  .map-legend { display: flex; gap: 10px; flex-wrap: wrap; padding: 0 1.2rem 0.6rem; }
+  .map-legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--muted); }
+  .map-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
   .date-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(29,27,22,0.5); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
   .date-modal-overlay.open { display: flex; }
@@ -618,6 +633,7 @@
       <button class="date-filter-btn" id="typeFilterBtn" onclick="openTypeModal()">
         <span id="typeFilterLabel">Type de course</span>
       </button>
+      <button class="date-filter-btn" onclick="openMapModal()">📍 Carte</button>
       <button class="date-reset-btn" onclick="resetAllFilters()">↺ Effacer</button>
     </div>
   </div>
@@ -682,6 +698,18 @@
         <button class="date-apply-btn" onclick="applyTypeFilter()" id="typeApplyBtn">Afficher 0 course</button>
         <div class="date-clear-link" onclick="clearTypeFilter()">Tout effacer</div>
       </div>
+    </div>
+  </div>
+
+  <!-- Carte interactive -->
+  <div class="map-modal-overlay" id="mapModalOverlay" onclick="if(event.target===this) closeMapModal()">
+    <div class="map-modal">
+      <div class="map-modal-header">
+        <div class="map-modal-title">Carte des courses — Gard</div>
+        <button class="map-modal-close" onclick="closeMapModal()">✕</button>
+      </div>
+      <div class="map-legend" id="mapLegend"></div>
+      <div id="mapContainer"></div>
     </div>
   </div>
 
@@ -1331,6 +1359,136 @@
     updateDistanceButtonLabel();
     updateTypeButtonLabel();
     renderCalendrier();
+  }
+
+  // -----------------------------------------------------------------------
+  // Carte interactive
+  // -----------------------------------------------------------------------
+  const COMMUNE_COORDS = {
+    "Bagnols-sur-Cèze":[44.1622,4.6244],"Aigues-Mortes":[43.5482,4.1606],
+    "Saint-Jean-de-Maruéjols-et-Avéjan":[44.2665,4.2968],"Estezargues":[43.956,4.6369],
+    "Saint-Siffret":[44.0148,4.4677],"Bagard":[44.0684,4.0422],"Caveirac":[43.8344,4.2723],
+    "Brouzet-lès-Alès":[44.1338,4.2533],"Valleraugue":[44.081,3.6272],
+    "Vénéjan":[44.1961,4.6726],"Bouillargues":[43.7989,4.4345],"Nîmes":[43.8322,4.3429],
+    "Vergèze":[43.7341,4.2332],"Cannes-et-Clairan":[43.9101,4.0879],
+    "Saint-Géniès-de-Malgoirès":[43.9477,4.214],"Domessargues":[43.973,4.1662],
+    "Lézan":[44.0119,4.0522],"Boisset et Gaujac":[44.0508,4.0282],
+    "Caissargues":[43.7924,4.3919],"Saint-Ambroix":[44.2489,4.1913],
+    "Saint-Gilles":[43.6606,4.4128],"Les Angles":[43.9414,4.7563],
+    "Villeneuve-lès-Avignon":[43.9776,4.792],"Uzès":[44.0289,4.416],
+    "Saint-Hilaire-de-Brethmas":[44.0941,4.1229],"Pont-Saint-Esprit":[44.2518,4.6422],
+    "Alès":[44.125,4.0905],"Pujaut":[44.0002,4.7645],"Beauvoisin":[43.6896,4.3222],
+    "Beaucaire":[43.7815,4.5912],"Méjannes-le-Clap":[44.233,4.3602],
+    "Codolet":[44.1267,4.7002],"Saint-Côme-et-Maruéjols":[43.833,4.1866],
+    "Quissac":[43.9213,3.9985],"Rochefort-du-Gard":[43.9841,4.682],
+    "Saze":[43.9464,4.6962],"Saint-Sébastien-d'Aigrefeuille":[44.1166,3.9915],
+    "Trèves":[44.0622,3.3869],"Saint-Christol-lès-Alès":[44.083,4.0682],
+    "Milhaud":[43.7831,4.3081],"Verfeuil":[44.1635,4.4568],
+    "Ribaute-les-Tavernes":[44.0434,4.09],"Branoux-les-Taillades":[44.2292,3.9822],
+    "Saint-Jean-de-Valériscle":[44.2328,4.1384],"Saint-Mamert-du-Gard":[43.8835,4.1763],
+    "Saint-Laurent-d'Aigouze":[43.5766,4.237],"Rousson":[44.1956,4.1526],
+    "Peyremale":[44.2989,4.0581],"Saint-Marcel-de-Careiret":[44.1434,4.4871],
+    "Barjac":[44.3137,4.3456],"Saint-Laurent-des-Arbres":[44.0522,4.6885],
+    "Pompignan":[43.8966,3.8659],"Arpaillargues-et-Aureillac":[43.9985,4.3687],
+    "Aubais":[43.7498,4.1422],"Saint-Victor-la-Coste":[44.052,4.6436],
+    "Laudun-l'Ardoise":[44.1051,4.6615],"Marguerittes":[43.8661,4.4594],
+    "Saint-Paulet-de-Caisson":[44.265,4.5827],"Tavel":[44.0086,4.6872],
+    "Le Vigan":[43.9822,3.6336],"Poulx":[43.9142,4.422],"Anduze":[44.054,3.9766],
+    "Saint-Jean-du-Gard":[44.1098,3.8796],"Bordezac":[44.3161,4.0843],
+    "Bourdic":[43.9777,4.3357],"Bellegarde":[43.7483,4.4967],
+    "Mont-Aigoual":[44.1214,3.5819],"Sauzet":[43.9632,4.2195],
+    "Genolhac":[44.3391,3.9481],"Saint-Julien-les-Rosiers":[44.1934,4.0986],
+    "Vic-le-Fesq":[43.8704,4.0813],"Clarensac":[43.8357,4.2251],
+    "Vers-Pont-du-Gard":[43.9697,4.5175],"Les Salles-du-Gardon":[44.1903,4.0155],
+    "Vauvert":[43.626,4.3103],"Sommières":[43.7706,4.0812],
+    "Fons-outre-Gardon":[43.9073,4.1801],"La Vernarède":[44.284,4.0077],
+    "Montclus":[44.2664,4.4189],"Cornillon":[44.2189,4.4931],
+    "Saint-Privat":[44.1411,4.1297],"Saint-Gervasy":[43.8715,4.4679]
+  };
+
+  let mapInstance = null;
+
+  function openMapModal() {
+    document.getElementById('mapModalOverlay').classList.add('open');
+    setTimeout(() => {
+      if (!mapInstance) {
+        mapInstance = L.map('mapContainer', { zoomControl: true }).setView([44.0, 4.2], 9);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap',
+          maxZoom: 18
+        }).addTo(mapInstance);
+      } else {
+        mapInstance.invalidateSize();
+      }
+      populateMapMarkers();
+    }, 150);
+  }
+
+  function closeMapModal() {
+    document.getElementById('mapModalOverlay').classList.remove('open');
+  }
+
+  function populateMapMarkers() {
+    if (!mapInstance) return;
+    // Retirer les anciens marqueurs
+    mapInstance.eachLayer(l => { if (l instanceof L.CircleMarker) mapInstance.removeLayer(l); });
+
+    // Légende : types présents
+    const typesPresent = new Set();
+
+    const upcoming = allCourses.filter(c => isUpcomingCourse(c));
+    const courses = upcoming.length ? upcoming : allCourses;
+
+    // Regrouper par commune pour décaler légèrement les marqueurs superposés
+    const byCommune = {};
+    courses.forEach(c => {
+      const commune = c.commune;
+      if (!commune) return;
+      if (!byCommune[commune]) byCommune[commune] = [];
+      byCommune[commune].push(c);
+    });
+
+    Object.entries(byCommune).forEach(([commune, list]) => {
+      const coords = COMMUNE_COORDS[commune];
+      if (!coords) return;
+
+      list.forEach((c, i) => {
+        const type = c.type || 'Nature';
+        const color = TYPE_COLORS[type] || '#746F62';
+        typesPresent.add(type);
+        // Petit décalage si plusieurs courses sur la même commune
+        const offset = list.length > 1 ? (i - (list.length - 1) / 2) * 0.004 : 0;
+        const lat = coords[0] + offset * 0.6;
+        const lng = coords[1] + offset;
+
+        const dateStr = c.date ? formatPodiumDate(c.date) : 'Date à définir';
+        const marker = L.circleMarker([lat, lng], {
+          radius: 8,
+          fillColor: color,
+          color: '#fff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9
+        }).addTo(mapInstance);
+
+        marker.bindPopup(`
+          <div style="font-family:inherit; min-width:180px;">
+            <div style="font-weight:800; font-size:14px; margin-bottom:4px;">${c.nom}</div>
+            <div style="font-size:12px; color:#746F62; margin-bottom:4px;">📍 ${commune}</div>
+            <div style="font-size:12px; margin-bottom:4px;">📅 ${dateStr}</div>
+            ${c.distances ? `<div style="font-size:12px; margin-bottom:4px;">📏 ${c.distances}</div>` : ''}
+            <div style="display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; color:#fff; background:${color};">${type}</div>
+            <div style="margin-top:8px;"><a href="#" onclick="event.preventDefault(); closeMapModal(); openFiche('${c.id}');" style="color:#E06A2C; font-weight:700; font-size:12px; text-decoration:none;">Voir la fiche →</a></div>
+          </div>
+        `, { maxWidth: 260 });
+      });
+    });
+
+    // Légende
+    const legendEl = document.getElementById('mapLegend');
+    legendEl.innerHTML = [...typesPresent].sort().map(t =>
+      `<div class="map-legend-item"><span class="map-legend-dot" style="background:${TYPE_COLORS[t] || '#746F62'}"></span>${t}</div>`
+    ).join('');
   }
 
   let coursesPromise = null;
