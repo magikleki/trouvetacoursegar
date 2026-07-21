@@ -232,8 +232,9 @@
   .pill-distance { display: inline-block; font-size: 12.5px; font-weight: 700; padding: 4px 11px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); white-space: nowrap; flex-shrink: 0; }
   .result-date-label { font-size: 10.5px; font-weight: 700; color: var(--accent-deep); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
   .ccard .body { padding: 10px 12px 12px; }
-  .ccard-share { float: right; background: none; border: none; font-size: 15px; cursor: pointer; opacity: .5; padding: 0 0 4px 8px; transition: opacity .12s ease, transform .12s ease; }
+  .ccard-share { float: right; background: none; border: none; font-size: 15px; cursor: pointer; opacity: .7; padding: 0 0 4px 8px; transition: opacity .12s ease, transform .12s ease; }
   .ccard-share:hover { opacity: 1; transform: scale(1.15); }
+  @media (hover: none) { .ccard-share { opacity: 1; } }
   .ccard .date { font-size: 10.5px; font-weight: 700; color: var(--accent-deep); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
   .ccard .title { font-weight: 800; font-size: 13.5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ccard .loc { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -364,8 +365,9 @@
   .lb-table-clickable:hover { border-color: var(--accent); box-shadow: 0 10px 20px -12px rgba(0,0,0,0.25); }
   .lb-row { display: grid; grid-template-columns: 36px 2fr 1fr; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 6px; }
   .lb-row-full { display: grid; grid-template-columns: 40px 52px 2fr 46px 1fr 84px 84px 1.2fr 34px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 8px; }
-  .lb-share-btn { background: none; border: none; font-size: 15px; cursor: pointer; padding: 2px 4px; opacity: .5; transition: opacity .12s ease, transform .12s ease; }
+  .lb-share-btn { background: none; border: none; font-size: 15px; cursor: pointer; padding: 2px 4px; opacity: .7; transition: opacity .12s ease, transform .12s ease; }
   .lb-share-btn:hover { opacity: 1; transform: scale(1.15); }
+  @media (hover: none) { .lb-share-btn { opacity: 1; } }
   .share-inline-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-tint); color: var(--accent-deep); border: none; border-radius: 999px; padding: 9px 16px; font-size: 13px; font-weight: 800; cursor: pointer; transition: background .15s ease, color .15s ease; }
   .share-inline-btn:hover { background: var(--accent); color: #fff; }
   .share-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 700; z-index: 9999; opacity: 0; transition: opacity .25s ease, transform .25s ease; pointer-events: none; max-width: 90vw; text-align: center; }
@@ -3367,6 +3369,8 @@
     clubList.forEach(c => { clubsByKey[c.key] = c; });
 
     honneurData = { byRaces, byKm, byMedals, clubsByMedals, clubsByCourses, clubsByKm, clubs: clubList, runners, rankByRaces, rankByKm, clubsByKey };
+    _honneurSearchCache = null;
+    _honneurCurrent = null;
     return honneurData;
   }
 
@@ -3377,13 +3381,18 @@
       container.innerHTML = `<div class="state-message">Chargement…</div>`;
       await Promise.all([loadCourses(), loadResultatsCountForStats(), loadClubs()]);
     }
-    buildHonneurData();
+    if (!honneurData) buildHonneurData();
     renderTableauHonneur();
   }
 
   let honneurTab = 'courses';
   let honneurExpanded = false;
   const HONNEUR_VISIBLE = 25;
+  let _honneurSearchTimer = null;
+  function debouncedHonneurSearch() {
+    clearTimeout(_honneurSearchTimer);
+    _honneurSearchTimer = setTimeout(updateHonneurBody, 120);
+  }
 
   // Ouvre la page Tableau d'Honneur directement sur l'onglet demandé
   // (utilisé par les cartes de l'accueil : « Voir le classement »).
@@ -3427,6 +3436,25 @@
     return `<span class="${lbRankClass(rank)}">${rank}</span>`;
   }
 
+  // Cache de recherche : évite d'appeler honneurNorm() sur chaque coureur/
+  // club à chaque frappe. Le cache est invalidé par buildHonneurData().
+  let _honneurSearchCache = null;
+  function getHonneurSearchCache() {
+    if (_honneurSearchCache) return _honneurSearchCache;
+    _honneurSearchCache = { runners: {}, clubs: {} };
+    Object.values(honneurData.runners).forEach(r => {
+      _honneurSearchCache.runners[r.key] = honneurNorm(r.prenom + " " + r.nom + " " + r.nom + " " + r.prenom + " " + (r.club || ""));
+    });
+    honneurData.clubs.forEach(c => {
+      _honneurSearchCache.clubs[c.key] = honneurNorm(c.nom);
+    });
+    return _honneurSearchCache;
+  }
+
+  // Données partagées entre renderTableauHonneur (structure complète) et
+  // updateHonneurBody (mise à jour du tableau seul lors de la recherche).
+  let _honneurCurrent = null;
+
   function renderTableauHonneur() {
     const container = document.getElementById("challengeContent");
     if (!honneurData) return;
@@ -3437,15 +3465,8 @@
       return;
     }
 
-    // La recherche re-rend tout le bloc à chaque frappe : on capture l'état
-    // du champ (valeur, sélection, focus) avant le innerHTML et on le
-    // restaure après, sinon le champ recréé perdrait le focus (même
-    // technique que la recherche du classement de course).
     const prevInput = document.getElementById('honneurSearch');
     const rawValue = prevInput ? prevInput.value : '';
-    const hadFocus = prevInput === document.activeElement;
-    const selStart = prevInput ? prevInput.selectionStart : null;
-    const selEnd = prevInput ? prevInput.selectionEnd : null;
     const q = honneurNorm(rawValue.trim());
 
     const tabs = [
@@ -3459,12 +3480,13 @@
       `<button class="lb-tab ${honneurTab === t.id ? 'active' : ''}" onclick="switchHonneurTab('${t.id}')">${t.label}</button>`
     ).join("")}</div>`;
 
-    let rowsSource, header, rowHtml, countLabel, placeholder;
+    const cache = getHonneurSearchCache();
+    let rowsSource, header, rowHtml, countLabel, placeholder, fullList;
     let subTabsHtml = "";
 
-    // Filtres de recherche et gabarits de lignes partagés entre onglets.
-    const filterRunners = list => q ? list.filter(r => honneurNorm(r.prenom + " " + r.nom + " " + r.nom + " " + r.prenom + " " + (r.club || "")).includes(q)) : list;
-    const filterClubs = list => q ? list.filter(c => honneurNorm(c.nom).includes(q)) : list;
+    // Filtres de recherche optimisés (utilisent le cache normalisé).
+    const filterRunners = list => q ? list.filter(r => cache.runners[r.key].includes(q)) : list;
+    const filterClubs = list => q ? list.filter(c => cache.clubs[c.key].includes(q)) : list;
     const runnerRowHtml = (rankProp, valueOf) => r => `
       <div class="lb-row with-share clickable" onclick="openCoureur('${escJsArg(r.key)}')">
         ${honneurRankBadge(r[rankProp])}
@@ -3478,8 +3500,6 @@
         <span class="lb-name">${c.nom}${subOf ? `<div class="honneur-sub">${subOf(c)}</div>` : ""}</span>
         <span class="honneur-value">${valueOf(c)}</span>
       </div>`;
-    // Sous-onglets Coureur(se)s / Clubs des onglets courses, km et médailles.
-    // Sans les stats clubs, on reste toujours côté coureurs, sans sous-onglets.
     const isClubsSub = SHOW_CLUB_STATS && honneurSub[honneurTab] === 'clubs';
     const buildSubTabs = (runnerCount, clubCount) => !SHOW_CLUB_STATS ? "" : `<div class="lb-subtabs">
       <button class="lb-subtab ${!isClubsSub ? 'active' : ''}" onclick="switchHonneurSub('coureurs')">Coureur(se)s<span class="count">${runnerCount}</span></button>
@@ -3492,7 +3512,7 @@
       const medalCell = (n, color) => `<span class="medal-val${n ? '' : ' empty'}"${n ? ` style="color:${color};"` : ''}>${n || '—'}</span>`;
       const medalCells = x => `${medalCell(x.p1, '#B8860B')}${medalCell(x.p2, '#7D7F82')}${medalCell(x.p3, '#B5651D')}`;
       if (isClubsSub) {
-        rowsSource = filterClubs(clubsByMedals);
+        fullList = clubsByMedals; rowsSource = filterClubs(clubsByMedals);
         placeholder = "Chercher un club...";
         countLabel = `${clubsByMedals.length} club${clubsByMedals.length > 1 ? "s" : ""} médaillé${clubsByMedals.length > 1 ? "s" : ""}`;
         header = `<div class="lb-row-medals head"><span>#</span><span>Club</span><span>🥇</span><span>🥈</span><span>🥉</span></div>`;
@@ -3503,7 +3523,7 @@
             ${medalCells(c)}
           </div>`;
       } else {
-        rowsSource = filterRunners(byMedals);
+        fullList = byMedals; rowsSource = filterRunners(byMedals);
         placeholder = "Chercher un(e) coureur(se)...";
         countLabel = `${byMedals.length} coureur·se·s médaillé·e·s`;
         header = `<div class="lb-row-medals with-share head"><span>#</span><span>Coureur·se</span><span>🥇</span><span>🥈</span><span>🥉</span><span></span></div>`;
@@ -3516,7 +3536,7 @@
           </div>`;
       }
     } else if (honneurTab === 'clubs') {
-      rowsSource = filterClubs(clubs);
+      fullList = clubs; rowsSource = filterClubs(clubs);
       placeholder = "Chercher un club...";
       countLabel = `${clubs.length} club${clubs.length > 1 ? "s" : ""} classé${clubs.length > 1 ? "s" : ""}`;
       header = `<div class="lb-row head"><span>#</span><span>Club</span><span style="text-align:right;">Participations</span></div>`;
@@ -3525,13 +3545,13 @@
       const { clubsByKm } = honneurData;
       subTabsHtml = buildSubTabs(byKm.length, clubsByKm.length);
       if (isClubsSub) {
-        rowsSource = filterClubs(clubsByKm);
+        fullList = clubsByKm; rowsSource = filterClubs(clubsByKm);
         placeholder = "Chercher un club...";
         countLabel = `${clubsByKm.length} club${clubsByKm.length > 1 ? "s" : ""} classé${clubsByKm.length > 1 ? "s" : ""}`;
         header = `<div class="lb-row head"><span>#</span><span>Club</span><span style="text-align:right;">Km</span></div>`;
         rowHtml = clubRowHtml('_rankKm', c => formatKm(c.km) + " km", c => `${c.coureurs.size} coureur${c.coureurs.size > 1 ? "s" : ""}`);
       } else {
-        rowsSource = filterRunners(byKm);
+        fullList = byKm; rowsSource = filterRunners(byKm);
         placeholder = "Chercher un(e) coureur(se)...";
         countLabel = `${byKm.length} coureur·se·s classé·e·s`;
         header = `<div class="lb-row with-share head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Km</span><span></span></div>`;
@@ -3541,13 +3561,13 @@
       const { clubsByCourses } = honneurData;
       subTabsHtml = buildSubTabs(byRaces.length, clubsByCourses.length);
       if (isClubsSub) {
-        rowsSource = filterClubs(clubsByCourses);
+        fullList = clubsByCourses; rowsSource = filterClubs(clubsByCourses);
         placeholder = "Chercher un club...";
         countLabel = `${clubsByCourses.length} club${clubsByCourses.length > 1 ? "s" : ""} classé${clubsByCourses.length > 1 ? "s" : ""}`;
         header = `<div class="lb-row head"><span>#</span><span>Club</span><span style="text-align:right;">Courses</span></div>`;
         rowHtml = clubRowHtml('_rankRaces', c => c.nbCourses, c => `${c.coureurs.size} coureur${c.coureurs.size > 1 ? "s" : ""}`);
       } else {
-        rowsSource = filterRunners(byRaces);
+        fullList = byRaces; rowsSource = filterRunners(byRaces);
         placeholder = "Chercher un(e) coureur(se)...";
         countLabel = `${byRaces.length} coureur·se·s classé·e·s`;
         header = `<div class="lb-row with-share head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Courses</span><span></span></div>`;
@@ -3555,8 +3575,9 @@
       }
     }
 
-    // Avec une recherche active, on montre tous les résultats filtrés (le
-    // rang affiché reste le rang global) ; sinon, top 25 + "Voir plus".
+    // Mémorise les fonctions de rendu pour updateHonneurBody (recherche rapide).
+    _honneurCurrent = { fullList, rowHtml, header, filterRunners, filterClubs, isClubsSub };
+
     const visible = (q || honneurExpanded) ? rowsSource : rowsSource.slice(0, HONNEUR_VISIBLE);
     const moreCount = rowsSource.length - visible.length;
     const bodyHtml = visible.length
@@ -3572,21 +3593,40 @@
       <div class="lb-count-row">
         <div class="lb-count-label">${countLabel}${honneurTab !== 'clubs' && !isClubsSub ? ` <button class="lb-share-btn" title="Partager le top 3 de ce classement" onclick="shareHonneur('${honneurTab}')">📤</button>` : ""}</div>
         <div class="lb-search-slot">
-          <input class="lb-search" id="honneurSearch" placeholder="${placeholder}" oninput="renderTableauHonneur()" value="${escapeHtmlAttr(rawValue)}" style="width:100%;" />
+          <input class="lb-search" id="honneurSearch" placeholder="${placeholder}" oninput="debouncedHonneurSearch()" value="${escapeHtmlAttr(rawValue)}" style="width:100%;" />
         </div>
       </div>
-      <div class="lb-table">${header}${bodyHtml}</div>
-      ${moreCount > 0 ? `<button class="honneur-more" onclick="expandHonneur()">Voir les ${moreCount} suivant${moreCount > 1 ? "s" : ""}</button>` : ""}
+      <div class="lb-table" id="honneurTableBody">${header}${bodyHtml}</div>
+      <div id="honneurMoreSlot">${moreCount > 0 ? `<button class="honneur-more" onclick="expandHonneur()">Voir les ${moreCount} suivant${moreCount > 1 ? "s" : ""}</button>` : ""}</div>
       ${noteHtml}`;
+  }
 
-    if (hadFocus) {
-      const newInput = document.getElementById('honneurSearch');
-      if (newInput) {
-        newInput.focus();
-        if (selStart !== null && selEnd !== null) {
-          try { newInput.setSelectionRange(selStart, selEnd); } catch (e) {}
-        }
-      }
+  // Mise à jour rapide du tableau uniquement (appelée par le debounce de
+  // recherche) : pas de reconstruction de l'input → pas de perte de focus.
+  function updateHonneurBody() {
+    if (!_honneurCurrent || !honneurData) { renderTableauHonneur(); return; }
+    const inp = document.getElementById('honneurSearch');
+    if (!inp) { renderTableauHonneur(); return; }
+    const q = honneurNorm(inp.value.trim());
+    const cache = getHonneurSearchCache();
+    const { fullList, rowHtml, header, isClubsSub } = _honneurCurrent;
+
+    const filterFn = (honneurTab === 'clubs' || isClubsSub)
+      ? (list => q ? list.filter(c => cache.clubs[c.key].includes(q)) : list)
+      : (list => q ? list.filter(r => cache.runners[r.key].includes(q)) : list);
+    const rowsSource = filterFn(fullList);
+    const visible = (q || honneurExpanded) ? rowsSource : rowsSource.slice(0, HONNEUR_VISIBLE);
+    const moreCount = rowsSource.length - visible.length;
+
+    const tableEl = document.getElementById('honneurTableBody');
+    const moreEl = document.getElementById('honneurMoreSlot');
+    if (tableEl) {
+      tableEl.innerHTML = header + (visible.length
+        ? visible.map(rowHtml).join("")
+        : `<div class="lb-row" style="grid-template-columns: 1fr;"><span style="color:var(--muted);">Aucun résultat pour cette recherche.</span></div>`);
+    }
+    if (moreEl) {
+      moreEl.innerHTML = moreCount > 0 ? `<button class="honneur-more" onclick="expandHonneur()">Voir les ${moreCount} suivant${moreCount > 1 ? "s" : ""}</button>` : "";
     }
   }
 
