@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Outil résultats — génération de resultats.json</title>
+<!-- SheetJS pour lire les fichiers Excel (.xlsx/.xls) livrés par les chronométreurs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bleu: #2E6FCE; --bleu-fonce: #1d4e9e; --vert: #1e9e5a; --rouge: #c0392b;
+    --fond: #f4f6fa; --carte: #ffffff; --texte: #1c2733; --gris: #6b7a8c; --bord: #dde4ec;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--fond); color: var(--texte); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: var(--gris); margin: 0 0 18px; font-size: 14px; }
+  .card { background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 20px; margin-bottom: 18px; }
+  .card h2 { font-size: 16px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  .num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--bleu); color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
+  select, input[type=text], textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--bord); border-radius: 8px; font-size: 14px; background: #fff; font-family: inherit; }
+  textarea { min-height: 110px; resize: vertical; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 220px; }
+  .drop { border: 2px dashed var(--bord); border-radius: 12px; padding: 30px 16px; text-align: center; color: var(--gris); cursor: pointer; transition: all .15s; }
+  .drop.over { border-color: var(--bleu); background: #eef4fd; color: var(--bleu); }
+  .drop strong { color: var(--texte); }
+  .pill { display: inline-block; background: #eef4fd; color: var(--bleu-fonce); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; margin: 2px; }
+  .ok { color: var(--vert); font-weight: 600; }
+  .err { color: var(--rouge); font-weight: 600; }
+  .muted { color: var(--gris); font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 10px; }
+  th, td { border: 1px solid var(--bord); padding: 5px 8px; text-align: left; white-space: nowrap; max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+  th { background: #f0f4f9; position: sticky; top: 0; z-index: 1; }
+  .scroll { overflow: auto; max-height: 320px; border: 1px solid var(--bord); border-radius: 8px; }
+  .scroll.tall { max-height: 520px; }
+  button { background: var(--bleu); color: #fff; border: 0; border-radius: 8px; padding: 11px 18px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  button:hover { background: var(--bleu-fonce); }
+  button:disabled { background: #b8c4d2; cursor: not-allowed; }
+  button.secondary { background: #fff; color: var(--bleu-fonce); border: 1px solid var(--bleu); }
+  button.small { padding: 5px 10px; font-size: 13px; }
+  .grid-map { display: grid; grid-template-columns: 160px 1fr; gap: 8px 12px; align-items: center; }
+  .grid-map .field-name { font-size: 13px; font-weight: 600; }
+  .grid-map .req { color: var(--rouge); }
+  .banner { border-radius: 10px; padding: 12px 14px; font-size: 14px; margin-top: 12px; }
+  .banner.info { background: #eef4fd; color: var(--bleu-fonce); }
+  .banner.good { background: #e8f7ef; color: #14683c; }
+  .banner.bad { background: #fdeeee; color: var(--rouge); }
+  .steps { font-size: 14px; line-height: 1.7; }
+  code { background: #f0f4f9; border-radius: 4px; padding: 1px 6px; font-size: 13px; }
+  .checkline { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; font-size: 14px; }
+  .checkline input { margin-top: 3px; }
+  hr { border: 0; border-top: 1px solid var(--bord); margin: 18px 0; }
+  /* Onglets de mode */
+  .modes { display: flex; gap: 10px; margin: 0 0 18px; }
+  .mode-btn { flex: 1; padding: 14px; border-radius: 12px; border: 2px solid var(--bord); background: #fff; color: var(--texte); font-size: 15px; font-weight: 700; cursor: pointer; }
+  .mode-btn.active { border-color: var(--bleu); background: #eef4fd; color: var(--bleu-fonce); }
+  /* Édition */
+  td[contenteditable] { background: #fffdf2; cursor: text; }
+  td[contenteditable]:focus { outline: 2px solid var(--bleu); background: #fff; }
+  tr.del td { opacity: .38; text-decoration: line-through; }
+  tr.del td[contenteditable] { pointer-events: none; }
+  .edit-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .edit-bar input[type=text] { max-width: 260px; }
+  .tab-hint { font-size: 12.5px; color: var(--gris); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏃 Outil résultats</h1>
+  <p class="sub">Gère le fichier <code>resultats.json</code> du site : import de nouveaux résultats (fichier ou copier-coller) et correction des résultats existants.</p>
+
+  <!-- ÉTAPE 0 : état des données -->
+  <div class="card" id="cardState">
+    <h2><span class="num">0</span> Données actuelles</h2>
+    <div id="stateInfo" class="muted">Chargement des courses et des résultats existants…</div>
+    <div id="firstMigration" style="display:none;">
+      <div class="banner info">
+        Le fichier <code>/data/resultats.json</code> n'existe pas encore : les résultats affichés ci-dessus
+        viennent de l'ancienne API Airtable. Clique ci-dessous pour créer le fichier initial à partir de ces
+        données (migration une seule fois), puis dépose-le dans <code>public/data/</code>.
+      </div>
+      <p><button class="secondary" id="btnMigration">⬇️ Télécharger resultats.json (migration initiale)</button></p>
+    </div>
+  </div>
+
+  <!-- Choix du mode -->
+  <div class="modes">
+    <button class="mode-btn active" id="modeImportBtn">➕ Importer des résultats</button>
+    <button class="mode-btn" id="modeEditBtn">✏️ Modifier des résultats existants</button>
+  </div>
+
+  <!-- ==================== MODE IMPORT ==================== -->
+  <div id="modeImport">
+    <!-- ÉTAPE 1 : course -->
+    <div class="card">
+      <h2><span class="num">1</span> Choisis la course</h2>
+      <div class="row">
+        <div>
+          <label for="selCourse">Course (depuis Airtable)</label>
+          <select id="selCourse"><option value="">— chargement… —</option></select>
+        </div>
+        <div>
+          <label for="inpDistance">Distance / Épreuve (ex. « 10 km », « Semi », « Trail 21 km »)</label>
+          <input type="text" id="inpDistance" placeholder="Laisser vide si une colonne du fichier contient la distance">
+        </div>
+      </div>
+    </div>
+
+    <!-- ÉTAPE 2 : fichier ou collage -->
+    <div class="card">
+      <h2><span class="num">2</span> Dépose le fichier de résultats… ou colle les données</h2>
+      <div class="drop" id="dropZone">
+        <strong>Glisse ici le fichier CSV / Excel</strong><br>ou clique pour le choisir<br>
+        <span class="muted">Formats acceptés : .csv, .txt, .xlsx, .xls</span>
+        <input type="file" id="fileInput" accept=".csv,.txt,.xlsx,.xls" style="display:none;">
+      </div>
+      <div id="fileInfo"></div>
+      <hr>
+      <label for="pasteArea">Ou colle ici un tableau copié (depuis Excel, ou depuis un site de résultats)</label>
+      <textarea id="pasteArea" placeholder="Sélectionne le tableau des résultats (avec sa ligne d'en-têtes si possible), copie-le (Ctrl+C), puis colle-le ici (Ctrl+V)."></textarea>
+      <div class="checkline">
+        <input type="checkbox" id="chkHeaders" checked>
+        <label for="chkHeaders" style="margin:0; font-weight:400;">La première ligne collée contient les titres des colonnes (Clt, Nom, Temps…)</label>
+      </div>
+      <p><button class="secondary" id="btnPaste">Analyser les données collées</button></p>
+      <p class="muted">📄 Tu n'as qu'un PDF ou une capture d'écran ? Envoie-les à Claude dans la conversation : il en extraira les résultats et mettra le fichier à jour pour toi.</p>
+    </div>
+
+    <!-- ÉTAPE 3 : correspondance des colonnes -->
+    <div class="card" id="cardMap" style="display:none;">
+      <h2><span class="num">3</span> Vérifie la correspondance des colonnes</h2>
+      <p class="muted">L'outil a essayé de deviner. Corrige si besoin — seuls Nom et Classement général sont indispensables.</p>
+      <div class="grid-map" id="mapGrid"></div>
+    </div>
+
+    <!-- ÉTAPE 4 : aperçu -->
+    <div class="card" id="cardPreview" style="display:none;">
+      <h2><span class="num">4</span> Aperçu (10 premières lignes converties)</h2>
+      <div class="scroll" id="previewTable"></div>
+      <div id="previewBanner"></div>
+      <div class="checkline">
+        <input type="checkbox" id="chkReplace" checked>
+        <label for="chkReplace" style="margin:0; font-weight:400;">Remplacer les résultats déjà enregistrés pour cette course + distance (utile pour ré-importer après correction). Décoché : les nouvelles lignes s'ajoutent en plus.</label>
+      </div>
+    </div>
+
+    <!-- ÉTAPE 5 : génération -->
+    <div class="card" id="cardGen" style="display:none;">
+      <h2><span class="num">5</span> Génère le fichier</h2>
+      <p><button id="btnGenerate">⬇️ Télécharger le nouveau resultats.json</button></p>
+      <div id="genBanner"></div>
+      <hr>
+      <div class="steps">
+        <strong>Ensuite :</strong><br>
+        1. Remplace le fichier <code>public/data/resultats.json</code> de ton site par celui téléchargé.<br>
+        2. Redéploie le site comme d'habitude (git push / Vercel).<br>
+        3. Les nouveaux résultats apparaissent en ligne après le déploiement.
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODE ÉDITION ==================== -->
+  <div id="modeEdit" style="display:none;">
+    <div class="card">
+      <h2><span class="num">1</span> Choisis la course à corriger</h2>
+      <select id="selEditCourse"><option value="">— chargement… —</option></select>
+      <div class="edit-bar">
+        <input type="text" id="editSearch" placeholder="🔎 Filtrer (nom, club, dossard…)">
+        <button class="small secondary" id="btnAddRow" disabled>➕ Ajouter une ligne</button>
+        <span class="muted" id="editCount"></span>
+      </div>
+      <p class="tab-hint">Clique dans une case jaune pour la corriger. 🗑 barre une ligne (elle sera retirée du fichier) — reclique pour annuler.</p>
+      <div class="scroll tall" id="editTableWrap"><div class="muted" style="padding:14px;">Choisis une course ci-dessus.</div></div>
+    </div>
+    <div class="card">
+      <h2><span class="num">2</span> Télécharge le fichier corrigé</h2>
+      <p><button id="btnEditDownload" disabled>⬇️ Télécharger le nouveau resultats.json</button></p>
+      <div id="editBanner"></div>
+      <hr>
+      <div class="steps">
+        Comme pour un import : remplace <code>public/data/resultats.json</code> par le fichier téléchargé, puis redéploie le site.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- État ----------
+  let courses = [];            // depuis /api/courses
+  let existing = [];           // résultats actuels (JSON ou API)
+  let existingFromArchive = false;
+  let rows = [];               // lignes importées (tableaux)
+  let headers = [];            // en-têtes importées
+  let mapping = {};            // champCible -> index de colonne (ou -1)
+
+  const $ = (id) => document.getElementById(id);
+
+  // Champs cibles = exactement le format attendu par le site.
+  const TARGETS = [
+    { key: "nom",                 label: "Nom",                 required: true,  hints: ["nom", "name", "lastname", "last name"] },
+    { key: "prenom",              label: "Prénom",              required: false, hints: ["prenom", "prénom", "firstname", "first name"] },
+    { key: "classementGeneral",   label: "Classement général",  required: true,  hints: ["classement", "clt", "place", "rang", "scratch", "pos", "général", "general"] },
+    { key: "temps",               label: "Temps",               required: false, hints: ["temps", "time", "chrono", "duree", "durée"] },
+    { key: "sexe",                label: "Sexe",                required: false, hints: ["sexe", "sex", "genre", "gender", "s."] },
+    { key: "classementCategorie", label: "Class. catégorie",    required: false, hints: ["categorie", "catégorie", "cat", "clt cat", "class cat"] },
+    { key: "club",                label: "Club",                required: false, hints: ["club", "equipe", "équipe", "team", "association"] },
+    { key: "dossard",             label: "Dossard",             required: false, hints: ["dossard", "doss", "bib", "numero", "numéro", "n°"] },
+    { key: "vitesse",             label: "Vitesse",             required: false, hints: ["vitesse", "speed", "moyenne", "allure", "min/km", "km/h"] },
+    { key: "departement",         label: "Département",         required: false, hints: ["departement", "département", "dept", "dpt"] },
+    { key: "distance",            label: "Distance / Épreuve",  required: false, hints: ["distance", "epreuve", "épreuve", "course", "format"] },
+  ];
+
+  // Colonnes affichées/éditables dans le mode édition.
+  const EDIT_COLS = [
+    { key: "classementGeneral", label: "Clt" },
+    { key: "dossard",           label: "Doss." },
+    { key: "nom",               label: "Nom" },
+    { key: "prenom",            label: "Prénom" },
+    { key: "sexe",              label: "Sexe" },
+    { key: "temps",             label: "Temps" },
+    { key: "classementCategorie", label: "Cat." },
+    { key: "club",              label: "Club" },
+    { key: "vitesse",           label: "Vitesse" },
+    { key: "distance",          label: "Distance" },
+    { key: "departement",       label: "Dépt" },
+  ];
+
+  // ---------- Utilitaires ----------
+  function norm(s) {
+    return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  }
+
+  function slug(s) {
+    return norm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30) || "x";
+  }
+
+  function normalizeSexe(v) {
+    const n = norm(v);
+    if (!n) return "";
+    if (/^f/.test(n) || /^w/.test(n)) return "F";      // F, Féminin, Femme, Woman…
+    if (/^[hm]/.test(n)) return "H";                    // H, M, Homme, Masculin, Male…
+    return "";
+  }
+
+  function parseRank(v) {
+    const m = String(v == null ? "" : v).match(/\d+/);
+    return m ? parseInt(m[0], 10) : null;
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // Parseur CSV maison : détection du séparateur (; , tab) + guillemets.
+  function parseCSV(text) {
+    text = text.replace(/^﻿/, "");
+    const firstLines = text.split(/\r?\n/).slice(0, 5).join("\n");
+    const counts = { ";": (firstLines.match(/;/g) || []).length, ",": (firstLines.match(/,/g) || []).length, "\t": (firstLines.match(/\t/g) || []).length };
+    const sep = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || ";";
+    const out = [];
+    let row = [], cell = "", inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQ) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { cell += '"'; i++; } else inQ = false;
+        } else cell += ch;
+      } else if (ch === '"') {
+        inQ = true;
+      } else if (ch === sep) {
+        row.push(cell); cell = "";
+      } else if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && text[i + 1] === "\n") i++;
+        row.push(cell); cell = "";
+        if (row.some(c => c.trim() !== "")) out.push(row);
+        row = [];
+      } else cell += ch;
+    }
+    row.push(cell);
+    if (row.some(c => c.trim() !== "")) out.push(row);
+    return out;
+  }
+
+  function download(filename, text) {
+    const blob = new Blob([text], { type: "application/json;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  function serialize(resultats) {
+    // Tri global identique à l'ancienne API : classement général croissant.
+    const sorted = resultats.slice().sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999));
+    return JSON.stringify({ resultats: sorted });
+  }
+
+  // ---------- Bascule de mode ----------
+  function setMode(edit) {
+    $("modeImport").style.display = edit ? "none" : "";
+    $("modeEdit").style.display = edit ? "" : "none";
+    $("modeImportBtn").classList.toggle("active", !edit);
+    $("modeEditBtn").classList.toggle("active", edit);
+  }
+  $("modeImportBtn").addEventListener("click", () => setMode(false));
+  $("modeEditBtn").addEventListener("click", () => setMode(true));
+
+  // ---------- Étape 0 : chargement des données actuelles ----------
+  async function loadState() {
+    try {
+      const resCourses = await fetch("/api/courses");
+      const dataCourses = await resCourses.json();
+      courses = (dataCourses && dataCourses.courses) || [];
+    } catch (e) { courses = []; }
+
+    try {
+      const resJson = await fetch("/data/resultats.json", { cache: "no-store" });
+      if (resJson.ok) {
+        const data = await resJson.json();
+        existing = (data && data.resultats) || [];
+        existingFromArchive = true;
+      } else { throw new Error("absent"); }
+    } catch (e) {
+      try {
+        const resApi = await fetch("/api/resultats");
+        const data = await resApi.json();
+        existing = (data && data.resultats) || [];
+      } catch (e2) { existing = []; }
+      existingFromArchive = false;
+    }
+
+    // Listes déroulantes des deux modes.
+    const sorted = courses.slice().sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    const sel = $("selCourse");
+    if (courses.length) {
+      sel.innerHTML = '<option value="">— choisis une course —</option>' +
+        sorted.map(c => `<option value="${c.id}">${escapeHtml(c.nom)}${c.date ? " — " + c.date : ""}</option>`).join("");
+    } else {
+      sel.innerHTML = '<option value="">⚠️ Impossible de charger les courses (/api/courses)</option>';
+    }
+
+    const counts = {};
+    existing.forEach(r => { counts[r.courseId] = (counts[r.courseId] || 0) + 1; });
+    const withResults = sorted.filter(c => counts[c.id]);
+    $("selEditCourse").innerHTML = withResults.length
+      ? '<option value="">— choisis une course —</option>' +
+        withResults.map(c => `<option value="${c.id}">${escapeHtml(c.nom)}${c.date ? " — " + c.date : ""} (${counts[c.id]} résultats)</option>`).join("")
+      : '<option value="">Aucune course avec des résultats</option>';
+
+    const nbCourses = Object.keys(counts).length;
+    $("stateInfo").innerHTML =
+      `<span class="pill">${courses.length} courses (Airtable)</span>` +
+      `<span class="pill">${existing.length} résultats existants</span>` +
+      `<span class="pill">${nbCourses} courses avec résultats</span>` +
+      `<span class="pill">${existingFromArchive ? "source : resultats.json ✅" : "source : ancienne API Airtable"}</span>`;
+
+    if (!existingFromArchive && existing.length) $("firstMigration").style.display = "block";
+  }
+
+  $("btnMigration").addEventListener("click", () => {
+    download("resultats.json", serialize(existing));
+  });
+
+  // ---------- Import : lecture du fichier ----------
+  const drop = $("dropZone");
+  const fileInput = $("fileInput");
+  drop.addEventListener("click", () => fileInput.click());
+  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+  drop.addEventListener("drop", (e) => {
+    e.preventDefault(); drop.classList.remove("over");
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener("change", () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+
+  function handleFile(file) {
+    const name = file.name.toLowerCase();
+    const isExcel = /\.(xlsx|xls)$/.test(name);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        let table;
+        if (isExcel) {
+          const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          table = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" });
+          table = table.filter(r => r.some(c => String(c).trim() !== ""));
+        } else {
+          table = parseCSV(e.target.result);
+        }
+        if (table.length < 2) throw new Error("Le fichier semble vide (ou n'a qu'une ligne).");
+        headers = table[0].map(h => String(h).trim());
+        rows = table.slice(1);
+        $("fileInfo").innerHTML = `<p class="ok">✅ ${escapeHtml(file.name)} — ${rows.length} lignes, ${headers.length} colonnes.</p>`;
+        buildMapping();
+      } catch (err) {
+        $("fileInfo").innerHTML = `<p class="err">❌ Lecture impossible : ${escapeHtml(err.message)}</p>`;
+      }
+    };
+    if (isExcel) reader.readAsArrayBuffer(file);
+    else reader.readAsText(file, "utf-8");
+  }
+
+  // ---------- Import : données collées ----------
+  $("btnPaste").addEventListener("click", () => {
+    const text = $("pasteArea").value;
+    if (!text.trim()) {
+      $("fileInfo").innerHTML = '<p class="err">❌ La zone de collage est vide.</p>';
+      return;
+    }
+    try {
+      const table = parseCSV(text);
+      if (!table.length) throw new Error("Aucune ligne détectée dans le texte collé.");
+      if ($("chkHeaders").checked) {
+        if (table.length < 2) throw new Error("Il n'y a que la ligne d'en-têtes : colle aussi les résultats.");
+        headers = table[0].map(h => String(h).trim());
+        rows = table.slice(1);
+      } else {
+        const width = Math.max(...table.map(r => r.length));
+        headers = Array.from({ length: width }, (_, i) => "Colonne " + (i + 1));
+        rows = table;
+      }
+      $("fileInfo").innerHTML = `<p class="ok">✅ Données collées — ${rows.length} lignes, ${headers.length} colonnes.</p>`;
+      buildMapping();
+    } catch (err) {
+      $("fileInfo").innerHTML = `<p class="err">❌ Analyse impossible : ${escapeHtml(err.message)}</p>`;
+    }
+  });
+
+  // ---------- Import : mapping ----------
+  function guessColumn(target) {
+    const normed = headers.map(norm);
+    for (const hint of target.hints) {
+      const i = normed.indexOf(norm(hint));
+      if (i !== -1) return i;
+    }
+    for (const hint of target.hints) {
+      const i = normed.findIndex(h => h.includes(norm(hint)));
+      if (i !== -1) return i;
+    }
+    return -1;
+  }
+
+  function buildMapping() {
+    const grid = $("mapGrid");
+    grid.innerHTML = "";
+    TARGETS.forEach(t => {
+      mapping[t.key] = guessColumn(t);
+      const lab = document.createElement("div");
+      lab.className = "field-name";
+      lab.innerHTML = t.label + (t.required ? ' <span class="req">*</span>' : "");
+      const sel = document.createElement("select");
+      sel.innerHTML = '<option value="-1">— non présent —</option>' +
+        headers.map((h, i) => `<option value="${i}" ${i === mapping[t.key] ? "selected" : ""}>${escapeHtml(h)}</option>`).join("");
+      sel.addEventListener("change", () => { mapping[t.key] = parseInt(sel.value, 10); renderPreview(); });
+      grid.appendChild(lab);
+      grid.appendChild(sel);
+    });
+    $("cardMap").style.display = "";
+    $("cardPreview").style.display = "";
+    $("cardGen").style.display = "";
+    renderPreview();
+  }
+
+  // ---------- Import : conversion ----------
+  function convertRows(courseId) {
+    const distFixed = $("inpDistance").value.trim();
+    const usedIds = new Set(existing.map(r => r.id));
+    const out = [];
+    const problems = [];
+    rows.forEach((row, idx) => {
+      const get = (key) => (mapping[key] >= 0 ? String(row[mapping[key]] ?? "").trim() : "");
+      const distance = get("distance") || distFixed;
+      const rec = {
+        id: "",
+        courseId: courseId,
+        distance: distance,
+        nom: get("nom"),
+        prenom: get("prenom"),
+        club: get("club"),
+        temps: get("temps"),
+        classementGeneral: parseRank(get("classementGeneral")),
+        classementCategorie: get("classementCategorie"),
+        sexe: normalizeSexe(get("sexe")),
+        departement: get("departement"),
+        dossard: get("dossard"),
+        vitesse: get("vitesse"),
+      };
+      if (!rec.nom && !rec.prenom) return; // ligne vide / totaux
+      if (rec.classementGeneral === null) problems.push(idx + 2);
+      let base = "j-" + slug(courseId).slice(0, 10) + "-" + slug(rec.distance || "d") + "-" + (rec.dossard ? slug(rec.dossard) : "l" + (idx + 1));
+      let id = base, n = 2;
+      while (usedIds.has(id)) { id = base + "-" + n++; }
+      usedIds.add(id);
+      rec.id = id;
+      out.push(rec);
+    });
+    return { out, problems };
+  }
+
+  function currentCourseId() { return $("selCourse").value; }
+
+  function renderPreview() {
+    const banner = $("previewBanner");
+    const courseId = currentCourseId();
+    if (!rows.length) return;
+    const { out, problems } = convertRows(courseId || "(course à choisir)");
+    const cols = ["classementGeneral", "dossard", "nom", "prenom", "sexe", "temps", "classementCategorie", "club", "vitesse", "distance"];
+    const head = "<tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr>";
+    const body = out.slice(0, 10).map(r => "<tr>" + cols.map(c => `<td>${escapeHtml(r[c])}</td>`).join("") + "</tr>").join("");
+    $("previewTable").innerHTML = `<table>${head}${body}</table>`;
+
+    const msgs = [];
+    if (!courseId) msgs.push("⚠️ Choisis la course à l'étape 1.");
+    const noDist = out.filter(r => !r.distance).length;
+    if (noDist) msgs.push(`⚠️ ${noDist} lignes sans distance : renseigne le champ « Distance / Épreuve » ou associe une colonne.`);
+    if (problems.length) msgs.push(`⚠️ ${problems.length} lignes sans classement général lisible (lignes ${problems.slice(0, 8).join(", ")}${problems.length > 8 ? "…" : ""}).`);
+    const noSexe = out.filter(r => !r.sexe).length;
+    if (noSexe && mapping.sexe >= 0) msgs.push(`ℹ️ ${noSexe} lignes avec un sexe non reconnu (attendu H/F).`);
+
+    // Garde-fou anti-doublons : des résultats existent-ils déjà pour cette
+    // course + distance ? (C'est un double import de ce genre qui avait
+    // dupliqué toute la Gambade de Saint Roman.)
+    const overlap = countOverlap(courseId, out);
+    if (overlap > 0) {
+      if ($("chkReplace").checked) {
+        msgs.push(`ℹ️ ${overlap} résultats déjà enregistrés pour cette course + distance : ils seront REMPLACÉS par ce fichier (comportement normal pour un ré-import).`);
+      } else {
+        msgs.push(`⚠️ ${overlap} résultats existent DÉJÀ pour cette course + distance, et la case « Remplacer » est décochée : les nouvelles lignes s'ajouteraient EN PLUS → doublons garantis ! Coche « Remplacer », sauf si tu es certain d'ajouter des coureurs manquants.`);
+      }
+    }
+    banner.innerHTML = msgs.length
+      ? `<div class="banner ${msgs.some(m => m.startsWith("⚠️")) ? "bad" : "info"}">${msgs.join("<br>")}</div>`
+      : `<div class="banner good">✅ ${out.length} résultats prêts à être ajoutés.</div>`;
+  }
+
+  // Nombre de résultats déjà enregistrés pour la même course + les mêmes
+  // distances que celles du fichier importé.
+  function countOverlap(courseId, out) {
+    if (!courseId || !out.length) return 0;
+    const dists = new Set(out.map(r => norm(r.distance)).filter(Boolean));
+    return existing.filter(r => r.courseId === courseId && dists.has(norm(r.distance))).length;
+  }
+
+  $("selCourse").addEventListener("change", () => { window.__confirmAddAnyway = false; renderPreview(); });
+  $("inpDistance").addEventListener("input", () => { window.__confirmAddAnyway = false; renderPreview(); });
+  $("chkReplace").addEventListener("change", () => { window.__confirmAddAnyway = false; renderPreview(); });
+
+  // ---------- Import : génération ----------
+  $("btnGenerate").addEventListener("click", () => {
+    const courseId = currentCourseId();
+    const gen = $("genBanner");
+    if (!courseId) { gen.innerHTML = '<div class="banner bad">Choisis d\'abord la course à l\'étape 1.</div>'; return; }
+    if (!rows.length) { gen.innerHTML = '<div class="banner bad">Dépose d\'abord un fichier de résultats (ou colle des données).</div>'; return; }
+    const { out } = convertRows(courseId);
+    if (!out.length) { gen.innerHTML = '<div class="banner bad">Aucune ligne exploitable.</div>'; return; }
+    if (out.some(r => !r.distance)) { gen.innerHTML = '<div class="banner bad">Certaines lignes n\'ont pas de distance : renseigne « Distance / Épreuve » à l\'étape 1.</div>'; return; }
+
+    // Garde-fou : ajouter EN PLUS alors que des résultats existent déjà pour
+    // cette course + distance crée des doublons. On demande un second clic
+    // de confirmation explicite.
+    const overlap = countOverlap(courseId, out);
+    if (overlap > 0 && !$("chkReplace").checked && !window.__confirmAddAnyway) {
+      window.__confirmAddAnyway = true;
+      gen.innerHTML = `<div class="banner bad">⚠️ ${overlap} résultats existent déjà pour cette course + distance. ` +
+        `Générer sans « Remplacer » va les ADDITIONNER (risque de doublons, comme sur la Gambade). ` +
+        `Soit coche « Remplacer » à l'étape 4, soit re-clique sur le bouton pour confirmer l'ajout en plus.</div>`;
+      return;
+    }
+    window.__confirmAddAnyway = false;
+
+    let base = existing;
+    if ($("chkReplace").checked) {
+      const newKeys = new Set(out.map(r => r.courseId + "|" + norm(r.distance)));
+      base = existing.filter(r => !newKeys.has(r.courseId + "|" + norm(r.distance)));
+    }
+    const merged = base.concat(out);
+    download("resultats.json", serialize(merged));
+    const removed = existing.length - base.length;
+    gen.innerHTML = `<div class="banner good">✅ Fichier généré : ${merged.length} résultats au total ` +
+      `(${out.length} ajoutés${removed ? ", " + removed + " anciens remplacés" : ""}). ` +
+      `Place-le dans <code>public/data/resultats.json</code> puis redéploie.</div>`;
+  });
+
+  // ==================== MODE ÉDITION ====================
+  let editCourseId = "";
+  let addCounter = 0;
+
+  function renderEditTable() {
+    editCourseId = $("selEditCourse").value;
+    const wrap = $("editTableWrap");
+    $("editSearch").value = "";
+    if (!editCourseId) {
+      wrap.innerHTML = '<div class="muted" style="padding:14px;">Choisis une course ci-dessus.</div>';
+      $("btnAddRow").disabled = true;
+      $("btnEditDownload").disabled = true;
+      $("editCount").textContent = "";
+      return;
+    }
+    const list = existing
+      .filter(r => r.courseId === editCourseId)
+      .slice()
+      .sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999));
+
+    const head = "<tr><th></th>" + EDIT_COLS.map(c => `<th>${c.label}</th>`).join("") + "</tr>";
+    const body = list.map(r =>
+      `<tr data-id="${escapeHtml(r.id)}">` +
+      `<td><button class="small secondary btn-del" title="Supprimer / restaurer la ligne">🗑</button></td>` +
+      EDIT_COLS.map(c => `<td contenteditable="true" data-field="${c.key}">${escapeHtml(r[c.key])}</td>`).join("") +
+      `</tr>`
+    ).join("");
+    wrap.innerHTML = `<table id="editTable">${head}${body}</table>`;
+    $("btnAddRow").disabled = false;
+    $("btnEditDownload").disabled = false;
+    $("editCount").textContent = list.length + " résultats affichés";
+    $("editBanner").innerHTML = "";
+  }
+
+  $("selEditCourse").addEventListener("change", renderEditTable);
+
+  // Suppression / restauration d'une ligne (délégation d'événement).
+  $("editTableWrap").addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-del");
+    if (!btn) return;
+    btn.closest("tr").classList.toggle("del");
+  });
+
+  // Filtre de recherche.
+  $("editSearch").addEventListener("input", () => {
+    const q = norm($("editSearch").value);
+    const table = $("editTable");
+    if (!table) return;
+    [...table.querySelectorAll("tr[data-id]")].forEach(tr => {
+      tr.style.display = !q || norm(tr.textContent).includes(q) ? "" : "none";
+    });
+  });
+
+  // Ajout d'une ligne vierge.
+  $("btnAddRow").addEventListener("click", () => {
+    const table = $("editTable");
+    if (!table || !editCourseId) return;
+    const usedIds = new Set(existing.map(r => r.id));
+    [...table.querySelectorAll("tr[data-id]")].forEach(tr => usedIds.add(tr.dataset.id));
+    let id, n = ++addCounter;
+    do { id = "j-" + slug(editCourseId).slice(0, 10) + "-manuel-" + n++; } while (usedIds.has(id));
+    const tr = document.createElement("tr");
+    tr.dataset.id = id;
+    tr.innerHTML = `<td><button class="small secondary btn-del" title="Supprimer / restaurer la ligne">🗑</button></td>` +
+      EDIT_COLS.map(c => `<td contenteditable="true" data-field="${c.key}"></td>`).join("");
+    table.appendChild(tr);
+    tr.querySelector("td[data-field]").focus();
+  });
+
+  // Téléchargement du fichier corrigé.
+  $("btnEditDownload").addEventListener("click", () => {
+    const table = $("editTable");
+    if (!table || !editCourseId) return;
+    const edited = [];
+    let dropped = 0;
+    [...table.querySelectorAll("tr[data-id]")].forEach(tr => {
+      if (tr.classList.contains("del")) { dropped++; return; }
+      const rec = { id: tr.dataset.id, courseId: editCourseId };
+      [...tr.querySelectorAll("td[data-field]")].forEach(td => {
+        rec[td.dataset.field] = td.textContent.trim();
+      });
+      rec.classementGeneral = parseRank(rec.classementGeneral);
+      rec.sexe = normalizeSexe(rec.sexe) || String(rec.sexe || "").trim();
+      if (!rec.nom && !rec.prenom) { dropped++; return; } // ligne ajoutée restée vide
+      edited.push(rec);
+    });
+    const others = existing.filter(r => r.courseId !== editCourseId);
+    const merged = others.concat(edited);
+    // On met à jour l'état local pour pouvoir enchaîner plusieurs corrections.
+    existing = merged;
+    download("resultats.json", serialize(merged));
+    $("editBanner").innerHTML = `<div class="banner good">✅ Fichier généré : ${edited.length} résultats conservés pour cette course` +
+      `${dropped ? ", " + dropped + " lignes retirées" : ""} — ${merged.length} résultats au total. ` +
+      `Place-le dans <code>public/data/resultats.json</code> puis redéploie.</div>`;
+  });
+
+  loadState();
+})();
+</script>
+</body>
+</html>

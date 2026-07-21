@@ -107,6 +107,11 @@
           <label for="inpDistance">Distance / Épreuve (ex. « 10 km », « Semi », « Trail 21 km »)</label>
           <input type="text" id="inpDistance" placeholder="Laisser vide si une colonne du fichier contient la distance">
         </div>
+        <div>
+          <label for="inpDate">Date de l'édition (celle des résultats importés)</label>
+          <input type="date" id="inpDate">
+          <span class="muted" style="font-size:12px;">Pré-remplie avec la date de la fiche course — corrige-la si la fiche pointe déjà sur l'édition suivante. Elle sert au tri « Derniers résultats » et au Tableau d'Honneur.</span>
+        </div>
       </div>
     </div>
 
@@ -483,6 +488,7 @@
       const rec = {
         id: "",
         courseId: courseId,
+        date: $("inpDate").value || "",
         distance: distance,
         nom: get("nom"),
         prenom: get("prenom"),
@@ -551,7 +557,15 @@
     return existing.filter(r => r.courseId === courseId && dists.has(norm(r.distance))).length;
   }
 
-  $("selCourse").addEventListener("change", () => { window.__confirmAddAnyway = false; renderPreview(); });
+  $("selCourse").addEventListener("change", () => {
+    window.__confirmAddAnyway = false;
+    // Pré-remplit la date d'édition avec la date de la fiche course (souvent
+    // correcte juste après la course ; à corriger si la fiche pointe déjà
+    // sur l'édition suivante).
+    const c = courses.find(x => x.id === $("selCourse").value);
+    if (c && c.date && /^\d{4}-\d{2}-\d{2}/.test(c.date)) $("inpDate").value = c.date.slice(0, 10);
+    renderPreview();
+  });
   $("inpDistance").addEventListener("input", () => { window.__confirmAddAnyway = false; renderPreview(); });
   $("chkReplace").addEventListener("change", () => { window.__confirmAddAnyway = false; renderPreview(); });
 
@@ -669,6 +683,11 @@
     [...table.querySelectorAll("tr[data-id]")].forEach(tr => {
       if (tr.classList.contains("del")) { dropped++; return; }
       const rec = { id: tr.dataset.id, courseId: editCourseId };
+      // Conserve la date d'édition portée par l'enregistrement existant
+      // (les lignes ajoutées à la main héritent de celle de la course).
+      const prev = existing.find(x => x.id === tr.dataset.id && x.courseId === editCourseId);
+      const anyDate = prev && prev.date ? prev.date : (existing.find(x => x.courseId === editCourseId && x.date) || {}).date;
+      if (anyDate) rec.date = anyDate;
       [...tr.querySelectorAll("td[data-field]")].forEach(td => {
         rec[td.dataset.field] = td.textContent.trim();
       });
