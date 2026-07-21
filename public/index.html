@@ -732,7 +732,7 @@
       </div>
       <div class="footer-col">
         <h4>Suivre</h4>
-        <ul><li><a href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener">@trouvetacourse_gard</a></li></ul>
+        <ul><li><a href="https://instagram.com/trouvetacourse_gard" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1"/></svg> @trouvetacourse_gard</a></li></ul>
       </div>
     </div>
     <div class="footer-bottom">© 2026 Trouve ta Course — Gard</div>
@@ -935,7 +935,16 @@
     if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
     renderCalendarModal();
   }
-  function jumpToMonth(year, month) { calViewYear = year; calViewMonth = month; renderCalendarModal(); }
+  // Cliquer un raccourci mois ("septembre"...) sélectionne tout le mois
+  // (comme le raccourci année pour selectYear), pas juste la vue du
+  // calendrier — sinon il fallait ensuite cliquer un jour précis pour que
+  // le filtre s'applique vraiment.
+  function jumpToMonth(year, month) {
+    rangeStart = new Date(year, month, 1);
+    rangeEnd = new Date(year, month + 1, 0);
+    calViewYear = year; calViewMonth = month;
+    renderCalendarModal();
+  }
   function selectYear(year) {
     rangeStart = new Date(year, 0, 1);
     rangeEnd = new Date(year, 11, 31);
@@ -1005,6 +1014,7 @@
   function countCoursesInRange(start, end) {
     let count = 0;
     allCourses.forEach(c => {
+      if (!isUpcomingCourse(c)) return;
       const d = new Date(c.date);
       if (!start) { count++; return; }
       const e = end || start;
@@ -1066,7 +1076,7 @@
     }));
   }
   function countCoursesForDistances(selectedSet) {
-    return allCourses.filter(c => courseMatchesDistances(c, selectedSet)).length;
+    return allCourses.filter(c => isUpcomingCourse(c) && courseMatchesDistances(c, selectedSet)).length;
   }
   function renderDistanceOptions() {
     document.getElementById('distanceOptionsList').innerHTML = DISTANCE_RANGES.map(r => {
@@ -1133,11 +1143,16 @@
     return selectedSet.has(c.challenge || "");
   }
   function countCoursesForChallenges(selectedSet) {
-    // Même règle de visibilité que renderCalendrier() : à venir toujours,
-    // passée seulement si elle appartient à un des challenges sélectionnés.
+    // Même règle de visibilité que renderCalendrier() : uniquement les
+    // courses qui correspondent au(x) challenge(s) sélectionné(s) (ou
+    // toutes si aucun n'est sélectionné), limitées aux "à venir" — sauf les
+    // "passée" qui appartiennent à un des challenges sélectionnés.
+    const hasFilter = selectedSet.size > 0;
     return allCourses.filter(c => {
-      if (isUpcomingCourse(c)) return true;
-      return selectedSet.size > 0 && courseMatchesChallenges(c, selectedSet) && isPastCourse(c);
+      const matchesChallenge = courseMatchesChallenges(c, selectedSet);
+      const challengeException = hasFilter && matchesChallenge && isPastCourse(c);
+      if (!isUpcomingCourse(c) && !challengeException) return false;
+      return matchesChallenge;
     }).length;
   }
   function renderChallengeOptions() {
@@ -1209,7 +1224,7 @@
     return selectedSet.has(c.type);
   }
   function countCoursesForTypes(selectedSet) {
-    return allCourses.filter(c => courseMatchesTypes(c, selectedSet)).length;
+    return allCourses.filter(c => isUpcomingCourse(c) && courseMatchesTypes(c, selectedSet)).length;
   }
   function renderTypeOptions() {
     document.getElementById('typeOptionsList').innerHTML = AIRTABLE_TYPES.map(t => {
