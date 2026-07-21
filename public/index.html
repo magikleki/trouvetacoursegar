@@ -347,14 +347,17 @@
   .info-row .l { color: var(--muted); }
   .info-row .v { font-weight: 700; text-align: right; }
 
-  .btn-toggle-results { display: flex; align-items: center; justify-content: space-between; width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 0.9rem 1.1rem; font-size: 13.5px; font-weight: 700; cursor: pointer; text-align: left; transition: border-color .15s ease, box-shadow .15s ease; }
+  .btn-toggle-results { display: flex; align-items: center; justify-content: space-between; width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 0.9rem 1.1rem; font-size: 13.5px; font-weight: 700; cursor: pointer; text-align: left; transition: border-color .15s ease, box-shadow .15s ease; outline: none; -webkit-tap-highlight-color: transparent; }
   .btn-toggle-results:hover { border-color: var(--accent); box-shadow: 0 10px 20px -12px rgba(0,0,0,0.25); }
+  @media (hover: none) { .btn-toggle-results:hover { border-color: var(--border); box-shadow: none; } }
+  .btn-toggle-results:focus-visible { border-color: var(--accent); }
   .btn-toggle-results .edition-tag { font-size: 10.5px; font-weight: 800; background: var(--accent-tint); color: var(--accent-deep); padding: 3px 9px; border-radius: 999px; margin-left: 8px; }
   .btn-toggle-results .chevron { color: var(--muted); font-size: 12px; transition: transform .15s ease; }
 
   .fiche-res-list { display: flex; flex-direction: column; gap: 8px; }
-  .fiche-res-row { background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 0.8rem 1rem; cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease; }
+  .fiche-res-row { background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 0.8rem 1rem; cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease; -webkit-tap-highlight-color: transparent; }
   .fiche-res-row:hover { border-color: var(--accent); box-shadow: 0 10px 20px -12px rgba(0,0,0,0.25); }
+  @media (hover: none) { .fiche-res-row:hover { border-color: var(--border); box-shadow: none; } }
   .fiche-res-row-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .fiche-res-distance { font-size: 12px; font-weight: 800; color: var(--accent-deep); }
   .fiche-res-count { font-size: 11.5px; font-weight: 700; color: var(--muted); }
@@ -385,6 +388,8 @@
   .lb-row-full:last-child { border-bottom: none; }
   .lb-row-tap { cursor: pointer; transition: background .12s ease; }
   .lb-row-tap:hover { background: var(--accent-tint); }
+  .lb-row-highlight { background: var(--accent-tint); box-shadow: inset 3px 0 0 var(--accent); animation: lb-highlight-pulse 1.5s ease-in-out 2; }
+  @keyframes lb-highlight-pulse { 0%,100% { background: var(--accent-tint); } 50% { background: color-mix(in srgb, var(--accent) 18%, transparent); } }
   .lb-club-cell { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lb-dossard { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
   .lb-vitesse { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -2034,7 +2039,7 @@
     grid.innerHTML = buildPodiumCardsHtml(entries);
   }
 
-  async function openLeaderboard(courseId, initialDistance) {
+  async function openLeaderboard(courseId, initialDistance, highlightRunner) {
     const course = allCourses.find(c => c.id === courseId);
     await loadResultatsCountForStats();
     const resultats = allResultats.filter(r => r.courseId === courseId);
@@ -2047,6 +2052,7 @@
     window.__leaderboardExpanded = {};
     window.__leaderboardActiveDistance = (initialDistance && distances.includes(initialDistance)) ? initialDistance : (distances[0] || null);
     window.__leaderboardActiveGender = {};
+    window.__leaderboardHighlight = highlightRunner || null;
 
     document.getElementById("leaderboardContent").innerHTML = `
       <div class="breadcrumb"><span class="crumb" onclick="showPage('accueil')">Accueil</span><span class="sep">/</span><span class="crumb" onclick="showPage('resultats')">Résultats</span><span class="sep">/</span><span class="crumb current">${course ? course.nom : ""}</span></div>
@@ -2060,6 +2066,27 @@
     `;
     renderLeaderboardTable();
     showPage('leaderboard', { courseId });
+
+    // Si un coureur est ciblé, déplier le tableau, pré-remplir la recherche
+    // et scroller vers sa ligne.
+    if (highlightRunner) {
+      // Déplier toutes les distances/genres pour que la ligne soit visible
+      const activeGender = window.__leaderboardActiveGender[window.__leaderboardActiveDistance] || 'scratch';
+      const expandKey = window.__leaderboardActiveDistance + '__' + activeGender;
+      window.__leaderboardExpanded[expandKey] = true;
+      const searchInput = document.getElementById('lbSearch');
+      if (searchInput) {
+        searchInput.value = highlightRunner;
+        renderLeaderboardTable();
+      }
+      setTimeout(() => {
+        const highlighted = document.querySelector('.lb-row-highlight');
+        if (highlighted) highlighted.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Nettoyer le highlight après scroll pour que les rendus suivants
+        // ne gardent pas le surlignage.
+        setTimeout(() => { window.__leaderboardHighlight = null; }, 2000);
+      }, 150);
+    }
   }
 
   function toggleLeaderboardExpand(key) {
@@ -2338,10 +2365,9 @@
     // En-tête de marque.
     ctx.textAlign = "center";
     ctx.fillStyle = "#fff";
-    ctx.font = f(800, 44);
-    ctx.fillText("TROUVE TA COURSE", STORY_W / 2, 150);
-    ctx.globalAlpha = 0.85;
-    ctx.font = f(700, 30);
+    ctx.font = f(900, 56);
+    ctx.fillText("TROUVE TA COURSE", STORY_W / 2, 145);
+    ctx.font = f(800, 34);
     ctx.fillText("• GARD •", STORY_W / 2, 200);
     ctx.globalAlpha = 1;
 
@@ -3061,8 +3087,10 @@
         : `
           <div class="lb-table">
             <div class="lb-row-full head"><span>Rang</span><span>Doss.</span><span>Coureur</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Club</span><span></span></div>
-            ${shown.map(r => `
-              <div class="lb-row-full lb-row-tap" onclick="openRunnerStatModal('${r.id}')">
+            ${shown.map(r => {
+              const hl = window.__leaderboardHighlight && `${r.prenom} ${r.nom}`.toLowerCase() === window.__leaderboardHighlight.toLowerCase();
+              return `
+              <div class="lb-row-full lb-row-tap${hl ? ' lb-row-highlight' : ''}" onclick="openRunnerStatModal('${r.id}')">
                 <span class="${lbRankClass(activeGender === 'scratch' ? r.classementGeneral : r.__rang)}">${activeGender === 'scratch' ? (r.classementGeneral ?? "—") : r.__rang}</span>
                 <span class="lb-dossard">${r.dossard || "—"}</span>
                 <span class="lb-name">${coureurNameHtml(r)}</span>
@@ -3072,7 +3100,7 @@
                 <span class="lb-vitesse">${r.vitesse || "—"}</span>
                 <span class="lb-club-cell">${r.club || "—"}</span>
                 <span><button class="lb-share-btn" title="Partager ce résultat" onclick="event.stopPropagation(); shareResult('${r.id}')">📤</button></span>
-              </div>`).join("")}
+              </div>`; }).join("")}
           </div>
           ${remaining > 0 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Voir les ${remaining} coureur${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""} ↓</button>` : ""}
           ${expanded && activeRows.length > 10 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Réduire ↑</button>` : ""}`;
@@ -3779,7 +3807,7 @@
     const c3 = catRangs.filter(v => v === 3).length;
 
     const raceRows = races.map(r => `
-      <div class="cr-row clickable" onclick="openLeaderboard('${r.courseId}')">
+      <div class="cr-row clickable" onclick="openLeaderboard('${r.courseId}', ${r.distance ? `'${(r.distance || "").replace(/'/g, "\\'")}'` : 'null'}, '${escJsArg(runner.prenom + " " + runner.nom)}')">
         <span style="color:var(--accent-deep); font-weight:700; font-size:11px; text-transform:uppercase;">${formatPodiumDate(r.date)}</span>
         <span class="lb-name">${r.courseNom}</span>
         <span>${r.distance || "—"}</span>
