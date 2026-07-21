@@ -1325,12 +1325,10 @@
       const remaining = distances.length - shown.length;
       distanceRowHtml = `<div class="ccard-distances">${shown.map(d => `<span class="pill-distance">${d}</span>`).join("")}${remaining > 0 ? `<span class="pill-distance">+${remaining}</span>` : ""}</div>`;
     }
-    const posterHtml = c.affiche ? `<div class="poster-frame-small"><img src="${c.affiche}" alt="Affiche ${c.nom}" /></div>` : "";
     return `
       <div class="ccard" onclick="openFiche('${c.id}')">
         <div class="thumb thumb-${tc}">
           <div class="big-icon icon-${tc}"></div>
-          ${posterHtml}
           <div class="badges-top"><span class="pill type-${tc}">${c.type || "—"}</span>${c.challenge ? `<span class="pill dark" title="${c.challenge}">🏆</span>` : ""}${isPastCourse(c) ? `<span class="pill dark">Passée</span>` : ""}</div>
         </div>
         <div class="body">

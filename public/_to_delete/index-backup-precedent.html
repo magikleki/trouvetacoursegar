@@ -1133,7 +1133,12 @@
     return selectedSet.has(c.challenge || "");
   }
   function countCoursesForChallenges(selectedSet) {
-    return allCourses.filter(c => courseMatchesChallenges(c, selectedSet)).length;
+    // Même règle de visibilité que renderCalendrier() : à venir toujours,
+    // passée seulement si elle appartient à un des challenges sélectionnés.
+    return allCourses.filter(c => {
+      if (isUpcomingCourse(c)) return true;
+      return selectedSet.size > 0 && courseMatchesChallenges(c, selectedSet) && isPastCourse(c);
+    }).length;
   }
   function renderChallengeOptions() {
     const challenges = getAllChallenges();
@@ -1291,13 +1296,17 @@
 
   document.getElementById('heroSearch').addEventListener('input', renderCalendrier);
 
-  // Une course est "passée" seulement si sa date est connue et strictement
-  // avant aujourd'hui. Une course sans date connue ("À définir") n'est pas
-  // considérée comme passée : elle reste à venir tant qu'elle n'est pas
-  // datée dans le passé.
+  // Le statut ("À venir" / "Passée" / "Annulée" / "Non confirmé") vient
+  // directement d'Airtable (champ annuel choisi côté serveur dans
+  // /api/courses selon l'année de la course) : c'est lui qui décide de la
+  // visibilité sur le site, pas la date. Seules les courses "À venir"
+  // apparaissent sur le calendrier ; toutes les autres sont masquées
+  // (sauf exception ci-dessous pour les challenges).
+  function isUpcomingCourse(c) {
+    return c.statut === "À venir";
+  }
   function isPastCourse(c) {
-    const d = new Date(c.date);
-    return !isNaN(d) && d < todayMidnight();
+    return c.statut === "Passée";
   }
 
   function renderCourseCardHtml(c) {
@@ -1345,7 +1354,7 @@
     if (!coursesLoaded) { container.innerHTML = `<div class="state-message">Chargement…</div>`; return; }
 
     const upcoming = allCourses
-      .filter(c => { const d = new Date(c.date); return !isNaN(d) && d >= todayMidnight(); })
+      .filter(c => isUpcomingCourse(c) && !isNaN(new Date(c.date)))
       .sort((a, b) => new Date(a.date) - new Date(b.date))
       .slice(0, 4);
 
@@ -1360,16 +1369,20 @@
 
     const query = document.getElementById('heroSearch').value.trim().toLowerCase();
 
-    // Quand un challenge est sélectionné, on veut aussi voir les courses
-    // passées qui en font partie (utile pour consulter tout le parcours
-    // d'un challenge, pas seulement ce qu'il reste à courir) : elles
-    // portent alors un badge "Passée" sur leur vignette. Sans filtre
-    // challenge, le calendrier reste limité aux courses à venir comme avant.
+    // Seules les courses au statut "À venir" (Airtable) apparaissent sur le
+    // calendrier. Exception : quand un challenge est sélectionné, on veut
+    // aussi voir les courses passées qui en font partie (utile pour
+    // consulter tout le parcours d'un challenge, pas seulement ce qu'il
+    // reste à courir) : elles portent alors un badge "Passée" sur leur
+    // vignette. Les courses annulées ou non confirmées restent masquées
+    // même dans un challenge. Sans filtre challenge, le calendrier reste
+    // limité aux courses à venir comme avant.
     const hasChallengeFilter = appliedChallenges.size > 0;
 
     const filtered = allCourses.filter(c => {
       const matchesChallenge = courseMatchesChallenges(c, appliedChallenges);
-      if (isPastCourse(c) && !(hasChallengeFilter && matchesChallenge)) return false;
+      const challengeException = hasChallengeFilter && matchesChallenge && isPastCourse(c);
+      if (!isUpcomingCourse(c) && !challengeException) return false;
       const d = new Date(c.date);
       let matchesDate = true;
       if (appliedStart) {
