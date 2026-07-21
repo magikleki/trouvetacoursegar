@@ -630,10 +630,10 @@
       <button class="date-filter-btn" id="challengeFilterBtn" onclick="openChallengeModal()">
         <span id="challengeFilterLabel">Challenge</span>
       </button>
+      <button class="date-filter-btn" onclick="openMapModal()">Carte</button>
       <button class="date-filter-btn" id="typeFilterBtn" onclick="openTypeModal()">
         <span id="typeFilterLabel">Type de course</span>
       </button>
-      <button class="date-filter-btn" onclick="openMapModal()">📍 Carte</button>
       <button class="date-reset-btn" onclick="resetAllFilters()">↺ Effacer</button>
     </div>
   </div>
@@ -1417,6 +1417,23 @@
           attribution: '© OpenStreetMap',
           maxZoom: 18
         }).addTo(mapInstance);
+
+        // Masque extérieur : assombrir tout sauf le Gard
+        fetch('/data/gard-contour.json')
+          .then(r => r.json())
+          .then(geo => {
+            const gardCoords = geo.geometry.coordinates[0].map(c => [c[1], c[0]]);
+            const worldBounds = [[-90, -180], [-90, 180], [90, 180], [90, -180], [-90, -180]];
+            L.polygon([worldBounds, gardCoords], {
+              fillColor: '#1D1B16',
+              fillOpacity: 0.45,
+              stroke: true,
+              color: '#E06A2C',
+              weight: 2.5,
+              opacity: 0.7
+            }).addTo(mapInstance);
+          })
+          .catch(() => {});
       } else {
         mapInstance.invalidateSize();
       }
