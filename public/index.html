@@ -3289,6 +3289,14 @@
   let honneurExpanded = false;
   const HONNEUR_VISIBLE = 25;
 
+  // Ouvre la page Tableau d'Honneur directement sur l'onglet demandé
+  // (utilisé par les cartes de l'accueil : « Voir le classement »).
+  function openHonneurTab(tab) {
+    honneurTab = tab;
+    honneurExpanded = false;
+    showPage('challenge');
+  }
+
   function switchHonneurTab(tab) {
     honneurTab = tab;
     honneurExpanded = false;
@@ -3712,14 +3720,14 @@
         <span class="val">${c.participations}</span>
       </div>`;
 
-    const card = (title, rowsHtml, shareKind) => `
+    const card = (title, rowsHtml, shareKind, tabId) => `
       <div class="podium-card">
         <div class="podium-card-head" style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
           <div class="podium-card-title">${title}</div>
           ${shareKind ? `<button class="lb-share-btn" style="flex-shrink:0;" title="Partager ce podium" onclick="shareHonneur('${shareKind}')">📤</button>` : ""}
         </div>
         ${rowsHtml || `<div style="color:var(--muted); font-size:12px;">Pas encore de classement.</div>`}
-        <button class="podium-cta" onclick="showPage('challenge')">Voir le classement</button>
+        <button class="podium-cta" onclick="openHonneurTab('${tabId || 'courses'}')">Voir le classement</button>
       </div>`;
 
     // Détail 🥇🥈🥉 plutôt qu'un total : le classement médailles trie par
@@ -3727,10 +3735,10 @@
     // pourrait donc paraître désordonné (2e avec 4, 3e avec 5…).
     const medalsDetail = r => [r.p1 ? r.p1 + "🥇" : "", r.p2 ? r.p2 + "🥈" : "", r.p3 ? r.p3 + "🥉" : ""].filter(Boolean).join(" ") || "—";
     grid.innerHTML =
-      card(`🏁 Le plus de courses`, honneurData.byRaces.slice(0, 3).map(r => runnerRow(r, r._rankRaces, r.races.length + " course" + (r.races.length > 1 ? "s" : ""))).join(""), "courses") +
-      card(`📏 Le plus de kilomètres`, honneurData.byKm.slice(0, 3).map(r => runnerRow(r, r._rankKm, formatKm(r.km) + " km")).join(""), "km") +
-      card(`🏅 Le plus de médailles`, honneurData.byMedals.slice(0, 3).map(r => runnerRow(r, r._rankMedals, medalsDetail(r))).join(""), "medailles") +
-      (SHOW_CLUB_STATS ? card(`👥 Clubs les plus représentés`, honneurData.clubs.slice(0, 3).map(clubRow).join("")) : "");
+      card(`🏁 Le plus de courses`, honneurData.byRaces.slice(0, 3).map(r => runnerRow(r, r._rankRaces, r.races.length + " course" + (r.races.length > 1 ? "s" : ""))).join(""), "courses", "courses") +
+      card(`📏 Le plus de kilomètres`, honneurData.byKm.slice(0, 3).map(r => runnerRow(r, r._rankKm, formatKm(r.km) + " km")).join(""), "km", "km") +
+      card(`🏅 Le plus de médailles`, honneurData.byMedals.slice(0, 3).map(r => runnerRow(r, r._rankMedals, medalsDetail(r))).join(""), "medailles", "medailles") +
+      (SHOW_CLUB_STATS ? card(`👥 Clubs les plus représentés`, honneurData.clubs.slice(0, 3).map(clubRow).join(""), null, "clubs") : "");
   }
 
   history.replaceState({ page: 'accueil' }, '', location.pathname + location.search);
