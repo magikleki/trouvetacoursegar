@@ -348,6 +348,14 @@
   .btn-toggle-results .edition-tag { font-size: 10.5px; font-weight: 800; background: var(--accent-tint); color: var(--accent-deep); padding: 3px 9px; border-radius: 999px; margin-left: 8px; }
   .btn-toggle-results .chevron { color: var(--muted); font-size: 12px; transition: transform .15s ease; }
 
+  .fiche-res-list { display: flex; flex-direction: column; gap: 8px; }
+  .fiche-res-row { background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 0.8rem 1rem; cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease; }
+  .fiche-res-row:hover { border-color: var(--accent); box-shadow: 0 10px 20px -12px rgba(0,0,0,0.25); }
+  .fiche-res-row-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .fiche-res-distance { font-size: 12px; font-weight: 800; color: var(--accent-deep); }
+  .fiche-res-count { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+  .fiche-res-row .podium-row-wrap .podium-row { flex-wrap: wrap; }
+
   .lb-table { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
   .lb-table-clickable { transition: border-color .15s ease, box-shadow .15s ease; }
   .lb-table-clickable:hover { border-color: var(--accent); box-shadow: 0 10px 20px -12px rgba(0,0,0,0.25); }
@@ -1593,7 +1601,7 @@
 
           <div class="block-label" style="margin-top:1.6rem;"><span class="bar"></span>Résultats</div>
           <button class="btn-toggle-results" onclick="toggleFicheResults('${c.id}')">
-            <span>Voir les résultats <span class="edition-tag">Édition ${edition}</span></span>
+            <span>Voir les résultats <span class="edition-tag" id="ficheResEditionTag">Édition ${edition}</span></span>
             <span class="chevron" id="resChevron">▾</span>
           </button>
           <div id="resPreview" style="display:none; margin-top:10px;"></div>
@@ -1630,16 +1638,37 @@
       <div class="fiche-map" style="width:100%; max-width:none; height:220px;"><iframe src="https://maps.google.com/maps?q=${mapQuery}&output=embed" loading="lazy"></iframe></div>
     `;
     showPage('fiche', { courseId: id });
-    updateFicheResultsCount(c.id);
+    updateFicheResultsCount(c.id, edition);
   }
 
-  async function updateFicheResultsCount(courseId) {
+  // Détermine l'année des résultats à afficher sur la fiche course : la plus
+  // récente année portée par le champ "date" des résultats eux-mêmes (même
+  // source que "editionDate" dans openLeaderboard() et "dateResultats" dans
+  // buildResultatsEntries()). Si aucun résultat n'a de date exploitable
+  // (anciens imports), on retombe sur l'édition actuellement affichée pour
+  // ne rien casser. Quand cette année diffère de l'édition affichée (ex: la
+  // course est affichée sur 2027 mais seuls les résultats 2026 existent), le
+  // badge doit dire "Résultats 2026" plutôt que le trompeur "Édition 2027".
+  function computeFicheResultsYear(resultats, edition) {
+    const annees = resultats.map(r => r.date ? new Date(r.date).getFullYear() : null).filter(a => a !== null && !isNaN(a));
+    if (!annees.length) return edition;
+    return Math.max(...annees);
+  }
+
+  async function updateFicheResultsCount(courseId, edition) {
     try {
       await loadResultatsCountForStats();
       const resultats = allResultats.filter(r => r.courseId === courseId);
       const el = document.getElementById("ficheCoureursCount");
       if (el) el.textContent = resultats.length || "—";
       window.__ficheResultatsCache = resultats;
+
+      const resultsYear = computeFicheResultsYear(resultats, edition);
+      window.__ficheResultsYear = resultsYear;
+      const tag = document.getElementById("ficheResEditionTag");
+      if (tag) {
+        tag.textContent = (resultats.length && resultsYear !== edition) ? `Résultats ${resultsYear}` : `Édition ${edition}`;
+      }
     } catch (err) { /* silencieux */ }
   }
 
@@ -1650,19 +1679,29 @@
     if (open) { el.style.display = 'none'; chevron.style.transform = 'rotate(0deg)'; return; }
     chevron.style.transform = 'rotate(180deg)';
     el.style.display = 'block';
-    const resultats = window.__ficheResultatsCache || [];
-    if (!resultats.length) { el.innerHTML = `<div class="state-message">Aucun résultat disponible pour l'instant.</div>`; return; }
-    const top3 = resultats.slice(0, 3);
+    const allForCourse = window.__ficheResultatsCache || [];
+    if (!allForCourse.length) { el.innerHTML = `<div class="state-message">Aucun résultat disponible pour l'instant.</div>`; return; }
+
+    // Ne montrer que les résultats de l'année la plus récente disponible
+    // (résultats 2026 si affichée sur l'édition 2027, par ex.) — repli sur
+    // tous les résultats si aucune date exploitable n'est disponible.
+    const resultsYear = window.__ficheResultsYear;
+    const hasDate = allForCourse.some(r => r.date);
+    const resultats = hasDate ? allForCourse.filter(r => r.date && new Date(r.date).getFullYear() === resultsYear) : allForCourse;
+
+    const rows = buildPodiumRowsByDistance(resultats);
+    if (!rows.length) { el.innerHTML = `<div class="state-message">Aucun résultat disponible pour l'instant.</div>`; return; }
+
     el.innerHTML = `
-      <div class="lb-table lb-table-clickable" onclick="openLeaderboard('${courseId}')" style="cursor:pointer;">
-        <div class="lb-row head"><span>Pl.</span><span>Coureur</span><span>Temps</span></div>
-        ${top3.map(r => `
-          <div class="lb-row">
-            <span class="lb-pos top3">${r.classementGeneral ?? "—"}</span>
-            <div><div class="lb-name">${displayRunnerName(r)}</div><div class="lb-club">${r.club || ""}${r.distance ? " · " + r.distance : ""}</div></div>
-            <span class="lb-time">${r.temps}</span>
+      <div class="fiche-res-list">
+        ${rows.map(r => `
+          <div class="fiche-res-row" onclick="openLeaderboard('${courseId}', '${(r.distance || "").replace(/'/g, "\\'")}')">
+            <div class="fiche-res-row-head">
+              <span class="fiche-res-distance">${r.distance}</span>
+              <span class="fiche-res-count">${r.count} coureur${r.count > 1 ? "s" : ""} →</span>
+            </div>
+            <div class="podium-row-wrap">${r.html}</div>
           </div>`).join("")}
-        <div class="lb-row" style="justify-content:center; color:var(--accent-deep); font-weight:700;">Voir les ${resultats.length} résultats →</div>
       </div>`;
   }
 
@@ -1852,43 +1891,43 @@
     return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }).replace(".", ".");
   }
 
-  // Construit le HTML des cartes "podium" (nom de la course, meta, gagnants
-  // par distance/catégorie) pour une liste d'entrées. Partagé entre les
-  // "Podiums du week-end" (page Résultats) et "Derniers résultats" (accueil).
-  function buildPodiumCardsHtml(entries) {
-    return entries.map(e => {
-      const results = allResultats.filter(r => r.courseId === e.courseId);
-      const distances = sortDistanceLabels([...new Set(results.map(r => r.distance).filter(Boolean))]);
+  // Construit, pour une liste de résultats d'une même course, les lignes
+  // "podium" par distance (une ligne solo H+F, ou une ligne par catégorie
+  // d'équipe pour les distances en duo). Retourne un tableau
+  // {distance, count, html} — un élément par distance — pour que l'appelant
+  // choisisse comment les regrouper (carte podium classique, ou bloc
+  // dépliable par distance sur la fiche course).
+  function buildPodiumRowsByDistance(results) {
+    const distances = sortDistanceLabels([...new Set(results.map(r => r.distance).filter(Boolean))]);
+    return distances.map(distance => {
+      const distResults = results.filter(r => r.distance === distance);
+      const groups = groupResultRows(distResults);
+      const isDuo = isDuoGroups(groups);
+      let html;
 
-      const rows = distances.map(distance => {
-        const distResults = results.filter(r => r.distance === distance);
-        const groups = groupResultRows(distResults);
-        const isDuo = isDuoGroups(groups);
-
-        if (isDuo) {
-          const teams = annotateDuoTeams(groups.map(g => ({
-            classementGeneral: g[0].classementGeneral,
-            classementCategorie: g[0].classementCategorie,
-            club: g[0].club,
-            coureurs: g,
-          })));
-          const categories = sortCategories([...new Set(teams.map(t => t.__cat))]);
-          return categories.map(cat => {
-            const winner = teams.filter(t => t.__cat === cat).sort((a, b) => a.__catRank - b.__catRank)[0];
-            const winnerName = winner ? (winner.club || winner.coureurs.map(c => displayRunnerName(c)).join(" & ")) : "";
-            return `
-              <div class="podium-row">
-                <span class="pill dark" style="background:var(--ink);">${cat}</span>
-                <div class="podium-winners">
-                  ${winner ? `<span class="podium-winner"><span class="icon">🏆</span><span class="name">${winnerName}</span></span>` : ""}
-                </div>
-              </div>`;
-          }).join("");
-        }
-
+      if (isDuo) {
+        const teams = annotateDuoTeams(groups.map(g => ({
+          classementGeneral: g[0].classementGeneral,
+          classementCategorie: g[0].classementCategorie,
+          club: g[0].club,
+          coureurs: g,
+        })));
+        const categories = sortCategories([...new Set(teams.map(t => t.__cat))]);
+        html = categories.map(cat => {
+          const winner = teams.filter(t => t.__cat === cat).sort((a, b) => a.__catRank - b.__catRank)[0];
+          const winnerName = winner ? (winner.club || winner.coureurs.map(c => displayRunnerName(c)).join(" & ")) : "";
+          return `
+            <div class="podium-row">
+              <span class="pill dark" style="background:var(--ink);">${cat}</span>
+              <div class="podium-winners">
+                ${winner ? `<span class="podium-winner"><span class="icon">🏆</span><span class="name">${winnerName}</span></span>` : ""}
+              </div>
+            </div>`;
+        }).join("");
+      } else {
         const winnerH = distResults.filter(r => r.sexe === "H").sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999))[0];
         const winnerF = distResults.filter(r => r.sexe === "F").sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999))[0];
-        return `
+        html = `
           <div class="podium-row">
             <span class="pill dark" style="background:var(--ink);">${distance}</span>
             <div class="podium-winners">
@@ -1897,7 +1936,18 @@
               ${winnerF ? `<span class="podium-winner"><span class="icon">🏆<span class="sexe-badge f">F</span></span><span class="name">${coureurNameHtml(winnerF)}</span></span>` : ""}
             </div>
           </div>`;
-      }).join("");
+      }
+      return { distance, count: distResults.length, html };
+    });
+  }
+
+  // Construit le HTML des cartes "podium" (nom de la course, meta, gagnants
+  // par distance/catégorie) pour une liste d'entrées. Partagé entre les
+  // "Podiums du week-end" (page Résultats) et "Derniers résultats" (accueil).
+  function buildPodiumCardsHtml(entries) {
+    return entries.map(e => {
+      const results = allResultats.filter(r => r.courseId === e.courseId);
+      const rows = buildPodiumRowsByDistance(results).map(r => r.html).join("");
 
       return `
         <div class="podium-card">
@@ -1953,7 +2003,7 @@
     grid.innerHTML = buildPodiumCardsHtml(entries);
   }
 
-  async function openLeaderboard(courseId) {
+  async function openLeaderboard(courseId, initialDistance) {
     const course = allCourses.find(c => c.id === courseId);
     await loadResultatsCountForStats();
     const resultats = allResultats.filter(r => r.courseId === courseId);
@@ -1964,7 +2014,7 @@
     window.__leaderboardData = resultats;
     window.__leaderboardDistances = distances;
     window.__leaderboardExpanded = {};
-    window.__leaderboardActiveDistance = distances[0] || null;
+    window.__leaderboardActiveDistance = (initialDistance && distances.includes(initialDistance)) ? initialDistance : (distances[0] || null);
     window.__leaderboardActiveGender = {};
 
     document.getElementById("leaderboardContent").innerHTML = `
@@ -3602,14 +3652,14 @@
         <div class="stat-cell"><div class="l">Kilomètres</div><div class="v accent">${runner.km > 0 ? formatKm(runner.km) + " km" : "—"}</div></div>
       </div>
       <div class="block-label" style="font-size:14px; margin:0.9rem 0 0.5rem;"><span class="bar"></span>Résultats scratch</div>
-      <div class="stat-bar" style="grid-template-columns: repeat(4, 1fr);">
+      <div class="stat-bar">
         <div class="stat-cell"><div class="l">Meilleur classement</div><div class="v">${best !== null ? best + (best === 1 ? "er" : "e") : "—"}</div></div>
         <div class="stat-cell"><div class="l">🥇 1ère place</div><div class="v" style="color:#B8860B;">${p1}</div></div>
         <div class="stat-cell"><div class="l">🥈 2e place</div><div class="v" style="color:#7D7F82;">${p2}</div></div>
         <div class="stat-cell"><div class="l">🥉 3e place</div><div class="v" style="color:#B5651D;">${p3}</div></div>
       </div>
       <div class="block-label" style="font-size:14px; margin:0.9rem 0 0.5rem;"><span class="bar"></span>Résultats catégorie</div>
-      <div class="stat-bar" style="grid-template-columns: repeat(4, 1fr);">
+      <div class="stat-bar">
         <div class="stat-cell"><div class="l">Meilleur clt. catégorie</div><div class="v">${bestCat !== null ? bestCat + (bestCat === 1 ? "er" : "e") : "—"}</div></div>
         <div class="stat-cell"><div class="l">🥇 1ère place</div><div class="v" style="color:#B8860B;">${c1}</div></div>
         <div class="stat-cell"><div class="l">🥈 2e place</div><div class="v" style="color:#7D7F82;">${c2}</div></div>
