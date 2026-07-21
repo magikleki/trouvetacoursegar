@@ -1827,19 +1827,21 @@
         const isDuo = isDuoGroups(groups);
 
         if (isDuo) {
-          const teams = groups.map(g => ({
+          const teams = annotateDuoTeams(groups.map(g => ({
+            classementGeneral: g[0].classementGeneral,
             classementCategorie: g[0].classementCategorie,
             club: g[0].club,
-          }));
-          const categories = sortCategories([...new Set(teams.map(t => extractCategoryLabel(t.classementCategorie)))]);
+            coureurs: g,
+          })));
+          const categories = sortCategories([...new Set(teams.map(t => t.__cat))]);
           return categories.map(cat => {
-            const winner = teams.filter(t => extractCategoryLabel(t.classementCategorie) === cat)
-              .sort((a, b) => (extractCategoryRank(a.classementCategorie) ?? 9999) - (extractCategoryRank(b.classementCategorie) ?? 9999))[0];
+            const winner = teams.filter(t => t.__cat === cat).sort((a, b) => a.__catRank - b.__catRank)[0];
+            const winnerName = winner ? (winner.club || winner.coureurs.map(c => displayRunnerName(c)).join(" & ")) : "";
             return `
               <div class="podium-row">
                 <span class="pill dark" style="background:var(--ink);">${cat}</span>
                 <div class="podium-winners">
-                  ${winner ? `<span class="podium-winner"><span class="icon">🏆</span><span class="name">${winner.club || "Équipe"}</span></span>` : ""}
+                  ${winner ? `<span class="podium-winner"><span class="icon">🏆</span><span class="name">${winnerName}</span></span>` : ""}
                 </div>
               </div>`;
           }).join("");
@@ -1990,6 +1992,35 @@
     const normName = r => ((r.nom || "") + "|" + (r.prenom || "")).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9|]/g, "");
     const distinct = groups.filter(g => normName(g[0]) !== normName(g[1])).length;
     return distinct >= groups.length * 0.5;
+  }
+
+  // Catégorie d'équipe d'un duo, déduite des sexes des deux coureurs
+  // (H+H → Homme, F+F → Femme, H+F → Mixte). Certains chronométreurs
+  // fournissent des catégories d'âge individuelles ("SE 1er", "M0 2e")
+  // inutilisables pour classer des équipes — les sexes, eux, sont toujours
+  // fiables (bug d'affichage vu sur le Duo Nocturne de St Hilaire).
+  function duoTeamCategory(coureurs) {
+    const sexes = (coureurs || []).map(c => (isMaleResult(c) ? "H" : (isFemaleResult(c) ? "F" : null)));
+    if (!sexes.length || sexes.some(s => !s)) return null;
+    if (sexes.every(s => s === "H")) return "Homme";
+    if (sexes.every(s => s === "F")) return "Femme";
+    return "Mixte";
+  }
+
+  // Annote chaque équipe d'une distance duo : __cat (catégorie d'équipe) et
+  // __catRank (rang dans cette catégorie, recalculé depuis le classement
+  // scratch — indépendant du format du chronométreur). Fallback sur le
+  // libellé fourni si les sexes sont incomplets.
+  function annotateDuoTeams(teams) {
+    teams.forEach(t => {
+      t.__cat = duoTeamCategory(t.coureurs) || extractCategoryLabel(t.classementCategorie);
+    });
+    const counters = {};
+    teams.slice().sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999)).forEach(t => {
+      counters[t.__cat] = (counters[t.__cat] || 0) + 1;
+      t.__catRank = counters[t.__cat];
+    });
+    return teams;
   }
 
   // Extrait le libellé de catégorie (ex: "Homme 4e" -> "Homme", "Mixte 1er" -> "Mixte")
@@ -2221,9 +2252,19 @@
     const dateTxt = course && course.date ? new Date(course.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
     ctx.fillText([dateTxt, r.distance].filter(Boolean).join("  •  "), inX, y + 55);
 
-    // En duo, la médaille suit le rang dans la catégorie (c'est le
-    // classement affiché par le site pour les équipes).
-    const medalRank = team ? extractCategoryRank(r.classementCategorie) : r.classementGeneral;
+    // En duo, la médaille et la catégorie suivent le rang de l'ÉQUIPE dans
+    // sa catégorie (Mixte/Femme/Homme déduite des sexes), comme le site.
+    let teamInfo = null;
+    if (team) {
+      const distRows = allResultats.filter(x => x.courseId === r.courseId && x.distance === r.distance);
+      const teams = annotateDuoTeams(groupResultRows(distRows).map(g => ({
+        classementGeneral: g[0].classementGeneral,
+        classementCategorie: g[0].classementCategorie,
+        coureurs: g,
+      })));
+      teamInfo = teams.find(t => t.coureurs.some(x => x.id === r.id)) || null;
+    }
+    const medalRank = teamInfo ? teamInfo.__catRank : r.classementGeneral;
     const medal = medalRank === 1 ? "🥇" : medalRank === 2 ? "🥈" : medalRank === 3 ? "🥉" : null;
     if (medal) { ctx.font = f(400, 90); ctx.fillText(medal, inX, cardY + 285); }
     y = cardY + 385;
@@ -2249,8 +2290,8 @@
     // "2 x 5 km" ne se parse pas de façon fiable) : on ne l'affiche pas.
     const stats = [
       ["SCRATCH", r.classementGeneral !== null ? r.classementGeneral + (r.classementGeneral === 1 ? "ᵉʳ" : "ᵉ") : "—"],
-      ["CATÉGORIE", categorie || "—"],
-      ["CLT. CATÉGORIE", rang !== null ? rang + (rang === 1 ? "ᵉʳ" : "ᵉ") : "—"],
+      ["CATÉGORIE", teamInfo ? teamInfo.__cat : (categorie || "—")],
+      ["CLT. CATÉGORIE", teamInfo ? teamInfo.__catRank + (teamInfo.__catRank === 1 ? "ᵉʳ" : "ᵉ") : (rang !== null ? rang + (rang === 1 ? "ᵉʳ" : "ᵉ") : "—")],
       ["ALLURE", team ? "—" : (allure || "—")],
       ["VITESSE", vitesse || "—"],
       ["DOSSARD", r.dossard || "—"],
@@ -2298,16 +2339,17 @@
       const groups = groupResultRows(distRes);
       const isDuo = isDuoGroups(groups);
       if (isDuo) {
-        const teams = groups.map(g => ({
+        const teams = annotateDuoTeams(groups.map(g => ({
+          classementGeneral: g[0].classementGeneral,
           classementCategorie: g[0].classementCategorie,
           temps: g[0].temps,
           coureurs: g,
-        }));
-        const categories = sortCategories([...new Set(teams.map(t => extractCategoryLabel(t.classementCategorie)))]).slice(0, 3);
+        })));
+        const categories = sortCategories([...new Set(teams.map(t => t.__cat))]).slice(0, 3);
         const catBlocks = categories.map(cat => ({
           cat,
-          list: teams.filter(t => extractCategoryLabel(t.classementCategorie) === cat)
-            .sort((a, b) => (extractCategoryRank(a.classementCategorie) ?? 9999) - (extractCategoryRank(b.classementCategorie) ?? 9999))
+          list: teams.filter(t => t.__cat === cat)
+            .sort((a, b) => a.__catRank - b.__catRank)
             .slice(0, 3),
         }));
         const height = 96 + catBlocks.reduce((s, cb) => s + 46 + cb.list.length * 48 + 18, 0) + 16;
@@ -2733,7 +2775,10 @@
     };
 
     const renderDuoBlock = (distance, groups) => {
-      let allTeams = groups.map(g => ({
+      // __cat / __catRank : catégorie d'équipe déduite des sexes et rang
+      // recalculé depuis le scratch (voir annotateDuoTeams) — fiable quel
+      // que soit le format de catégorie fourni par le chronométreur.
+      let allTeams = annotateDuoTeams(groups.map(g => ({
         classementGeneral: g[0].classementGeneral,
         classementCategorie: g[0].classementCategorie,
         temps: g[0].temps,
@@ -2741,7 +2786,7 @@
         dossard: g[0].dossard,
         club: g[0].club,
         coureurs: g,
-      }));
+      })));
       allTeams.sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999));
 
       const filteredTeamsAll = q
@@ -2751,7 +2796,7 @@
       // Les catégories viennent de la liste complète (non filtrée) pour que
       // les onglets restent affichés même si la recherche en cours ne
       // donne aucun résultat dans une catégorie.
-      const categories = sortCategories([...new Set(allTeams.map(t => extractCategoryLabel(t.classementCategorie)))]);
+      const categories = sortCategories([...new Set(allTeams.map(t => t.__cat))]);
       if (!window.__leaderboardActiveCategory) window.__leaderboardActiveCategory = {};
       let activeCategory = window.__leaderboardActiveCategory[distance];
       if (!activeCategory || !categories.includes(activeCategory)) {
@@ -2759,8 +2804,8 @@
         window.__leaderboardActiveCategory[distance] = activeCategory;
       }
 
-      const filteredTeams = filteredTeamsAll.filter(t => extractCategoryLabel(t.classementCategorie) === activeCategory)
-        .sort((a, b) => (extractCategoryRank(a.classementCategorie) ?? 9999) - (extractCategoryRank(b.classementCategorie) ?? 9999));
+      const filteredTeams = filteredTeamsAll.filter(t => t.__cat === activeCategory)
+        .sort((a, b) => a.__catRank - b.__catRank);
 
       const expandKey = distance + '__' + activeCategory;
       const expanded = !!window.__leaderboardExpanded[expandKey];
@@ -2768,7 +2813,7 @@
       const remaining = filteredTeams.length - shown.length;
 
       const subtabsHtml = `<div class="lb-subtabs">${categories.map(cat => {
-        const count = filteredTeamsAll.filter(t => extractCategoryLabel(t.classementCategorie) === cat).length;
+        const count = filteredTeamsAll.filter(t => t.__cat === cat).length;
         return `<button class="lb-subtab ${cat === activeCategory ? 'active' : ''}" onclick="switchLeaderboardCategory('${distance}', '${cat.replace(/'/g, "\\'")}')">${cat}<span class="count">${count}</span></button>`;
       }).join("")}</div>`;
 
@@ -2780,7 +2825,7 @@
           <div class="lb-table">
             <div class="lb-row-full lb-row-duo head"><span>Rang</span><span>Scratch</span><span>Doss.</span><span>Coureurs</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Équipe</span><span></span></div>
             ${shown.map(t => {
-              const catRank = extractCategoryRank(t.classementCategorie);
+              const catRank = t.__catRank;
               return `
               <div class="lb-row-full lb-row-duo">
                 <span class="${lbRankClass(catRank)}">${catRank ?? "—"}</span>
@@ -2788,7 +2833,7 @@
                 <span class="lb-dossard">${t.dossard || "—"}</span>
                 <span class="lb-name">${t.coureurs.map(c => coureurNameHtml(c)).join(" &amp; ")}</span>
                 <span>${t.coureurs.map(c => c.sexe || "—").join("/")}</span>
-                <span>${t.classementCategorie || "—"}</span>
+                <span>${t.__cat} ${t.__catRank}${t.__catRank === 1 ? "er" : "e"}</span>
                 <span class="lb-time">${t.temps || "—"}</span>
                 <span class="lb-vitesse">${t.vitesse || "—"}</span>
                 <span class="lb-club-cell">${t.club || "—"}</span>

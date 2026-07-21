@@ -526,13 +526,34 @@
     if (problems.length) msgs.push(`⚠️ ${problems.length} lignes sans classement général lisible (lignes ${problems.slice(0, 8).join(", ")}${problems.length > 8 ? "…" : ""}).`);
     const noSexe = out.filter(r => !r.sexe).length;
     if (noSexe && mapping.sexe >= 0) msgs.push(`ℹ️ ${noSexe} lignes avec un sexe non reconnu (attendu H/F).`);
+
+    // Garde-fou anti-doublons : des résultats existent-ils déjà pour cette
+    // course + distance ? (C'est un double import de ce genre qui avait
+    // dupliqué toute la Gambade de Saint Roman.)
+    const overlap = countOverlap(courseId, out);
+    if (overlap > 0) {
+      if ($("chkReplace").checked) {
+        msgs.push(`ℹ️ ${overlap} résultats déjà enregistrés pour cette course + distance : ils seront REMPLACÉS par ce fichier (comportement normal pour un ré-import).`);
+      } else {
+        msgs.push(`⚠️ ${overlap} résultats existent DÉJÀ pour cette course + distance, et la case « Remplacer » est décochée : les nouvelles lignes s'ajouteraient EN PLUS → doublons garantis ! Coche « Remplacer », sauf si tu es certain d'ajouter des coureurs manquants.`);
+      }
+    }
     banner.innerHTML = msgs.length
       ? `<div class="banner ${msgs.some(m => m.startsWith("⚠️")) ? "bad" : "info"}">${msgs.join("<br>")}</div>`
       : `<div class="banner good">✅ ${out.length} résultats prêts à être ajoutés.</div>`;
   }
 
-  $("selCourse").addEventListener("change", renderPreview);
-  $("inpDistance").addEventListener("input", renderPreview);
+  // Nombre de résultats déjà enregistrés pour la même course + les mêmes
+  // distances que celles du fichier importé.
+  function countOverlap(courseId, out) {
+    if (!courseId || !out.length) return 0;
+    const dists = new Set(out.map(r => norm(r.distance)).filter(Boolean));
+    return existing.filter(r => r.courseId === courseId && dists.has(norm(r.distance))).length;
+  }
+
+  $("selCourse").addEventListener("change", () => { window.__confirmAddAnyway = false; renderPreview(); });
+  $("inpDistance").addEventListener("input", () => { window.__confirmAddAnyway = false; renderPreview(); });
+  $("chkReplace").addEventListener("change", () => { window.__confirmAddAnyway = false; renderPreview(); });
 
   // ---------- Import : génération ----------
   $("btnGenerate").addEventListener("click", () => {
@@ -543,6 +564,19 @@
     const { out } = convertRows(courseId);
     if (!out.length) { gen.innerHTML = '<div class="banner bad">Aucune ligne exploitable.</div>'; return; }
     if (out.some(r => !r.distance)) { gen.innerHTML = '<div class="banner bad">Certaines lignes n\'ont pas de distance : renseigne « Distance / Épreuve » à l\'étape 1.</div>'; return; }
+
+    // Garde-fou : ajouter EN PLUS alors que des résultats existent déjà pour
+    // cette course + distance crée des doublons. On demande un second clic
+    // de confirmation explicite.
+    const overlap = countOverlap(courseId, out);
+    if (overlap > 0 && !$("chkReplace").checked && !window.__confirmAddAnyway) {
+      window.__confirmAddAnyway = true;
+      gen.innerHTML = `<div class="banner bad">⚠️ ${overlap} résultats existent déjà pour cette course + distance. ` +
+        `Générer sans « Remplacer » va les ADDITIONNER (risque de doublons, comme sur la Gambade). ` +
+        `Soit coche « Remplacer » à l'étape 4, soit re-clique sur le bouton pour confirmer l'ajout en plus.</div>`;
+      return;
+    }
+    window.__confirmAddAnyway = false;
 
     let base = existing;
     if ($("chkReplace").checked) {

@@ -1824,7 +1824,7 @@
       const rows = distances.map(distance => {
         const distResults = results.filter(r => r.distance === distance);
         const groups = groupResultRows(distResults);
-        const isDuo = groups.length > 0 && groups.every(g => g.length === 2);
+        const isDuo = isDuoGroups(groups);
 
         if (isDuo) {
           const teams = groups.map(g => ({
@@ -1977,6 +1977,19 @@
       groups[key].push(r);
     });
     return Object.values(groups);
+  }
+
+  // Une distance est considérée courue en duo si CHAQUE groupe contient
+  // exactement 2 coureurs ET que la grande majorité des paires sont deux
+  // personnes différentes. Ce second critère protège contre un import en
+  // double (chaque coureur dupliqué au même rang ressemblait à une équipe,
+  // ce qui basculait tout l'affichage en mode duo — bug vu sur la Gambade
+  // de Saint Roman).
+  function isDuoGroups(groups) {
+    if (!groups.length || !groups.every(g => g.length === 2)) return false;
+    const normName = r => ((r.nom || "") + "|" + (r.prenom || "")).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9|]/g, "");
+    const distinct = groups.filter(g => normName(g[0]) !== normName(g[1])).length;
+    return distinct >= groups.length * 0.5;
   }
 
   // Extrait le libellé de catégorie (ex: "Homme 4e" -> "Homme", "Mixte 1er" -> "Mixte")
@@ -2182,7 +2195,7 @@
   function duoTeammatesOf(r) {
     const distRows = allResultats.filter(x => x.courseId === r.courseId && x.distance === r.distance);
     const groups = groupResultRows(distRows);
-    const isDuo = groups.length > 0 && groups.every(g => g.length === 2);
+    const isDuo = isDuoGroups(groups);
     if (!isDuo) return null;
     return groups.find(g => g.some(x => x.id === r.id)) || null;
   }
@@ -2283,7 +2296,7 @@
       // Distance courue en duo : podiums par catégorie (Mixte/Femme/Homme),
       // chaque équipe affichée avec ses DEUX coureurs.
       const groups = groupResultRows(distRes);
-      const isDuo = groups.length > 0 && groups.every(g => g.length === 2);
+      const isDuo = isDuoGroups(groups);
       if (isDuo) {
         const teams = groups.map(g => ({
           classementCategorie: g[0].classementCategorie,
@@ -2792,7 +2805,7 @@
     const renderDistanceBlock = (distance) => {
       const distanceRows = allRows.filter(r => r.distance === distance);
       const groups = groupResultRows(distanceRows);
-      const isDuo = groups.length > 0 && groups.every(g => g.length === 2);
+      const isDuo = isDuoGroups(groups);
       return isDuo ? renderDuoBlock(distance, groups) : renderSoloBlock(distance, distanceRows);
     };
 
@@ -2931,7 +2944,7 @@
     const duoKeys = new Set();
     Object.keys(byCourseDistance).forEach(k => {
       const groups = groupResultRows(byCourseDistance[k]);
-      if (groups.length > 0 && groups.every(g => g.length === 2)) duoKeys.add(k);
+      if (isDuoGroups(groups)) duoKeys.add(k);
     });
 
     const runners = {};
