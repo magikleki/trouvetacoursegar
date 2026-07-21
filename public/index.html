@@ -577,6 +577,9 @@
   </div>
 
   <div class="section">
+    <div style="margin-bottom:1rem;">
+      <button class="date-filter-btn" onclick="openMapModal()">Carte</button>
+    </div>
     <div class="home-preview-grid" id="homePreviewGrid"><div class="state-message">Chargement…</div></div>
     <div style="text-align:center; margin-top:1.6rem;">
       <button class="see-all-btn" onclick="showPage('calendrier')">Voir toutes les courses à venir</button>
@@ -1534,11 +1537,15 @@
   const MONTH_SHORT_FR = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
 
   function getMapMonths() {
+    const now = new Date();
+    const currentKey = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
     const months = new Set();
     allCourses.forEach(c => {
       if (!c.date) return;
       const d = new Date(c.date);
-      if (!isNaN(d)) months.add(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'));
+      if (isNaN(d)) return;
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+      if (key >= currentKey) months.add(key);
     });
     return [...months].sort();
   }
