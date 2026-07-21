@@ -3928,11 +3928,35 @@
   }
 
   history.replaceState({ page: 'accueil' }, '', location.pathname + location.search);
+
+  // Priorité 1 : le calendrier (au-dessus du fold).
   loadCourses();
-  loadResultatsCountForStats();
-  renderHomeResults();
-  renderHomeClubs();
-  renderHomeHonneur();
+
+  // Priorité 2 : les sections sous le fold se chargent quand elles
+  // deviennent visibles (IntersectionObserver) ou au bout de 3 s
+  // (fallback pour les navigateurs lents ou si l'utilisateur ne scrolle pas).
+  const _lazyLoaded = { results: false, honneur: false, clubs: false };
+  function lazyResults()  { if (_lazyLoaded.results) return; _lazyLoaded.results = true; loadResultatsCountForStats(); renderHomeResults(); }
+  function lazyHonneur()  { if (_lazyLoaded.honneur) return; _lazyLoaded.honneur = true; renderHomeHonneur(); }
+  function lazyClubs()    { if (_lazyLoaded.clubs) return; _lazyLoaded.clubs = true; renderHomeClubs(); }
+
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        const id = e.target.id;
+        if (id === 'homeResultsSection') { lazyResults(); lazyHonneur(); }
+        else if (id === 'homeHonneurSection') { lazyHonneur(); lazyResults(); }
+        else if (id === 'homeClubsSection') lazyClubs();
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '200px' });
+    const rs = document.getElementById('homeResultsSection'); if (rs) io.observe(rs);
+    const hs = document.getElementById('homeHonneurSection'); if (hs) io.observe(hs);
+    const cs = document.getElementById('homeClubsSection'); if (cs) io.observe(cs);
+  }
+  // Fallback : tout charger après 3 s si rien ne s'est déclenché.
+  setTimeout(() => { lazyResults(); lazyHonneur(); lazyClubs(); }, 3000);
 </script>
 
 </body>
