@@ -1737,6 +1737,7 @@
   function buildResultatsEntries() {
     const grouped = {};
     const distancesByCourse = {};
+    const resultDateByCourse = {};
     allResultats.forEach(r => {
       if (!r.courseId) return;
       grouped[r.courseId] = (grouped[r.courseId] || 0) + 1;
@@ -1744,18 +1745,23 @@
         if (!distancesByCourse[r.courseId]) distancesByCourse[r.courseId] = [];
         if (!distancesByCourse[r.courseId].includes(r.distance)) distancesByCourse[r.courseId].push(r.distance);
       }
+      // Date d'édition portée par les résultats eux-mêmes (champ "date").
+      // Prioritaire sur la date de la fiche course, qui bascule sur
+      // l'édition suivante (ex. 2027) dès qu'elle est connue.
+      if (r.date && (!resultDateByCourse[r.courseId] || r.date > resultDateByCourse[r.courseId])) resultDateByCourse[r.courseId] = r.date;
     });
 
     const entries = Object.keys(grouped).map(courseId => {
       const course = allCourses.find(c => c.id === courseId);
-      return { courseId, count: grouped[courseId], course, distances: sortDistanceLabels(distancesByCourse[courseId] || []) };
+      return { courseId, count: grouped[courseId], course, dateResultats: resultDateByCourse[courseId] || (course ? course.date : null), distances: sortDistanceLabels(distancesByCourse[courseId] || []) };
     }).filter(e => e.course);
 
-    // Tri de la plus récente à la plus ancienne. Les courses sans date
-    // connue sont reléguées en fin de liste plutôt que de perturber l'ordre.
+    // Tri de la plus récente à la plus ancienne, par date d'édition des
+    // résultats (toujours relative à aujourd'hui, jamais à l'ordre d'import).
+    // Les courses sans date connue sont reléguées en fin de liste.
     entries.sort((a, b) => {
-      const dA = new Date(a.course.date);
-      const dB = new Date(b.course.date);
+      const dA = new Date(a.dateResultats);
+      const dB = new Date(b.dateResultats);
       const validA = !isNaN(dA);
       const validB = !isNaN(dB);
       if (validA && validB) return dB - dA;
@@ -1793,7 +1799,7 @@
 
     container.innerHTML = `<div class="course-grid" style="grid-template-columns:1fr;">${entries.map(e => `
       <div class="side-card side-card-clickable" style="cursor:pointer; aspect-ratio:auto;" onclick="openLeaderboard('${e.courseId}')">
-        <div class="result-date-label">${formatDayLabel(e.course.date)}</div>
+        <div class="result-date-label">${formatDayLabel(e.dateResultats || e.course.date)}</div>
         <div style="font-weight:800; font-size:14px;">${e.course.nom}</div>
         ${e.course.challenge ? `<div class="challenge-tag" title="${e.course.challenge}">🏆<span class="txt">${e.course.challenge}</span></div>` : ""}
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:6px;">
@@ -1871,7 +1877,7 @@
         <div class="podium-card">
           <div class="podium-card-head">
             <div class="podium-card-title">${e.course.nom}</div>
-            <div class="podium-card-meta">📅 ${formatPodiumDate(e.course.date)} · 📍 ${e.course.commune || ""}</div>
+            <div class="podium-card-meta">📅 ${formatPodiumDate(e.dateResultats || e.course.date)} · 📍 ${e.course.commune || ""}</div>
           </div>
           ${rows}
           <div style="margin-top:auto; display:flex; gap:8px;">
@@ -1887,7 +1893,7 @@
     const { start, end } = getLastWeekendRange();
 
     const weekendEntries = entries.filter(e => {
-      const d = new Date(e.course.date);
+      const d = new Date(e.dateResultats || e.course.date);
       return !isNaN(d) && d >= start && d <= end;
     });
 
@@ -1925,7 +1931,8 @@
     const course = allCourses.find(c => c.id === courseId);
     await loadResultatsCountForStats();
     const resultats = allResultats.filter(r => r.courseId === courseId);
-    const edition = course ? ((new Date(course.date)).getFullYear() || new Date().getFullYear()) : new Date().getFullYear();
+    const editionDate = (resultats.find(r => r.date) || {}).date || (course ? course.date : null);
+    const edition = (new Date(editionDate)).getFullYear() || new Date().getFullYear();
 
     const distances = sortDistanceLabels([...new Set(resultats.map(r => r.distance).filter(Boolean))]);
     window.__leaderboardData = resultats;
@@ -2106,6 +2113,17 @@
     const rel = s.match(/(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)/i);
     if (rel) return parseFloat(rel[1].replace(",", ".")) * parseFloat(rel[2].replace(",", "."));
     return distanceNumValue(s);
+  }
+
+  // Stats "catégorie" d'un coureur sur sa saison : nombre de podiums dans sa
+  // catégorie d'âge et meilleur classement catégorie. Plus parlant pour la
+  // majorité des coureurs que les classements du Tableau d'Honneur.
+  function categoryStatsOf(races) {
+    const rangs = races.map(x => splitClassementCategorie(x.classementCategorie).rang).filter(v => v !== null);
+    return {
+      podiumsCat: rangs.filter(v => v <= 3).length,
+      bestCat: rangs.length ? Math.min(...rangs) : null,
+    };
   }
 
   // Stats calculées d'un résultat, partagées entre la pop-up et l'image de
@@ -2490,8 +2508,7 @@
     const p2 = races.filter(r => r.classementGeneral === 2).length;
     const p3 = races.filter(r => r.classementGeneral === 3).length;
     const best = races.reduce((acc, r) => (r.classementGeneral !== null && (acc === null || r.classementGeneral < acc)) ? r.classementGeneral : acc, null);
-    const rankRaces = honneurData.rankByRaces[key];
-    const rankKm = honneurData.rankByKm[key];
+    const { podiumsCat, bestCat } = categoryStatsOf(races);
     const { cv, ctx, f, roundRect, fitText, card, footer } = storyBase();
     const W = STORY_W;
 
@@ -2523,8 +2540,8 @@
       ["KILOMÈTRES", runner.km > 0 ? formatKm(runner.km) : "—"],
       ["PODIUMS SCRATCH", String(podiums)],
       ["MEILLEUR CLT.", best !== null ? best + (best === 1 ? "ᵉʳ" : "ᵉ") : "—"],
-      ["CLT. COURSES", rankRaces ? rankRaces + (rankRaces === 1 ? "ᵉʳ" : "ᵉ") + " / " + honneurData.byRaces.length : "—"],
-      ["CLT. KILOMÈTRES", rankKm ? rankKm + (rankKm === 1 ? "ᵉʳ" : "ᵉ") + " / " + honneurData.byKm.length : "—"],
+      ["PODIUMS CATÉG.", String(podiumsCat)],
+      ["MEILLEUR CLT. CATÉG.", bestCat !== null ? bestCat + (bestCat === 1 ? "ᵉʳ" : "ᵉ") : "—"],
     ];
     const gw = (cardW - 180) / 2, gh = 190, gx0 = cardX + 60, gy0 = cardY + 420;
     tiles.forEach(([label, value], i) => {
@@ -3143,7 +3160,10 @@
     allResultats.forEach(r => {
       const course = coursesById[r.courseId];
       if (!course) return;
-      const d = new Date(course.date);
+      // Année de l'édition portée par le résultat lui-même (champ "date"),
+      // sinon date de la fiche course. Évite d'exclure les résultats d'une
+      // course dont la fiche pointe déjà sur l'édition suivante.
+      const d = new Date(r.date || course.date);
       if (isNaN(d) || d.getFullYear() !== HONNEUR_YEAR) return;
       if (!(r.nom || r.prenom)) return;
 
@@ -3164,7 +3184,7 @@
       runner.races.push({
         courseId: r.courseId,
         courseNom: course.nom,
-        date: course.date,
+        date: r.date || course.date,
         distance: r.distance,
         temps: r.temps,
         classementGeneral: r.classementGeneral,
@@ -3268,6 +3288,14 @@
   let honneurTab = 'courses';
   let honneurExpanded = false;
   const HONNEUR_VISIBLE = 25;
+
+  // Ouvre la page Tableau d'Honneur directement sur l'onglet demandé
+  // (utilisé par les cartes de l'accueil : « Voir le classement »).
+  function openHonneurTab(tab) {
+    honneurTab = tab;
+    honneurExpanded = false;
+    showPage('challenge');
+  }
 
   function switchHonneurTab(tab) {
     honneurTab = tab;
@@ -3518,8 +3546,12 @@
     const p2 = races.filter(r => r.classementGeneral === 2).length;
     const p3 = races.filter(r => r.classementGeneral === 3).length;
     const best = races.reduce((acc, r) => (r.classementGeneral !== null && (acc === null || r.classementGeneral < acc)) ? r.classementGeneral : acc, null);
-    const rankRaces = honneurData.rankByRaces[key];
-    const rankKm = honneurData.rankByKm[key];
+    const { podiumsCat, bestCat } = categoryStatsOf(races);
+    // Nombre de médailles par place en catégorie (or/argent/bronze).
+    const catRangs = races.map(x => splitClassementCategorie(x.classementCategorie).rang).filter(v => v !== null);
+    const c1 = catRangs.filter(v => v === 1).length;
+    const c2 = catRangs.filter(v => v === 2).length;
+    const c3 = catRangs.filter(v => v === 3).length;
 
     const raceRows = races.map(r => `
       <div class="cr-row clickable" onclick="openLeaderboard('${r.courseId}')">
@@ -3539,16 +3571,23 @@
       <h1 style="margin:0 0 0.2rem;">${displayRunnerName(runner)}</h1>
       <p style="color:var(--muted); font-size:13.5px; margin:0 0 1rem;">${runner.club ? (SHOW_CLUB_STATS ? `<a style="color:var(--accent-deep); font-weight:700; cursor:pointer;" onclick="openClubFiche('${escJsArg(honneurNorm(runner.club))}')">${runner.club}</a> · ` : `<span style="font-weight:700;">${runner.club}</span> · `) : ""}Saison ${HONNEUR_YEAR}</p>
       <button class="share-inline-btn" style="margin:0 0 1.4rem;" onclick="shareCoureur('${escJsArg(key)}')">📤 Partager cette fiche</button>
-      <div class="stat-bar">
+      <div class="stat-bar" style="grid-template-columns: repeat(2, 1fr);">
         <div class="stat-cell"><div class="l">Courses</div><div class="v accent">${races.length}</div></div>
         <div class="stat-cell"><div class="l">Kilomètres</div><div class="v accent">${runner.km > 0 ? formatKm(runner.km) + " km" : "—"}</div></div>
-        <div class="stat-cell"><div class="l">Podiums scratch</div><div class="v">${podiums}</div></div>
-        <div class="stat-cell"><div class="l">Meilleur classement</div><div class="v">${best !== null ? best + (best === 1 ? "er" : "e") : "—"}</div></div>
       </div>
-      ${podiumBreakdownHtml(p1, p2, p3)}
-      <div class="stat-bar" style="grid-template-columns: repeat(2, 1fr);">
-        <div class="stat-cell"><div class="l">Classement courses</div><div class="v">${rankRaces ? rankRaces + (rankRaces === 1 ? "er" : "e") + " / " + honneurData.byRaces.length : "—"}</div></div>
-        <div class="stat-cell"><div class="l">Classement kilomètres</div><div class="v">${rankKm ? rankKm + (rankKm === 1 ? "er" : "e") + " / " + honneurData.byKm.length : "—"}</div></div>
+      <div class="block-label" style="font-size:14px; margin:0.9rem 0 0.5rem;"><span class="bar"></span>Résultats scratch</div>
+      <div class="stat-bar" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="stat-cell"><div class="l">Meilleur classement</div><div class="v">${best !== null ? best + (best === 1 ? "er" : "e") : "—"}</div></div>
+        <div class="stat-cell"><div class="l">🥇 1ère place</div><div class="v" style="color:#B8860B;">${p1}</div></div>
+        <div class="stat-cell"><div class="l">🥈 2e place</div><div class="v" style="color:#7D7F82;">${p2}</div></div>
+        <div class="stat-cell"><div class="l">🥉 3e place</div><div class="v" style="color:#B5651D;">${p3}</div></div>
+      </div>
+      <div class="block-label" style="font-size:14px; margin:0.9rem 0 0.5rem;"><span class="bar"></span>Résultats catégorie</div>
+      <div class="stat-bar" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="stat-cell"><div class="l">Meilleur clt. catégorie</div><div class="v">${bestCat !== null ? bestCat + (bestCat === 1 ? "er" : "e") : "—"}</div></div>
+        <div class="stat-cell"><div class="l">🥇 1ère place</div><div class="v" style="color:#B8860B;">${c1}</div></div>
+        <div class="stat-cell"><div class="l">🥈 2e place</div><div class="v" style="color:#7D7F82;">${c2}</div></div>
+        <div class="stat-cell"><div class="l">🥉 3e place</div><div class="v" style="color:#B5651D;">${c3}</div></div>
       </div>
       <div class="block-label" style="font-size:16px; margin-bottom:0.8rem;"><span class="bar"></span>Courses ${HONNEUR_YEAR}</div>
       <div class="lb-table">
@@ -3681,14 +3720,14 @@
         <span class="val">${c.participations}</span>
       </div>`;
 
-    const card = (title, rowsHtml, shareKind) => `
+    const card = (title, rowsHtml, shareKind, tabId) => `
       <div class="podium-card">
         <div class="podium-card-head" style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
           <div class="podium-card-title">${title}</div>
           ${shareKind ? `<button class="lb-share-btn" style="flex-shrink:0;" title="Partager ce podium" onclick="shareHonneur('${shareKind}')">📤</button>` : ""}
         </div>
         ${rowsHtml || `<div style="color:var(--muted); font-size:12px;">Pas encore de classement.</div>`}
-        <button class="podium-cta" onclick="showPage('challenge')">Voir le classement</button>
+        <button class="podium-cta" onclick="openHonneurTab('${tabId || 'courses'}')">Voir le classement</button>
       </div>`;
 
     // Détail 🥇🥈🥉 plutôt qu'un total : le classement médailles trie par
@@ -3696,10 +3735,10 @@
     // pourrait donc paraître désordonné (2e avec 4, 3e avec 5…).
     const medalsDetail = r => [r.p1 ? r.p1 + "🥇" : "", r.p2 ? r.p2 + "🥈" : "", r.p3 ? r.p3 + "🥉" : ""].filter(Boolean).join(" ") || "—";
     grid.innerHTML =
-      card(`🏁 Le plus de courses`, honneurData.byRaces.slice(0, 3).map(r => runnerRow(r, r._rankRaces, r.races.length + " course" + (r.races.length > 1 ? "s" : ""))).join(""), "courses") +
-      card(`📏 Le plus de kilomètres`, honneurData.byKm.slice(0, 3).map(r => runnerRow(r, r._rankKm, formatKm(r.km) + " km")).join(""), "km") +
-      card(`🏅 Le plus de médailles`, honneurData.byMedals.slice(0, 3).map(r => runnerRow(r, r._rankMedals, medalsDetail(r))).join(""), "medailles") +
-      (SHOW_CLUB_STATS ? card(`👥 Clubs les plus représentés`, honneurData.clubs.slice(0, 3).map(clubRow).join("")) : "");
+      card(`🏁 Le plus de courses`, honneurData.byRaces.slice(0, 3).map(r => runnerRow(r, r._rankRaces, r.races.length + " course" + (r.races.length > 1 ? "s" : ""))).join(""), "courses", "courses") +
+      card(`📏 Le plus de kilomètres`, honneurData.byKm.slice(0, 3).map(r => runnerRow(r, r._rankKm, formatKm(r.km) + " km")).join(""), "km", "km") +
+      card(`🏅 Le plus de médailles`, honneurData.byMedals.slice(0, 3).map(r => runnerRow(r, r._rankMedals, medalsDetail(r))).join(""), "medailles", "medailles") +
+      (SHOW_CLUB_STATS ? card(`👥 Clubs les plus représentés`, honneurData.clubs.slice(0, 3).map(clubRow).join(""), null, "clubs") : "");
   }
 
   history.replaceState({ page: 'accueil' }, '', location.pathname + location.search);

@@ -50,25 +50,10 @@ export default async function handler(request, response) {
           ? posterAttachment[0].url
           : null;
 
-      // Le champ "Statut" unique a été remplacé par deux champs annuels,
-      // "Statut 2026" et "Statut 2027" (À venir / Passée / Annulée / Non
-      // confirmé), pour garder un historique propre d'une année sur l'autre.
-      // On choisit le champ qui correspond à l'année de la date de la
-      // course ; si la date est inconnue ou une autre année, on retombe sur
-      // le premier des deux champs qui est renseigné.
-      const statut2026 = record.fields["Statut 2026"] || "";
-      const statut2027 = record.fields["Statut 2027"] || "";
-      const dateStr = record.fields["Date de la course"] || "";
-      const year = dateStr ? new Date(dateStr).getFullYear() : null;
-      const statut =
-        year === 2027 ? (statut2027 || statut2026) :
-        year === 2026 ? (statut2026 || statut2027) :
-        (statut2026 || statut2027 || "");
-
       return {
         id: record.id,
         nom: record.fields["Nom de la course"] || "",
-        date: dateStr,
+        date: record.fields["Date de la course"] || "",
         heure: record.fields["Heure de départ"] || "",
         distances: record.fields["Distances"] || "",
         type: record.fields["Type"] || "",
@@ -79,7 +64,7 @@ export default async function handler(request, response) {
         contact: record.fields["Contact"] || "",
         reseaux: record.fields["Réseaux sociaux"] || "",
         affiche: posterUrl,
-        statut,
+        statut: record.fields["Statut"] || "",
       };
     });
 
