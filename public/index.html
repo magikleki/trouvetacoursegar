@@ -372,6 +372,15 @@
   .share-inline-btn:hover { background: var(--accent); color: #fff; }
   .share-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 700; z-index: 9999; opacity: 0; transition: opacity .25s ease, transform .25s ease; pointer-events: none; max-width: 90vw; text-align: center; }
   .share-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .share-preview-overlay { display: none; position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,.7); align-items: center; justify-content: center; padding: 20px; }
+  .share-preview-overlay.open { display: flex; }
+  .share-preview-inner { background: var(--card); border-radius: 18px; padding: 16px; max-width: 340px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; align-items: center; gap: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.4); }
+  .share-preview-inner img { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 10px; }
+  .share-preview-actions { display: flex; gap: 10px; width: 100%; }
+  .share-preview-actions button { flex: 1; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; border: none; transition: opacity .15s ease; }
+  .share-preview-actions .share-btn-primary { background: var(--accent); color: #fff; }
+  .share-preview-actions .share-btn-secondary { background: var(--border); color: var(--ink); }
   .lb-row-full.head { background: var(--bg); font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
   .lb-row-full:last-child { border-bottom: none; }
   .lb-row-tap { cursor: pointer; transition: background .12s ease; }
@@ -2899,8 +2908,45 @@
 
   async function finishShare(cv, fileName, title) {
     if (!cv) return;
-    const status = await shareCanvas(cv, fileName, title);
-    if (status === "downloaded") showShareToast("Image téléchargée ✅ — format vertical prêt pour une story");
+    // Aperçu du visuel avant partage.
+    const dataUrl = cv.toDataURL("image/png");
+    const overlay = getSharePreviewOverlay();
+    const img = overlay.querySelector("img");
+    img.src = dataUrl;
+    overlay.classList.add("open");
+
+    return new Promise(resolve => {
+      overlay.__onShare = async () => {
+        overlay.classList.remove("open");
+        const status = await shareCanvas(cv, fileName, title);
+        if (status === "downloaded") showShareToast("Image téléchargée ✅ — format vertical prêt pour une story");
+        resolve(status);
+      };
+      overlay.__onCancel = () => {
+        overlay.classList.remove("open");
+        resolve("cancelled");
+      };
+    });
+  }
+
+  function getSharePreviewOverlay() {
+    let el = document.getElementById("sharePreviewOverlay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "sharePreviewOverlay";
+      el.className = "share-preview-overlay";
+      el.innerHTML = `
+        <div class="share-preview-inner">
+          <img src="" alt="Aperçu" />
+          <div class="share-preview-actions">
+            <button class="share-btn-secondary" onclick="document.getElementById('sharePreviewOverlay').__onCancel()">Annuler</button>
+            <button class="share-btn-primary" onclick="document.getElementById('sharePreviewOverlay').__onShare()">Partager</button>
+          </div>
+        </div>`;
+      el.addEventListener("click", e => { if (e.target === el) el.__onCancel(); });
+      document.body.appendChild(el);
+    }
+    return el;
   }
 
   async function shareResult(resultId) {
@@ -2936,9 +2982,9 @@
     const btn = document.getElementById("runnerStatShareBtn");
     btn.disabled = true;
     try {
+      const cv = buildStoryCanvas(r);
       const fileName = shareFileName("resultat", r.prenom + "-" + r.nom);
-      const status = await shareCanvas(buildStoryCanvas(r), fileName, "Résultat — Trouve ta Course");
-      if (hint && status === "downloaded") hint.textContent = "Image téléchargée ✅ — depuis un téléphone, ce bouton ouvre directement la feuille de partage.";
+      await finishShare(cv, fileName, "Résultat — Trouve ta Course");
     } finally {
       btn.disabled = false;
     }
