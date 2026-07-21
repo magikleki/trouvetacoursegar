@@ -54,7 +54,10 @@
   .hamburger-btn span { display: block; width: 20px; height: 2px; background: var(--ink); border-radius: 2px; }
   @media (min-width: 780px) { .hamburger-btn { display: none; } }
 
-  .mobile-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; background: var(--card); border-bottom: 1px solid var(--border); box-shadow: 0 14px 28px -18px rgba(0,0,0,.28); padding: 6px 1.3rem 16px; max-height: calc(100vh - 60px); overflow-y: auto; }
+  .mobile-menu-overlay { display: none; position: fixed; inset: 0; z-index: 99; background: rgba(0,0,0,.25); }
+  .mobile-menu-overlay.open { display: block; }
+  @media (min-width: 780px) { .mobile-menu-overlay { display: none !important; } }
+  .mobile-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; background: var(--card); border-bottom: 1px solid var(--border); box-shadow: 0 14px 28px -18px rgba(0,0,0,.28); padding: 6px 1.3rem 16px; max-height: calc(100vh - 60px); overflow-y: auto; z-index: 100; }
   .mobile-menu.open { display: flex; }
   @media (min-width: 780px) { .mobile-menu { display: none !important; } }
   .mobile-menu-link { padding: 13px 4px; font-weight: 800; font-size: 15px; color: var(--accent-deep); border-bottom: 1px solid var(--border); cursor: pointer; }
@@ -532,6 +535,7 @@
     </div>
   </div>
 </div>
+<div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="closeMobileMenu()"></div>
 
 <div id="page-accueil">
   <div class="hero">
@@ -693,7 +697,7 @@
     <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-top:1.6rem; margin-bottom:0.9rem;">
       <div class="block-label" style="font-size:17px; margin-bottom:0;"><span class="bar"></span>Tous les résultats des courses</div>
       <div style="max-width:280px; width:100%; flex:0 1 280px;">
-        <input id="resultatsSearch" placeholder="Chercher une course..." oninput="filterResultats()" style="width:100%; border:1px solid var(--border); border-radius:999px; padding:9px 16px; font-size:13px;" />
+        <input id="resultatsSearch" placeholder="Chercher une course ou une ville..." oninput="filterResultats()" style="width:100%; border:1px solid var(--border); border-radius:999px; padding:9px 16px; font-size:13px;" />
       </div>
     </div>
     <div id="resultatsListContent"><div class="state-message">Chargement…</div></div>
@@ -840,13 +844,26 @@
   });
 
   function toggleMobileMenu() {
-    document.getElementById('mobileMenu').classList.toggle('open');
+    const isOpen = document.getElementById('mobileMenu').classList.toggle('open');
+    document.getElementById('mobileMenuOverlay').classList.toggle('open', isOpen);
   }
   function closeMobileMenu() {
     document.getElementById('mobileMenu').classList.remove('open');
+    document.getElementById('mobileMenuOverlay').classList.remove('open');
     document.getElementById('mobileReportSubgroup').classList.remove('open');
     document.getElementById('mobileReportChevron').classList.remove('open');
   }
+
+  // Swipe vers le haut pour fermer le menu mobile
+  (function() {
+    const menu = document.getElementById('mobileMenu');
+    let startY = 0;
+    menu.addEventListener('touchstart', function(e) { startY = e.touches[0].clientY; }, { passive: true });
+    menu.addEventListener('touchend', function(e) {
+      const dy = e.changedTouches[0].clientY - startY;
+      if (dy < -60) closeMobileMenu();
+    }, { passive: true });
+  })();
   function navigateMobile(page) {
     closeMobileMenu();
     showPage(page);
@@ -1851,13 +1868,13 @@
     const allEntries = window.__resultatsEntries || [];
     const q = (document.getElementById('resultatsSearch')?.value || '').trim().toLowerCase();
 
-    const entries = !q ? allEntries : allEntries.filter(e => e.course.nom.toLowerCase().includes(q));
+    const entries = !q ? allEntries : allEntries.filter(e => e.course.nom.toLowerCase().includes(q) || (e.course.commune || '').toLowerCase().includes(q));
 
     renderPodiums(entries);
 
     if (!entries.length) {
       container.innerHTML = q
-        ? `<div class="empty-state"><div class="ic">🔎</div><div class="big">Aucune course ne correspond</div><p>Essaie un autre nom de course.</p></div>`
+        ? `<div class="empty-state"><div class="ic">🔎</div><div class="big">Aucune course ne correspond</div><p>Essaie un autre nom de course ou de ville.</p></div>`
         : `<div class="empty-state"><div class="ic">🏁</div><div class="big">Aucun résultat pour l'instant</div><p>Dès qu'une course sera traitée, son classement apparaîtra ici.</p></div>`;
       return;
     }
