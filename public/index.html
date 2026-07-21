@@ -162,11 +162,15 @@
   .map-modal-close { background: var(--bg); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 14px; color: var(--muted); cursor: pointer; }
   .map-modal-close:hover { background: var(--accent-tint); color: var(--accent-deep); }
   #mapContainer { flex: 1; border-radius: 0 0 22px 22px; }
-  .map-filters { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 1.2rem 0.6rem; }
-  .map-filter-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; border: 2px solid var(--border); background: var(--bg); color: var(--muted); cursor: pointer; transition: all .15s; }
-  .map-filter-chip:hover { border-color: var(--accent); color: var(--ink); }
-  .map-filter-chip.active { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-deep); }
-  .map-filter-chip .chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .map-filters { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 1.2rem 0.5rem; align-items: center; }
+  .map-dropdown-wrap { position: relative; }
+  .map-dropdown { display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 200; background: var(--card); border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.18); min-width: 210px; max-height: 260px; overflow-y: auto; padding: 6px 0; }
+  .map-dropdown.open { display: block; }
+  .map-dd-row { display: flex; align-items: center; gap: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 600; transition: background .12s; }
+  .map-dd-row:hover { background: var(--accent-tint); }
+  .map-dd-row.active { color: var(--accent-deep); }
+  .map-dd-check { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; color: #fff; }
+  .map-dd-row.active .map-dd-check { background: var(--accent); border-color: var(--accent); }
   .map-tag { display: flex; align-items:center; gap:2px; padding:2px 7px 2px 5px; border-radius:8px; font-size:13px; line-height:1; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,.22); border:2px solid #fff; cursor:pointer; transition:transform .15s; }
   .map-tag:hover { transform:scale(1.15); }
   .map-tag-emoji { font-size:14px; }
@@ -713,7 +717,25 @@
         <div class="map-modal-title">Carte des courses — Gard</div>
         <button class="map-modal-close" onclick="closeMapModal()">✕</button>
       </div>
-      <div class="map-filters" id="mapFilters"></div>
+      <div class="map-filters" id="mapFilters">
+        <div class="map-dropdown-wrap">
+          <button class="date-filter-btn" id="mapDateBtn" onclick="toggleMapDropdown('date')"><span id="mapDateLabel">Date</span></button>
+          <div class="map-dropdown" id="mapDateDropdown"></div>
+        </div>
+        <div class="map-dropdown-wrap">
+          <button class="date-filter-btn" id="mapDistBtn" onclick="toggleMapDropdown('dist')"><span id="mapDistLabel">Distance</span></button>
+          <div class="map-dropdown" id="mapDistDropdown"></div>
+        </div>
+        <div class="map-dropdown-wrap">
+          <button class="date-filter-btn" id="mapChalBtn" onclick="toggleMapDropdown('chal')"><span id="mapChalLabel">Challenge</span></button>
+          <div class="map-dropdown" id="mapChalDropdown"></div>
+        </div>
+        <div class="map-dropdown-wrap">
+          <button class="date-filter-btn" id="mapTypeBtn" onclick="toggleMapDropdown('type')"><span id="mapTypeLabel">Type de course</span></button>
+          <div class="map-dropdown" id="mapTypeDropdown"></div>
+        </div>
+        <button class="date-reset-btn" onclick="resetMapFilters()">↺ Effacer</button>
+      </div>
       <div id="mapContainer"></div>
     </div>
   </div>
@@ -1449,6 +1471,7 @@
             }).addTo(mapInstance);
           })
           .catch(() => {});
+        mapInstance.on('click', closeAllMapDropdowns);
       } else {
         mapInstance.invalidateSize();
       }
@@ -1457,6 +1480,7 @@
   }
 
   function closeMapModal() {
+    closeAllMapDropdowns();
     document.getElementById('mapModalOverlay').classList.remove('open');
   }
 
@@ -1466,36 +1490,142 @@
     Ekiden: '🎽', Backyard: '🔄'
   };
 
-  let mapSelectedTypes = new Set();
+  /* ---- Map filter state ---- */
+  let mapFilterMonths = new Set();   // "2026-07", "2026-08" …
+  let mapFilterDists = new Set();    // keys from DISTANCE_RANGES
+  let mapFilterChals = new Set();    // challenge names
+  let mapFilterTypes = new Set();    // type names
+  let mapOpenDropdown = null;        // 'date'|'dist'|'chal'|'type'|null
 
-  function toggleMapType(t) {
-    if (mapSelectedTypes.has(t)) mapSelectedTypes.delete(t);
-    else mapSelectedTypes.add(t);
-    renderMapFilters();
+  function toggleMapDropdown(name) {
+    if (mapOpenDropdown === name) { mapOpenDropdown = null; }
+    else { mapOpenDropdown = name; }
+    renderMapDropdown(name);
+    // close others
+    ['date','dist','chal','type'].forEach(n => {
+      if (n !== name) document.getElementById('map' + ({date:'Date',dist:'Dist',chal:'Chal',type:'Type'}[n]) + 'Dropdown').classList.remove('open');
+    });
+  }
+  function closeAllMapDropdowns() {
+    mapOpenDropdown = null;
+    ['mapDateDropdown','mapDistDropdown','mapChalDropdown','mapTypeDropdown'].forEach(id => document.getElementById(id)?.classList.remove('open'));
+  }
+
+  function getMapMonths() {
+    const months = new Set();
+    allCourses.forEach(c => {
+      if (!c.date) return;
+      const d = new Date(c.date);
+      if (!isNaN(d)) months.add(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'));
+    });
+    return [...months].sort();
+  }
+  const MONTH_NAMES_FR = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+
+  function renderMapDropdown(name) {
+    const ddId = 'map' + ({date:'Date',dist:'Dist',chal:'Chal',type:'Type'}[name]) + 'Dropdown';
+    const dd = document.getElementById(ddId);
+    if (mapOpenDropdown !== name) { dd.classList.remove('open'); return; }
+    let html = '';
+    if (name === 'date') {
+      html = getMapMonths().map(m => {
+        const active = mapFilterMonths.has(m);
+        const [y, mo] = m.split('-');
+        const label = MONTH_NAMES_FR[parseInt(mo)-1] + ' ' + y;
+        return `<div class="map-dd-row${active ? ' active' : ''}" onclick="event.stopPropagation(); mapToggle('month','${m}')"><span class="map-dd-check">${active ? '✓' : ''}</span>${label}</div>`;
+      }).join('');
+    } else if (name === 'dist') {
+      html = DISTANCE_RANGES.map(r => {
+        const active = mapFilterDists.has(r.key);
+        return `<div class="map-dd-row${active ? ' active' : ''}" onclick="event.stopPropagation(); mapToggle('dist','${r.key}')"><span class="map-dd-check">${active ? '✓' : ''}</span>${r.label}</div>`;
+      }).join('');
+    } else if (name === 'chal') {
+      const chals = getAllChallenges();
+      if (!chals.length) { html = '<div style="padding:12px;font-size:13px;color:var(--muted);">Aucun challenge</div>'; }
+      else html = chals.map(c => {
+        const active = mapFilterChals.has(c);
+        return `<div class="map-dd-row${active ? ' active' : ''}" onclick="event.stopPropagation(); mapToggle('chal','${c.replace(/'/g, "\\'")}')"><span class="map-dd-check">${active ? '✓' : ''}</span>${c}</div>`;
+      }).join('');
+    } else if (name === 'type') {
+      html = AIRTABLE_TYPES.map(t => {
+        const active = mapFilterTypes.has(t);
+        const color = TYPE_COLORS[t] || '#746F62';
+        const emoji = TYPE_EMOJIS[t] || '🏃';
+        return `<div class="map-dd-row${active ? ' active' : ''}" onclick="event.stopPropagation(); mapToggle('type','${t}')"><span class="map-dd-check">${active ? '✓' : ''}</span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></span>${emoji} ${t}</div>`;
+      }).join('');
+    }
+    dd.innerHTML = html;
+    dd.classList.add('open');
+  }
+
+  function mapToggle(kind, val) {
+    const set = kind === 'month' ? mapFilterMonths : kind === 'dist' ? mapFilterDists : kind === 'chal' ? mapFilterChals : mapFilterTypes;
+    if (set.has(val)) set.delete(val); else set.add(val);
+    renderMapDropdown(mapOpenDropdown);
+    updateMapBtnLabels();
     populateMapMarkers();
   }
 
-  function renderMapFilters() {
-    const el = document.getElementById('mapFilters');
-    if (!el) return;
-    el.innerHTML = AIRTABLE_TYPES.map(t => {
-      const active = mapSelectedTypes.has(t);
-      const color = TYPE_COLORS[t] || '#746F62';
-      const emoji = TYPE_EMOJIS[t] || '🏃';
-      return `<div class="map-filter-chip${active ? ' active' : ''}" onclick="toggleMapType('${t}')"><span class="chip-dot" style="background:${color}"></span>${emoji} ${t}</div>`;
-    }).join('');
+  function updateMapBtnLabels() {
+    // Date
+    const dBtn = document.getElementById('mapDateBtn');
+    const dLbl = document.getElementById('mapDateLabel');
+    if (mapFilterMonths.size === 0) { dLbl.textContent = 'Date'; dBtn.classList.remove('active'); }
+    else { dBtn.classList.add('active'); dLbl.textContent = mapFilterMonths.size === 1 ? (() => { const [y,m] = [...mapFilterMonths][0].split('-'); return MONTH_NAMES_FR[parseInt(m)-1]+' '+y; })() : `Date (${mapFilterMonths.size})`; }
+    // Distance
+    const diBtn = document.getElementById('mapDistBtn');
+    const diLbl = document.getElementById('mapDistLabel');
+    if (mapFilterDists.size === 0) { diLbl.textContent = 'Distance'; diBtn.classList.remove('active'); }
+    else { diBtn.classList.add('active'); diLbl.textContent = mapFilterDists.size === 1 ? DISTANCE_RANGES.find(r=>r.key===[...mapFilterDists][0])?.label||'Distance' : `Distance (${mapFilterDists.size})`; }
+    // Challenge
+    const cBtn = document.getElementById('mapChalBtn');
+    const cLbl = document.getElementById('mapChalLabel');
+    if (mapFilterChals.size === 0) { cLbl.textContent = 'Challenge'; cBtn.classList.remove('active'); }
+    else { cBtn.classList.add('active'); cLbl.textContent = mapFilterChals.size === 1 ? [...mapFilterChals][0] : `Challenge (${mapFilterChals.size})`; }
+    // Type
+    const tBtn = document.getElementById('mapTypeBtn');
+    const tLbl = document.getElementById('mapTypeLabel');
+    if (mapFilterTypes.size === 0) { tLbl.textContent = 'Type de course'; tBtn.classList.remove('active'); }
+    else { tBtn.classList.add('active'); tLbl.textContent = mapFilterTypes.size === 1 ? [...mapFilterTypes][0] : `Type (${mapFilterTypes.size})`; }
+  }
+
+  function resetMapFilters() {
+    mapFilterMonths.clear(); mapFilterDists.clear(); mapFilterChals.clear(); mapFilterTypes.clear();
+    closeAllMapDropdowns();
+    updateMapBtnLabels();
+    populateMapMarkers();
+  }
+
+  function mapCourseMatchesFilters(c) {
+    // Date (month)
+    if (mapFilterMonths.size > 0) {
+      if (!c.date) return false;
+      const d = new Date(c.date);
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+      if (!mapFilterMonths.has(key)) return false;
+    }
+    // Distance
+    if (mapFilterDists.size > 0) {
+      if (!courseMatchesDistances(c, mapFilterDists)) return false;
+    }
+    // Challenge
+    if (mapFilterChals.size > 0) {
+      if (!mapFilterChals.has(c.challenge || '')) return false;
+    }
+    // Type
+    if (mapFilterTypes.size > 0) {
+      if (!mapFilterTypes.has(c.type)) return false;
+    }
+    return true;
   }
 
   function populateMapMarkers() {
     if (!mapInstance) return;
-    // Retirer les anciens marqueurs
     mapInstance.eachLayer(l => { if (l instanceof L.Marker) mapInstance.removeLayer(l); });
 
+    const hasAnyFilter = mapFilterMonths.size + mapFilterDists.size + mapFilterChals.size + mapFilterTypes.size > 0;
     const upcoming = allCourses.filter(c => isUpcomingCourse(c));
-    let courses = upcoming.length ? upcoming : allCourses;
-    if (mapSelectedTypes.size > 0) {
-      courses = courses.filter(c => mapSelectedTypes.has(c.type));
-    }
+    let courses = (hasAnyFilter ? allCourses : (upcoming.length ? upcoming : allCourses)).filter(c => mapCourseMatchesFilters(c));
 
     // Regrouper par commune pour décaler légèrement les marqueurs superposés
     const byCommune = {};
@@ -1541,7 +1671,6 @@
       });
     });
 
-    renderMapFilters();
   }
 
   let coursesPromise = null;
