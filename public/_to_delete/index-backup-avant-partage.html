@@ -740,14 +740,6 @@
     </div>
     <div id="runnerStatContext" style="font-size: 12px; color: var(--muted); font-weight: 700; margin-bottom: 1rem;"></div>
     <div id="runnerStatBody"></div>
-    <!-- Partage : génère une image 1080×1920 (format story Instagram) avec
-         les stats de la carte. Sur mobile, ouvre la feuille de partage
-         native (Instagram → Story) ; sur ordinateur, télécharge l'image. -->
-    <button id="runnerStatShareBtn" onclick="shareRunnerStory()"
-      style="width:100%; margin-top:14px; padding:12px; border:0; border-radius:12px; background:var(--accent); color:#fff; font-weight:800; font-size:14.5px; cursor:pointer;">
-      📤 Partager en story
-    </button>
-    <div id="runnerStatShareHint" style="font-size:12px; color:var(--muted); text-align:center; margin-top:8px;"></div>
   </div>
 </div>
 
@@ -2030,9 +2022,9 @@
     if (m) return { rang: parseInt(m[2], 10), categorie: m[1] };
     return { rang: null, categorie: s };
   }
-  // Stats calculées d'un résultat, partagées entre la pop-up et l'image de
-  // partage en story : catégorie/rang séparés, allure et vitesse calculées.
-  function computeRunnerStats(r) {
+  function openRunnerStatModal(resultId) {
+    const r = allResultats.find(x => x.id === resultId);
+    if (!r) return;
     const course = allCourses.find(c => c.id === r.courseId);
     const { rang, categorie } = splitClassementCategorie(r.classementCategorie);
     const sec = parseTempsSeconds(r.temps);
@@ -2044,16 +2036,6 @@
     const vitesse = r.vitesse
       ? (/km\/?h/i.test(r.vitesse) ? r.vitesse : r.vitesse + " km/h")
       : (hasKm ? (Math.round((km / (sec / 3600)) * 10) / 10).toLocaleString("fr-FR") + " km/h" : null);
-    return { course, rang, categorie, allure, vitesse };
-  }
-
-  function openRunnerStatModal(resultId) {
-    const r = allResultats.find(x => x.id === resultId);
-    if (!r) return;
-    window.__runnerStatCurrentId = resultId;
-    const hint = document.getElementById("runnerStatShareHint");
-    if (hint) hint.textContent = "";
-    const { course, rang, categorie, allure, vitesse } = computeRunnerStats(r);
 
     // Nom cliquable vers la fiche coureur (la pop-up se ferme avant la
     // navigation). Si le coureur n'a pas de fiche, nom en texte simple.
@@ -2078,177 +2060,6 @@
   }
   function closeRunnerStatModal() {
     document.getElementById("runnerStatModalOverlay").classList.remove("open");
-  }
-
-  // ---- Partage en story Instagram -------------------------------------
-  // Dessine une image 1080×1920 (format story) avec les stats du résultat,
-  // aux couleurs du site, puis :
-  //  - sur mobile : ouvre la feuille de partage native (l'utilisateur touche
-  //    Instagram → "Ajouter à ta story") — Instagram n'autorise aucun envoi
-  //    direct depuis un site web, c'est le maximum possible ;
-  //  - sur ordinateur (pas de partage de fichiers) : télécharge le PNG.
-  function buildStoryCanvas(r) {
-    const { course, rang, categorie, allure, vitesse } = computeRunnerStats(r);
-    const W = 1080, H = 1920;
-    const cv = document.createElement("canvas");
-    cv.width = W; cv.height = H;
-    const ctx = cv.getContext("2d");
-    const FONT = '-apple-system, "Helvetica Neue", Arial, sans-serif';
-    const f = (weight, size) => `${weight} ${size}px ${FONT}`;
-
-    // Fond dégradé orange de la charte + cercles décoratifs.
-    const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, "#E06A2C");
-    bg.addColorStop(1, "#A8481A");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 0.08;
-    ctx.fillStyle = "#fff";
-    [[140, 260, 190], [980, 480, 240], [80, 1660, 220], [1010, 1740, 160]].forEach(([x, y, rad]) => {
-      ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-
-    const roundRect = (x, y, w, h, rad) => {
-      ctx.beginPath();
-      ctx.moveTo(x + rad, y);
-      ctx.arcTo(x + w, y, x + w, y + h, rad);
-      ctx.arcTo(x + w, y + h, x, y + h, rad);
-      ctx.arcTo(x, y + h, x, y, rad);
-      ctx.arcTo(x, y, x + w, y, rad);
-      ctx.closePath();
-    };
-    const fitText = (text, maxW, weight, size, minSize) => {
-      let s = size;
-      ctx.font = f(weight, s);
-      while (ctx.measureText(text).width > maxW && s > minSize) { s -= 2; ctx.font = f(weight, s); }
-      return s;
-    };
-
-    // En-tête : marque.
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#fff";
-    ctx.font = f(800, 44);
-    ctx.fillText("TROUVE TA COURSE", W / 2, 150);
-    ctx.globalAlpha = 0.85;
-    ctx.font = f(700, 30);
-    ctx.fillText("• GARD •", W / 2, 200);
-    ctx.globalAlpha = 1;
-
-    // Carte blanche centrale.
-    const cardX = 70, cardY = 300, cardW = W - 140, cardH = 1180;
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.25)";
-    ctx.shadowBlur = 60;
-    ctx.shadowOffsetY = 20;
-    ctx.fillStyle = "#FFFDFA";
-    roundRect(cardX, cardY, cardW, cardH, 48);
-    ctx.fill();
-    ctx.restore();
-
-    // Course + date + distance.
-    const inX = W / 2, maxW = cardW - 120;
-    ctx.fillStyle = "#A8481A";
-    let y = cardY + 110;
-    const courseName = (course ? course.nom : "").toUpperCase() || "RÉSULTAT";
-    fitText(courseName, maxW, 800, 40, 24);
-    ctx.fillText(courseName, inX, y);
-    ctx.fillStyle = "#8a7a6d";
-    ctx.font = f(700, 30);
-    const dateTxt = course && course.date ? new Date(course.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
-    ctx.fillText([dateTxt, r.distance].filter(Boolean).join("  •  "), inX, y + 55);
-
-    // Médaille éventuelle (sur sa propre ligne, sous la date), puis nom.
-    const medal = r.classementGeneral === 1 ? "🥇" : r.classementGeneral === 2 ? "🥈" : r.classementGeneral === 3 ? "🥉" : null;
-    if (medal) { ctx.font = f(400, 90); ctx.fillText(medal, inX, cardY + 285); }
-    y = cardY + 385;
-    const name = displayRunnerName(r);
-    ctx.fillStyle = "#1c1410";
-    fitText(name, maxW, 800, 68, 34);
-    ctx.fillText(name, inX, y);
-    if (r.club) {
-      ctx.fillStyle = "#8a7a6d";
-      fitText(r.club, maxW, 700, 30, 20);
-      ctx.fillText(r.club, inX, y + 52);
-    }
-
-    // Temps en très grand.
-    y = cardY + 585;
-    ctx.fillStyle = "#E06A2C";
-    ctx.font = f(800, 130);
-    ctx.fillText(r.temps || "—", inX, y);
-    ctx.fillStyle = "#8a7a6d";
-    ctx.font = f(800, 28);
-    ctx.fillText("TEMPS", inX, y + 50);
-
-    // Grille de stats 2 × 2 + allure/vitesse.
-    const stats = [
-      ["SCRATCH", r.classementGeneral !== null ? r.classementGeneral + (r.classementGeneral === 1 ? "ᵉʳ" : "ᵉ") : "—"],
-      ["CATÉGORIE", categorie || "—"],
-      ["CLT. CATÉGORIE", rang !== null ? rang + (rang === 1 ? "ᵉʳ" : "ᵉ") : "—"],
-      ["ALLURE", allure || "—"],
-      ["VITESSE", vitesse || "—"],
-      ["DOSSARD", r.dossard || "—"],
-    ];
-    const gw = (cardW - 180) / 2, gh = 150, gx0 = cardX + 60, gy0 = cardY + 680;
-    stats.forEach(([label, value], i) => {
-      const gx = gx0 + (i % 2) * (gw + 60);
-      const gy = gy0 + Math.floor(i / 2) * (gh + 24);
-      ctx.fillStyle = "#FBEBE0";
-      roundRect(gx, gy, gw, gh, 24);
-      ctx.fill();
-      ctx.fillStyle = "#A8481A";
-      ctx.font = f(800, 24);
-      ctx.fillText(label, gx + gw / 2, gy + 52);
-      ctx.fillStyle = "#1c1410";
-      const vs = fitText(String(value), gw - 50, 800, 46, 24);
-      ctx.font = f(800, vs);
-      ctx.fillText(String(value), gx + gw / 2, gy + 112);
-    });
-
-    // Pied de page : site + Instagram.
-    ctx.fillStyle = "#fff";
-    ctx.font = f(800, 38);
-    ctx.fillText("@trouvetacourse_gard", W / 2, H - 240);
-    ctx.globalAlpha = 0.85;
-    ctx.font = f(700, 30);
-    ctx.fillText(location.host || "trouvetacourse", W / 2, H - 180);
-    ctx.globalAlpha = 1;
-    ctx.font = f(700, 26);
-    ctx.globalAlpha = 0.7;
-    ctx.fillText("Tous les résultats du Gard sur notre site", W / 2, H - 120);
-    ctx.globalAlpha = 1;
-    return cv;
-  }
-
-  async function shareRunnerStory() {
-    const r = allResultats.find(x => x.id === window.__runnerStatCurrentId);
-    if (!r) return;
-    const hint = document.getElementById("runnerStatShareHint");
-    const btn = document.getElementById("runnerStatShareBtn");
-    btn.disabled = true;
-    try {
-      const cv = buildStoryCanvas(r);
-      const blob = await new Promise(res => cv.toBlob(res, "image/png"));
-      const fileName = ("resultat-" + (r.prenom + "-" + r.nom).toLowerCase().replace(/[^a-z0-9]+/gi, "-") + ".png").replace(/-+/g, "-");
-      const file = new File([blob], fileName, { type: "image/png" });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: "Mon résultat — Trouve ta Course" });
-          if (hint) hint.textContent = "Dans la feuille de partage : Instagram → « Ajouter à ta story » 📸";
-        } catch (e) { /* partage annulé par l'utilisateur : ne rien afficher */ }
-      } else {
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-        if (hint) hint.textContent = "Image story téléchargée ✅ — depuis un téléphone, le bouton ouvre directement le partage Instagram.";
-      }
-    } finally {
-      btn.disabled = false;
-    }
   }
 
   function renderLeaderboardTable() {
