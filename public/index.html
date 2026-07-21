@@ -2531,14 +2531,55 @@
     return cv;
   }
 
-  // Visuel "fiche course" : annonce de l'épreuve.
-  function buildCourseStoryCanvas(courseId) {
+  // Texte des distances pour les visuels : séparateur " · " SANS casser les
+  // virgules décimales ("11,2 km" doit rester entier — on ne remplace la
+  // virgule que si elle est suivie d'une espace, comme dans la liste
+  // Airtable "8 km, 11,2 km"). Un élément purement numérique récupère son
+  // unité ("8, 11,2 km" → "8 km · 11,2 km").
+  function distancesShareText(c) {
+    let txt = getDistancesDisplayText(c, splitDistances(c.distances));
+    txt = txt.replace(/<br>/g, " · ").replace(/\s*;\s*/g, " · ").replace(/,\s+/g, " · ");
+    return txt.split(" · ").map(part => {
+      const p = part.trim();
+      return /^[\d.,]+$/.test(p) ? p + " km" : p;
+    }).join(" · ");
+  }
+
+  // Charge l'affiche de la course pour le canvas. crossOrigin est requis
+  // pour ne pas "tainter" le canvas (sinon l'export PNG est bloqué) ; si le
+  // serveur d'Airtable refuse ou si l'image ne charge pas en 4 s, on
+  // renvoie null et le visuel se dessine simplement sans affiche.
+  function loadPosterImage(url) {
+    return new Promise(resolve => {
+      if (!url) return resolve(null);
+      const img = new Image();
+      const timer = setTimeout(() => resolve(null), 4000);
+      img.crossOrigin = "anonymous";
+      img.onload = () => { clearTimeout(timer); resolve(img); };
+      img.onerror = () => { clearTimeout(timer); resolve(null); };
+      img.src = url;
+    });
+  }
+
+  // Visuel "fiche course" : annonce de l'épreuve, avec l'affiche si dispo.
+  async function buildCourseStoryCanvas(courseId) {
     const c = allCourses.find(x => x.id === courseId);
     if (!c) return null;
+    const poster = await loadPosterImage(c.affiche);
     const { cv, ctx, f, roundRect, fitText, card, footer } = storyBase();
     const W = STORY_W;
 
-    const cardX = 70, cardY = 360, cardW = W - 140, cardH = 1000;
+    const cardX = 70, cardW = W - 140;
+    const cardY = poster ? 280 : 360;
+    // Dimensions de l'affiche calculées AVANT la carte, pour que la hauteur
+    // de la carte s'adapte et que rien ne se chevauche.
+    let pw = 0, ph = 0;
+    if (poster) {
+      const ratio = Math.min(400 / poster.width, 520 / poster.height);
+      pw = Math.round(poster.width * ratio);
+      ph = Math.round(poster.height * ratio);
+    }
+    const cardH = poster ? (300 + ph + 95 + 265 + 150) : 1000;
     card(cardX, cardY, cardW, cardH);
     const inX = W / 2, maxW = cardW - 120;
 
@@ -2554,44 +2595,63 @@
     }
 
     ctx.fillStyle = "#1c1410";
-    fitText(c.nom, maxW, 800, 58, 30);
-    ctx.fillText(c.nom, inX, cardY + 210);
+    fitText(c.nom, maxW, 800, poster ? 54 : 58, 30);
+    ctx.fillText(c.nom, inX, cardY + (poster ? 195 : 210));
     ctx.fillStyle = "#8a7a6d";
     ctx.font = f(700, 30);
-    ctx.fillText([c.commune, "Gard"].filter(Boolean).join(" · "), inX, cardY + 262);
+    ctx.fillText([c.commune, "Gard"].filter(Boolean).join(" · "), inX, cardY + (poster ? 245 : 262));
+
+    let y; // ordonnée de la zone date, décalée si affiche présente
+    if (poster) {
+      // Affiche centrée, cadrée dans un rectangle arrondi (ratio conservé).
+      const px = inX - pw / 2, py = cardY + 300;
+      ctx.save();
+      roundRect(px, py, pw, ph, 18);
+      ctx.clip();
+      ctx.drawImage(poster, px, py, pw, ph);
+      ctx.restore();
+      ctx.strokeStyle = "#e2d8cd";
+      ctx.lineWidth = 2;
+      roundRect(px, py, pw, ph, 18);
+      ctx.stroke();
+      y = py + ph + 95;
+    } else {
+      y = cardY + 390;
+    }
 
     // Date + heure de départ.
     ctx.fillStyle = "#E06A2C";
     const dateTxt = c.date ? new Date(c.date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).toUpperCase() : "DATE À VENIR";
-    fitText(dateTxt, maxW, 800, 44, 26);
-    ctx.fillText(dateTxt, inX, cardY + 390);
+    fitText(dateTxt, maxW, 800, poster ? 40 : 44, 26);
+    ctx.fillText(dateTxt, inX, y);
     if (c.heure) {
       ctx.fillStyle = "#8a7a6d";
       ctx.font = f(700, 30);
-      ctx.fillText("Départ " + c.heure, inX, cardY + 442);
+      ctx.fillText("Départ " + c.heure, inX, y + 48);
     }
 
     // Distances.
     ctx.fillStyle = "#A8481A";
     ctx.font = f(800, 26);
-    ctx.fillText("DISTANCES", inX, cardY + 560);
+    ctx.fillText("DISTANCES", inX, y + (poster ? 140 : 170));
     ctx.fillStyle = "#1c1410";
-    const distancesTxt = getDistancesDisplayText(c, splitDistances(c.distances)).replace(/<br>/g, " · ").replace(/\s*[;,]\s*/g, " · ");
+    const distancesTxt = distancesShareText(c);
     fitText(distancesTxt, maxW, 800, 40, 20);
-    ctx.fillText(distancesTxt, inX, cardY + 620);
-    if (c.challenge) {
+    ctx.fillText(distancesTxt, inX, y + (poster ? 195 : 230));
+    if (!poster && c.challenge) {
       ctx.fillStyle = "#8a7a6d";
       fitText("🏆 " + c.challenge, maxW, 700, 28, 18);
-      ctx.fillText("🏆 " + c.challenge, inX, cardY + 690);
+      ctx.fillText("🏆 " + c.challenge, inX, y + 300);
     }
 
-    // Bandeau d'appel à l'action.
+    // Bandeau d'appel à l'action (placé sous les distances, jamais dessus).
+    const ctaY = poster ? (y + 265) : (cardY + cardH - 210);
     ctx.fillStyle = "#E06A2C";
-    roundRect(cardX + 90, cardY + 790, cardW - 180, 90, 45);
+    roundRect(cardX + 90, ctaY, cardW - 180, 90, 45);
     ctx.fill();
     ctx.fillStyle = "#fff";
     ctx.font = f(800, 30);
-    ctx.fillText("Infos & inscription sur notre site", inX, cardY + 848);
+    ctx.fillText("Plus d'infos sur notre site", inX, ctaY + 58);
 
     footer("Le calendrier running complet du Gard");
     return cv;
@@ -2664,7 +2724,7 @@
   async function shareCourse(courseId) {
     const c = allCourses.find(x => x.id === courseId);
     if (!c) return;
-    await finishShare(buildCourseStoryCanvas(courseId), shareFileName("course", c.nom), c.nom + " — Trouve ta Course");
+    await finishShare(await buildCourseStoryCanvas(courseId), shareFileName("course", c.nom), c.nom + " — Trouve ta Course");
   }
 
   // Bouton de la pop-up résultat : même partage, avec le message d'aide
@@ -3541,9 +3601,14 @@
         <button class="podium-cta" onclick="showPage('challenge')">Voir le classement</button>
       </div>`;
 
+    // Détail 🥇🥈🥉 plutôt qu'un total : le classement médailles trie par
+    // ors d'abord (comme la page Tableau d'Honneur), un simple total
+    // pourrait donc paraître désordonné (2e avec 4, 3e avec 5…).
+    const medalsDetail = r => [r.p1 ? r.p1 + "🥇" : "", r.p2 ? r.p2 + "🥈" : "", r.p3 ? r.p3 + "🥉" : ""].filter(Boolean).join(" ") || "—";
     grid.innerHTML =
       card(`🏁 Le plus de courses`, honneurData.byRaces.slice(0, 3).map(r => runnerRow(r, r._rankRaces, r.races.length + " course" + (r.races.length > 1 ? "s" : ""))).join("")) +
       card(`📏 Le plus de kilomètres`, honneurData.byKm.slice(0, 3).map(r => runnerRow(r, r._rankKm, formatKm(r.km) + " km")).join("")) +
+      card(`🏅 Le plus de médailles`, honneurData.byMedals.slice(0, 3).map(r => runnerRow(r, r._rankMedals, medalsDetail(r))).join("")) +
       (SHOW_CLUB_STATS ? card(`👥 Clubs les plus représentés`, honneurData.clubs.slice(0, 3).map(clubRow).join("")) : "");
   }
 
