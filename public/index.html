@@ -163,14 +163,6 @@
   .map-modal-close:hover { background: var(--accent-tint); color: var(--accent-deep); }
   #mapContainer { flex: 1; border-radius: 0 0 22px 22px; }
   .map-filters { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 1.2rem 0.5rem; align-items: center; }
-  .map-dropdown-wrap { position: relative; }
-  .map-dropdown { display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 200; background: var(--card); border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.18); min-width: 210px; max-height: 260px; overflow-y: auto; padding: 6px 0; }
-  .map-dropdown.open { display: block; }
-  .map-dd-row { display: flex; align-items: center; gap: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 600; transition: background .12s; }
-  .map-dd-row:hover { background: var(--accent-tint); }
-  .map-dd-row.active { color: var(--accent-deep); }
-  .map-dd-check { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; color: #fff; }
-  .map-dd-row.active .map-dd-check { background: var(--accent); border-color: var(--accent); }
   .map-tag { display: flex; align-items:center; gap:2px; padding:2px 7px 2px 5px; border-radius:8px; font-size:13px; line-height:1; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,.22); border:2px solid #fff; cursor:pointer; transition:transform .15s; }
   .map-tag:hover { transform:scale(1.15); }
   .map-tag-emoji { font-size:14px; }
@@ -630,6 +622,7 @@
     <h1 style="margin:0 0 1.2rem;">Calendrier des courses</h1>
     <div class="search-box" style="margin:0 0 1rem;"><input id="heroSearch" placeholder="Chercher une course, une ville..." /><button onclick="renderCalendrier()">Chercher</button></div>
     <div class="hero-chips" id="heroChips" style="justify-content:flex-start;">
+      <button class="date-filter-btn" onclick="openMapModal()">Carte</button>
       <button class="date-filter-btn" id="dateFilterBtn" onclick="openDateModal()">
         <span id="dateFilterLabel">Date</span>
       </button>
@@ -639,7 +632,6 @@
       <button class="date-filter-btn" id="challengeFilterBtn" onclick="openChallengeModal()">
         <span id="challengeFilterLabel">Challenge</span>
       </button>
-      <button class="date-filter-btn" onclick="openMapModal()">Carte</button>
       <button class="date-filter-btn" id="typeFilterBtn" onclick="openTypeModal()">
         <span id="typeFilterLabel">Type de course</span>
       </button>
@@ -718,25 +710,70 @@
         <button class="map-modal-close" onclick="closeMapModal()">✕</button>
       </div>
       <div class="map-filters" id="mapFilters">
-        <div class="map-dropdown-wrap">
-          <button class="date-filter-btn" id="mapDateBtn" onclick="toggleMapDropdown('date')"><span id="mapDateLabel">Date</span></button>
-          <div class="map-dropdown" id="mapDateDropdown"></div>
-        </div>
-        <div class="map-dropdown-wrap">
-          <button class="date-filter-btn" id="mapDistBtn" onclick="toggleMapDropdown('dist')"><span id="mapDistLabel">Distance</span></button>
-          <div class="map-dropdown" id="mapDistDropdown"></div>
-        </div>
-        <div class="map-dropdown-wrap">
-          <button class="date-filter-btn" id="mapChalBtn" onclick="toggleMapDropdown('chal')"><span id="mapChalLabel">Challenge</span></button>
-          <div class="map-dropdown" id="mapChalDropdown"></div>
-        </div>
-        <div class="map-dropdown-wrap">
-          <button class="date-filter-btn" id="mapTypeBtn" onclick="toggleMapDropdown('type')"><span id="mapTypeLabel">Type de course</span></button>
-          <div class="map-dropdown" id="mapTypeDropdown"></div>
-        </div>
+        <button class="date-filter-btn" id="mapDateBtn" onclick="openMapDateModal()"><span id="mapDateLabel">Date</span></button>
+        <button class="date-filter-btn" id="mapDistBtn" onclick="openMapDistModal()"><span id="mapDistLabel">Distance</span></button>
+        <button class="date-filter-btn" id="mapChalBtn" onclick="openMapChalModal()"><span id="mapChalLabel">Challenge</span></button>
+        <button class="date-filter-btn" id="mapTypeBtn" onclick="openMapTypeModal()"><span id="mapTypeLabel">Type de course</span></button>
         <button class="date-reset-btn" onclick="resetMapFilters()">↺ Effacer</button>
       </div>
       <div id="mapContainer"></div>
+    </div>
+  </div>
+
+  <!-- Modales filtres carte -->
+  <div class="date-modal-overlay" id="mapDateModalOverlay" onclick="if(event.target===this) closeMapDateModal()" style="z-index:110;">
+    <div class="date-modal">
+      <div class="date-modal-header">
+        <div class="date-modal-title">Date</div>
+        <button class="date-modal-close" onclick="closeMapDateModal()">✕</button>
+      </div>
+      <div class="challenge-options" id="mapDateOptionsList"></div>
+      <div class="date-modal-footer">
+        <button class="date-apply-btn" onclick="applyMapDateFilter()" id="mapDateApplyBtn">Afficher</button>
+        <div class="date-clear-link" onclick="clearMapDateFilter()">Tout effacer</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="date-modal-overlay" id="mapDistModalOverlay" onclick="if(event.target===this) closeMapDistModal()" style="z-index:110;">
+    <div class="date-modal">
+      <div class="date-modal-header">
+        <div class="date-modal-title">Distance</div>
+        <button class="date-modal-close" onclick="closeMapDistModal()">✕</button>
+      </div>
+      <div class="challenge-options" id="mapDistOptionsList"></div>
+      <div class="date-modal-footer">
+        <button class="date-apply-btn" onclick="applyMapDistFilter()" id="mapDistApplyBtn">Afficher</button>
+        <div class="date-clear-link" onclick="clearMapDistFilter()">Tout effacer</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="date-modal-overlay" id="mapChalModalOverlay" onclick="if(event.target===this) closeMapChalModal()" style="z-index:110;">
+    <div class="date-modal">
+      <div class="date-modal-header">
+        <div class="date-modal-title">Challenge</div>
+        <button class="date-modal-close" onclick="closeMapChalModal()">✕</button>
+      </div>
+      <div class="challenge-options" id="mapChalOptionsList"></div>
+      <div class="date-modal-footer">
+        <button class="date-apply-btn" onclick="applyMapChalFilter()" id="mapChalApplyBtn">Afficher</button>
+        <div class="date-clear-link" onclick="clearMapChalFilter()">Tout effacer</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="date-modal-overlay" id="mapTypeModalOverlay" onclick="if(event.target===this) closeMapTypeModal()" style="z-index:110;">
+    <div class="date-modal">
+      <div class="date-modal-header">
+        <div class="date-modal-title">Type de course</div>
+        <button class="date-modal-close" onclick="closeMapTypeModal()">✕</button>
+      </div>
+      <div class="challenge-options" id="mapTypeOptionsList"></div>
+      <div class="date-modal-footer">
+        <button class="date-apply-btn" onclick="applyMapTypeFilter()" id="mapTypeApplyBtn">Afficher</button>
+        <div class="date-clear-link" onclick="clearMapTypeFilter()">Tout effacer</div>
+      </div>
     </div>
   </div>
 
@@ -1471,7 +1508,6 @@
             }).addTo(mapInstance);
           })
           .catch(() => {});
-        mapInstance.on('click', closeAllMapDropdowns);
       } else {
         mapInstance.invalidateSize();
       }
@@ -1480,7 +1516,6 @@
   }
 
   function closeMapModal() {
-    closeAllMapDropdowns();
     document.getElementById('mapModalOverlay').classList.remove('open');
   }
 
@@ -1491,25 +1526,17 @@
   };
 
   /* ---- Map filter state ---- */
-  let mapFilterMonths = new Set();   // "2026-07", "2026-08" …
-  let mapFilterDists = new Set();    // keys from DISTANCE_RANGES
-  let mapFilterChals = new Set();    // challenge names
-  let mapFilterTypes = new Set();    // type names
-  let mapOpenDropdown = null;        // 'date'|'dist'|'chal'|'type'|null
+  let mapFilterMonths = new Set();
+  let mapFilterDists = new Set();
+  let mapFilterChals = new Set();
+  let mapFilterTypes = new Set();
+  window.__mapPendingMonths = new Set();
+  window.__mapPendingDists = new Set();
+  window.__mapPendingChals = new Set();
+  window.__mapPendingTypes = new Set();
 
-  function toggleMapDropdown(name) {
-    if (mapOpenDropdown === name) { mapOpenDropdown = null; }
-    else { mapOpenDropdown = name; }
-    renderMapDropdown(name);
-    // close others
-    ['date','dist','chal','type'].forEach(n => {
-      if (n !== name) document.getElementById('map' + ({date:'Date',dist:'Dist',chal:'Chal',type:'Type'}[n]) + 'Dropdown').classList.remove('open');
-    });
-  }
-  function closeAllMapDropdowns() {
-    mapOpenDropdown = null;
-    ['mapDateDropdown','mapDistDropdown','mapChalDropdown','mapTypeDropdown'].forEach(id => document.getElementById(id)?.classList.remove('open'));
-  }
+  const MONTH_NAMES_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const MONTH_SHORT_FR = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
 
   function getMapMonths() {
     const months = new Set();
@@ -1520,102 +1547,195 @@
     });
     return [...months].sort();
   }
-  const MONTH_NAMES_FR = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
 
-  function renderMapDropdown(name) {
-    const ddId = 'map' + ({date:'Date',dist:'Dist',chal:'Chal',type:'Type'}[name]) + 'Dropdown';
-    const dd = document.getElementById(ddId);
-    if (mapOpenDropdown !== name) { dd.classList.remove('open'); return; }
-    let html = '';
-    if (name === 'date') {
-      html = getMapMonths().map(m => {
-        const active = mapFilterMonths.has(m);
-        const [y, mo] = m.split('-');
-        const label = MONTH_NAMES_FR[parseInt(mo)-1] + ' ' + y;
-        return `<div class="map-dd-row${active ? ' active' : ''}" onclick="event.stopPropagation(); mapToggle('month','${m}')"><span class="map-dd-check">${active ? '✓' : ''}</span>${label}</div>`;
-      }).join('');
-    } else if (name === 'dist') {
-      html = DISTANCE_RANGES.map(r => {
-        const active = mapFilterDists.has(r.key);
-        return `<div class="map-dd-row${active ? ' active' : ''}" onclick="event.stopPropagation(); mapToggle('dist','${r.key}')"><span class="map-dd-check">${active ? '✓' : ''}</span>${r.label}</div>`;
-      }).join('');
-    } else if (name === 'chal') {
-      const chals = getAllChallenges();
-      if (!chals.length) { html = '<div style="padding:12px;font-size:13px;color:var(--muted);">Aucun challenge</div>'; }
-      else html = chals.map(c => {
-        const active = mapFilterChals.has(c);
-        return `<div class="map-dd-row${active ? ' active' : ''}" onclick="event.stopPropagation(); mapToggle('chal','${c.replace(/'/g, "\\'")}')"><span class="map-dd-check">${active ? '✓' : ''}</span>${c}</div>`;
-      }).join('');
-    } else if (name === 'type') {
-      html = AIRTABLE_TYPES.map(t => {
-        const active = mapFilterTypes.has(t);
-        const color = TYPE_COLORS[t] || '#746F62';
-        const emoji = TYPE_EMOJIS[t] || '🏃';
-        return `<div class="map-dd-row${active ? ' active' : ''}" onclick="event.stopPropagation(); mapToggle('type','${t}')"><span class="map-dd-check">${active ? '✓' : ''}</span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></span>${emoji} ${t}</div>`;
-      }).join('');
-    }
-    dd.innerHTML = html;
-    dd.classList.add('open');
+  function countMapCourses(months, dists, chals, types) {
+    return allCourses.filter(c => {
+      if (months.size > 0) {
+        if (!c.date) return false;
+        const d = new Date(c.date);
+        const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+        if (!months.has(key)) return false;
+      } else { if (!isUpcomingCourse(c)) return false; }
+      if (dists.size > 0 && !courseMatchesDistances(c, dists)) return false;
+      if (chals.size > 0 && !chals.has(c.challenge || '')) return false;
+      if (types.size > 0 && !types.has(c.type)) return false;
+      return true;
+    }).length;
   }
 
-  function mapToggle(kind, val) {
-    const set = kind === 'month' ? mapFilterMonths : kind === 'dist' ? mapFilterDists : kind === 'chal' ? mapFilterChals : mapFilterTypes;
-    if (set.has(val)) set.delete(val); else set.add(val);
-    renderMapDropdown(mapOpenDropdown);
-    updateMapBtnLabels();
-    populateMapMarkers();
+  /* -- DATE -- */
+  function renderMapDateOptions() {
+    document.getElementById('mapDateOptionsList').innerHTML = getMapMonths().map(m => {
+      const active = window.__mapPendingMonths.has(m);
+      const [y, mo] = m.split('-');
+      return `<div class="distance-option-row${active ? ' active' : ''}" onclick="toggleMapMonth('${m}')">
+        <span class="checkbox-box">${active ? '<span style="color:#fff;font-size:12px;font-weight:800;">✓</span>' : ''}</span>
+        <span>${MONTH_NAMES_FR[parseInt(mo)-1]} ${y}</span>
+      </div>`;
+    }).join('');
+  }
+  function toggleMapMonth(m) {
+    if (window.__mapPendingMonths.has(m)) window.__mapPendingMonths.delete(m); else window.__mapPendingMonths.add(m);
+    renderMapDateOptions(); updateMapDateCount();
+  }
+  function updateMapDateCount() {
+    const n = countMapCourses(window.__mapPendingMonths, mapFilterDists, mapFilterChals, mapFilterTypes);
+    document.getElementById('mapDateApplyBtn').textContent = `Afficher ${n} course${n>1?'s':''}`;
+  }
+  function openMapDateModal() {
+    window.__mapPendingMonths = new Set(mapFilterMonths);
+    renderMapDateOptions(); updateMapDateCount();
+    document.getElementById('mapDateModalOverlay').classList.add('open');
+  }
+  function closeMapDateModal() { document.getElementById('mapDateModalOverlay').classList.remove('open'); }
+  function applyMapDateFilter() {
+    mapFilterMonths = new Set(window.__mapPendingMonths);
+    updateMapBtnLabels(); closeMapDateModal(); populateMapMarkers();
+  }
+  function clearMapDateFilter() {
+    mapFilterMonths.clear(); window.__mapPendingMonths.clear();
+    renderMapDateOptions(); updateMapDateCount(); updateMapBtnLabels(); populateMapMarkers();
   }
 
+  /* -- DISTANCE -- */
+  function renderMapDistOptions() {
+    document.getElementById('mapDistOptionsList').innerHTML = DISTANCE_RANGES.map(r => {
+      const active = window.__mapPendingDists.has(r.key);
+      return `<div class="distance-option-row${active ? ' active' : ''}" onclick="toggleMapDist('${r.key}')">
+        <span class="checkbox-box">${active ? '<span style="color:#fff;font-size:12px;font-weight:800;">✓</span>' : ''}</span>
+        <span>${r.label}</span>
+      </div>`;
+    }).join('');
+  }
+  function toggleMapDist(k) {
+    if (window.__mapPendingDists.has(k)) window.__mapPendingDists.delete(k); else window.__mapPendingDists.add(k);
+    renderMapDistOptions(); updateMapDistCount();
+  }
+  function updateMapDistCount() {
+    const n = countMapCourses(mapFilterMonths, window.__mapPendingDists, mapFilterChals, mapFilterTypes);
+    document.getElementById('mapDistApplyBtn').textContent = `Afficher ${n} course${n>1?'s':''}`;
+  }
+  function openMapDistModal() {
+    window.__mapPendingDists = new Set(mapFilterDists);
+    renderMapDistOptions(); updateMapDistCount();
+    document.getElementById('mapDistModalOverlay').classList.add('open');
+  }
+  function closeMapDistModal() { document.getElementById('mapDistModalOverlay').classList.remove('open'); }
+  function applyMapDistFilter() {
+    mapFilterDists = new Set(window.__mapPendingDists);
+    updateMapBtnLabels(); closeMapDistModal(); populateMapMarkers();
+  }
+  function clearMapDistFilter() {
+    mapFilterDists.clear(); window.__mapPendingDists.clear();
+    renderMapDistOptions(); updateMapDistCount(); updateMapBtnLabels(); populateMapMarkers();
+  }
+
+  /* -- CHALLENGE -- */
+  function renderMapChalOptions() {
+    const chals = getAllChallenges();
+    const wrap = document.getElementById('mapChalOptionsList');
+    if (!chals.length) { wrap.innerHTML = '<div class="state-message">Aucun challenge enregistré.</div>'; return; }
+    wrap.innerHTML = chals.map(c => {
+      const active = window.__mapPendingChals.has(c);
+      return `<div class="distance-option-row${active ? ' active' : ''}" onclick="toggleMapChal('${c.replace(/'/g,"\\'")}')">
+        <span class="checkbox-box">${active ? '<span style="color:#fff;font-size:12px;font-weight:800;">✓</span>' : ''}</span>
+        <span>${c}</span>
+      </div>`;
+    }).join('');
+  }
+  function toggleMapChal(c) {
+    if (window.__mapPendingChals.has(c)) window.__mapPendingChals.delete(c); else window.__mapPendingChals.add(c);
+    renderMapChalOptions(); updateMapChalCount();
+  }
+  function updateMapChalCount() {
+    const n = countMapCourses(mapFilterMonths, mapFilterDists, window.__mapPendingChals, mapFilterTypes);
+    document.getElementById('mapChalApplyBtn').textContent = `Afficher ${n} course${n>1?'s':''}`;
+  }
+  function openMapChalModal() {
+    window.__mapPendingChals = new Set(mapFilterChals);
+    renderMapChalOptions(); updateMapChalCount();
+    document.getElementById('mapChalModalOverlay').classList.add('open');
+  }
+  function closeMapChalModal() { document.getElementById('mapChalModalOverlay').classList.remove('open'); }
+  function applyMapChalFilter() {
+    mapFilterChals = new Set(window.__mapPendingChals);
+    updateMapBtnLabels(); closeMapChalModal(); populateMapMarkers();
+  }
+  function clearMapChalFilter() {
+    mapFilterChals.clear(); window.__mapPendingChals.clear();
+    renderMapChalOptions(); updateMapChalCount(); updateMapBtnLabels(); populateMapMarkers();
+  }
+
+  /* -- TYPE -- */
+  function renderMapTypeOptions() {
+    document.getElementById('mapTypeOptionsList').innerHTML = AIRTABLE_TYPES.map(t => {
+      const active = window.__mapPendingTypes.has(t);
+      const color = TYPE_COLORS[t] || '#746F62';
+      const emoji = TYPE_EMOJIS[t] || '🏃';
+      return `<div class="distance-option-row${active ? ' active' : ''}" onclick="toggleMapTypeOpt('${t}')">
+        <span class="checkbox-box">${active ? '<span style="color:#fff;font-size:12px;font-weight:800;">✓</span>' : ''}</span>
+        <span class="type-dot" style="background:${color};"></span>
+        <span>${emoji} ${t}</span>
+      </div>`;
+    }).join('');
+  }
+  function toggleMapTypeOpt(t) {
+    if (window.__mapPendingTypes.has(t)) window.__mapPendingTypes.delete(t); else window.__mapPendingTypes.add(t);
+    renderMapTypeOptions(); updateMapTypeCount();
+  }
+  function updateMapTypeCount() {
+    const n = countMapCourses(mapFilterMonths, mapFilterDists, mapFilterChals, window.__mapPendingTypes);
+    document.getElementById('mapTypeApplyBtn').textContent = `Afficher ${n} course${n>1?'s':''}`;
+  }
+  function openMapTypeModal() {
+    window.__mapPendingTypes = new Set(mapFilterTypes);
+    renderMapTypeOptions(); updateMapTypeCount();
+    document.getElementById('mapTypeModalOverlay').classList.add('open');
+  }
+  function closeMapTypeModal() { document.getElementById('mapTypeModalOverlay').classList.remove('open'); }
+  function applyMapTypeFilter() {
+    mapFilterTypes = new Set(window.__mapPendingTypes);
+    updateMapBtnLabels(); closeMapTypeModal(); populateMapMarkers();
+  }
+  function clearMapTypeFilter() {
+    mapFilterTypes.clear(); window.__mapPendingTypes.clear();
+    renderMapTypeOptions(); updateMapTypeCount(); updateMapBtnLabels(); populateMapMarkers();
+  }
+
+  /* -- Labels boutons + reset -- */
   function updateMapBtnLabels() {
-    // Date
-    const dBtn = document.getElementById('mapDateBtn');
-    const dLbl = document.getElementById('mapDateLabel');
+    const dBtn = document.getElementById('mapDateBtn'), dLbl = document.getElementById('mapDateLabel');
     if (mapFilterMonths.size === 0) { dLbl.textContent = 'Date'; dBtn.classList.remove('active'); }
-    else { dBtn.classList.add('active'); dLbl.textContent = mapFilterMonths.size === 1 ? (() => { const [y,m] = [...mapFilterMonths][0].split('-'); return MONTH_NAMES_FR[parseInt(m)-1]+' '+y; })() : `Date (${mapFilterMonths.size})`; }
-    // Distance
-    const diBtn = document.getElementById('mapDistBtn');
-    const diLbl = document.getElementById('mapDistLabel');
+    else { dBtn.classList.add('active'); const [y,m] = [...mapFilterMonths][0].split('-'); dLbl.textContent = mapFilterMonths.size === 1 ? MONTH_SHORT_FR[parseInt(m)-1]+' '+y : `Date (${mapFilterMonths.size})`; }
+
+    const diBtn = document.getElementById('mapDistBtn'), diLbl = document.getElementById('mapDistLabel');
     if (mapFilterDists.size === 0) { diLbl.textContent = 'Distance'; diBtn.classList.remove('active'); }
-    else { diBtn.classList.add('active'); diLbl.textContent = mapFilterDists.size === 1 ? DISTANCE_RANGES.find(r=>r.key===[...mapFilterDists][0])?.label||'Distance' : `Distance (${mapFilterDists.size})`; }
-    // Challenge
-    const cBtn = document.getElementById('mapChalBtn');
-    const cLbl = document.getElementById('mapChalLabel');
+    else { diBtn.classList.add('active'); diLbl.textContent = mapFilterDists.size === 1 ? (DISTANCE_RANGES.find(r=>r.key===[...mapFilterDists][0])?.label||'Distance') : `Distance (${mapFilterDists.size})`; }
+
+    const cBtn = document.getElementById('mapChalBtn'), cLbl = document.getElementById('mapChalLabel');
     if (mapFilterChals.size === 0) { cLbl.textContent = 'Challenge'; cBtn.classList.remove('active'); }
     else { cBtn.classList.add('active'); cLbl.textContent = mapFilterChals.size === 1 ? [...mapFilterChals][0] : `Challenge (${mapFilterChals.size})`; }
-    // Type
-    const tBtn = document.getElementById('mapTypeBtn');
-    const tLbl = document.getElementById('mapTypeLabel');
+
+    const tBtn = document.getElementById('mapTypeBtn'), tLbl = document.getElementById('mapTypeLabel');
     if (mapFilterTypes.size === 0) { tLbl.textContent = 'Type de course'; tBtn.classList.remove('active'); }
     else { tBtn.classList.add('active'); tLbl.textContent = mapFilterTypes.size === 1 ? [...mapFilterTypes][0] : `Type (${mapFilterTypes.size})`; }
   }
 
   function resetMapFilters() {
     mapFilterMonths.clear(); mapFilterDists.clear(); mapFilterChals.clear(); mapFilterTypes.clear();
-    closeAllMapDropdowns();
-    updateMapBtnLabels();
-    populateMapMarkers();
+    updateMapBtnLabels(); populateMapMarkers();
   }
 
   function mapCourseMatchesFilters(c) {
-    // Date (month)
     if (mapFilterMonths.size > 0) {
       if (!c.date) return false;
       const d = new Date(c.date);
       const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
       if (!mapFilterMonths.has(key)) return false;
     }
-    // Distance
-    if (mapFilterDists.size > 0) {
-      if (!courseMatchesDistances(c, mapFilterDists)) return false;
-    }
-    // Challenge
-    if (mapFilterChals.size > 0) {
-      if (!mapFilterChals.has(c.challenge || '')) return false;
-    }
-    // Type
-    if (mapFilterTypes.size > 0) {
-      if (!mapFilterTypes.has(c.type)) return false;
-    }
+    if (mapFilterDists.size > 0 && !courseMatchesDistances(c, mapFilterDists)) return false;
+    if (mapFilterChals.size > 0 && !mapFilterChals.has(c.challenge || '')) return false;
+    if (mapFilterTypes.size > 0 && !mapFilterTypes.has(c.type)) return false;
     return true;
   }
 
