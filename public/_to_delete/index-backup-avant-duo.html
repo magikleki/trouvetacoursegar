@@ -365,11 +365,11 @@
   .lb-dossard { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
   .lb-vitesse { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
   .lb-scratch { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
-  .lb-row-full.lb-row-duo { grid-template-columns: 36px 56px 48px 2fr 42px 1fr 78px 78px 1.1fr 34px; }
+  .lb-row-full.lb-row-duo { grid-template-columns: 36px 56px 48px 2fr 42px 1fr 78px 78px 1.1fr; }
   @media (max-width: 640px) {
     .lb-row-full:not(.lb-row-duo) { grid-template-columns: 32px 1.5fr 70px 30px; }
     .lb-row-full:not(.lb-row-duo) span:nth-child(2), .lb-row-full:not(.lb-row-duo) span:nth-child(4), .lb-row-full:not(.lb-row-duo) span:nth-child(5), .lb-row-full:not(.lb-row-duo) span:nth-child(7), .lb-row-full:not(.lb-row-duo) span:nth-child(8) { display: none; }
-    .lb-row-full.lb-row-duo { grid-template-columns: 28px 1.5fr 70px 30px; }
+    .lb-row-full.lb-row-duo { grid-template-columns: 28px 1.5fr 70px; }
     .lb-row-full.lb-row-duo span:nth-child(2), .lb-row-full.lb-row-duo span:nth-child(3), .lb-row-full.lb-row-duo span:nth-child(5), .lb-row-full.lb-row-duo span:nth-child(6), .lb-row-full.lb-row-duo span:nth-child(8), .lb-row-full.lb-row-duo span:nth-child(9) { display: none; }
   }
   .lb-row:last-child { border-bottom: none; }
@@ -1975,14 +1975,14 @@
   // Extrait le libellé de catégorie (ex: "Homme 4e" -> "Homme", "Mixte 1er" -> "Mixte")
   function extractCategoryLabel(cat) {
     if (!cat) return "Autres";
-    const label = cat.replace(/\s*\d+\s*(er|ère|re|e)?\s*$/i, '').trim();
+    const label = cat.replace(/\s*\d+\s*(er|ère|e)?\s*$/i, '').trim();
     return label || cat;
   }
 
-  // Extrait le rang au sein de la catégorie (ex: "Homme 4e" -> 4, "Mixte 1er" -> 1, "Femme 1re" -> 1)
+  // Extrait le rang au sein de la catégorie (ex: "Homme 4e" -> 4, "Mixte 1er" -> 1)
   function extractCategoryRank(cat) {
     if (!cat) return null;
-    const m = cat.match(/(\d+)\s*(er|ère|re|e)?\s*$/i);
+    const m = cat.match(/(\d+)\s*(er|ère|e)?\s*$/i);
     return m ? parseInt(m[1], 10) : null;
   }
 
@@ -2034,9 +2034,9 @@
   //   "SEM"                -> rang null, catégorie SEM (pas de rang)
   function splitClassementCategorie(cc) {
     const s = String(cc || "").trim();
-    let m = s.match(/^(\d+)\s*(?:er|ère|re|e)?\s+(.+)$/i);
+    let m = s.match(/^(\d+)\s*(?:er|ère|e)?\s+(.+)$/i);
     if (m) return { rang: parseInt(m[1], 10), categorie: m[2] };
-    m = s.match(/^(.+?)\s+(\d+)\s*(?:er|ère|re|e)?$/i);
+    m = s.match(/^(.+?)\s+(\d+)\s*(?:er|ère|e)?$/i);
     if (m) return { rang: parseInt(m[2], 10), categorie: m[1] };
     return { rang: null, categorie: s };
   }
@@ -2169,21 +2169,9 @@
     return { cv, ctx, f, roundRect, fitText, card, footer };
   }
 
-  // Une course/distance en duo a deux lignes de résultats par équipe (une
-  // par coureur), qui partagent le même classement général. Renvoie les
-  // coéquipiers de r (r inclus) si sa distance est courue en duo, sinon null.
-  function duoTeammatesOf(r) {
-    const distRows = allResultats.filter(x => x.courseId === r.courseId && x.distance === r.distance);
-    const groups = groupResultRows(distRows);
-    const isDuo = groups.length > 0 && groups.every(g => g.length === 2);
-    if (!isDuo) return null;
-    return groups.find(g => g.some(x => x.id === r.id)) || null;
-  }
-
-  // Visuel d'un résultat individuel — ou d'une équipe duo (les 2 noms).
+  // Visuel d'un résultat individuel (identique à la version validée).
   function buildStoryCanvas(r) {
     const { course, rang, categorie, allure, vitesse } = computeRunnerStats(r);
-    const team = duoTeammatesOf(r);
     const { cv, ctx, f, roundRect, fitText, card, footer } = storyBase();
     const W = STORY_W;
 
@@ -2201,15 +2189,12 @@
     const dateTxt = course && course.date ? new Date(course.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
     ctx.fillText([dateTxt, r.distance].filter(Boolean).join("  •  "), inX, y + 55);
 
-    // En duo, la médaille suit le rang dans la catégorie (c'est le
-    // classement affiché par le site pour les équipes).
-    const medalRank = team ? extractCategoryRank(r.classementCategorie) : r.classementGeneral;
-    const medal = medalRank === 1 ? "🥇" : medalRank === 2 ? "🥈" : medalRank === 3 ? "🥉" : null;
+    const medal = r.classementGeneral === 1 ? "🥇" : r.classementGeneral === 2 ? "🥈" : r.classementGeneral === 3 ? "🥉" : null;
     if (medal) { ctx.font = f(400, 90); ctx.fillText(medal, inX, cardY + 285); }
     y = cardY + 385;
-    const name = team ? team.map(displayRunnerName).join("  &  ") : displayRunnerName(r);
+    const name = displayRunnerName(r);
     ctx.fillStyle = "#1c1410";
-    fitText(name, maxW, 800, team ? 52 : 68, 26);
+    fitText(name, maxW, 800, 68, 34);
     ctx.fillText(name, inX, y);
     if (r.club) {
       ctx.fillStyle = "#8a7a6d";
@@ -2225,13 +2210,11 @@
     ctx.font = f(800, 28);
     ctx.fillText("TEMPS", inX, y + 50);
 
-    // En duo, l'allure calculée n'a pas de sens (la "distance" du format
-    // "2 x 5 km" ne se parse pas de façon fiable) : on ne l'affiche pas.
     const stats = [
       ["SCRATCH", r.classementGeneral !== null ? r.classementGeneral + (r.classementGeneral === 1 ? "ᵉʳ" : "ᵉ") : "—"],
       ["CATÉGORIE", categorie || "—"],
       ["CLT. CATÉGORIE", rang !== null ? rang + (rang === 1 ? "ᵉʳ" : "ᵉ") : "—"],
-      ["ALLURE", team ? "—" : (allure || "—")],
+      ["ALLURE", allure || "—"],
       ["VITESSE", vitesse || "—"],
       ["DOSSARD", r.dossard || "—"],
     ];
@@ -2273,26 +2256,6 @@
     const MEDALS = ["🥇", "🥈", "🥉"];
     const blocks = distances.map(dist => {
       const distRes = results.filter(r => r.distance === dist);
-      // Distance courue en duo : podiums par catégorie (Mixte/Femme/Homme),
-      // chaque équipe affichée avec ses DEUX coureurs.
-      const groups = groupResultRows(distRes);
-      const isDuo = groups.length > 0 && groups.every(g => g.length === 2);
-      if (isDuo) {
-        const teams = groups.map(g => ({
-          classementCategorie: g[0].classementCategorie,
-          temps: g[0].temps,
-          coureurs: g,
-        }));
-        const categories = sortCategories([...new Set(teams.map(t => extractCategoryLabel(t.classementCategorie)))]).slice(0, 3);
-        const catBlocks = categories.map(cat => ({
-          cat,
-          list: teams.filter(t => extractCategoryLabel(t.classementCategorie) === cat)
-            .sort((a, b) => (extractCategoryRank(a.classementCategorie) ?? 9999) - (extractCategoryRank(b.classementCategorie) ?? 9999))
-            .slice(0, 3),
-        }));
-        const height = 96 + catBlocks.reduce((s, cb) => s + 46 + cb.list.length * 48 + 18, 0) + 16;
-        return { dist, isDuo, catBlocks, height };
-      }
       const top = (fltr) => distRes.filter(fltr).sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999)).slice(0, 3);
       const cols = [
         { label: "HOMMES", color: "#2E6FCE", list: top(isMaleResult) },
@@ -2320,7 +2283,7 @@
     ctx.fillText(course && course.date ? new Date(course.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "", W / 2, cardY + 126);
 
     let by = cardY + headH;
-    blocks.forEach(({ dist, cols, isDuo, catBlocks, height }) => {
+    blocks.forEach(({ dist, cols, height }) => {
       // Pastille distance.
       ctx.fillStyle = "#1c1410";
       const pillW = 280, pillH = 52;
@@ -2329,37 +2292,6 @@
       ctx.fillStyle = "#fff";
       fitText(dist, pillW - 40, 800, 27, 17);
       ctx.fillText(dist, W / 2, by + 35);
-
-      if (isDuo) {
-        // Une colonne pleine largeur par catégorie : "🥇 Nom1 & Nom2   temps".
-        let cy = by + 100;
-        catBlocks.forEach(cb => {
-          ctx.textAlign = "center";
-          ctx.fillStyle = "#A8481A";
-          ctx.font = f(800, 24);
-          ctx.fillText(cb.cat.toUpperCase(), W / 2, cy);
-          cb.list.forEach((t, i) => {
-            const ly = cy + 46 + i * 48;
-            ctx.textAlign = "left";
-            ctx.font = f(400, 30);
-            ctx.fillText(MEDALS[i], cardX + 60, ly);
-            const nm = t.coureurs.map(displayRunnerName).join(" & ");
-            ctx.fillStyle = "#1c1410";
-            const ts = fitText(nm, cardW - 330, 700, 27, 15);
-            ctx.font = f(700, ts);
-            ctx.fillText(nm, cardX + 106, ly);
-            ctx.textAlign = "right";
-            ctx.fillStyle = "#8a7a6d";
-            ctx.font = f(700, 22);
-            ctx.fillText(t.temps || "", cardX + cardW - 60, ly);
-            ctx.fillStyle = "#1c1410";
-          });
-          cy += 46 + cb.list.length * 48 + 18;
-        });
-        ctx.textAlign = "center";
-        by += height;
-        return;
-      }
 
       const colW = (cardW - 140) / 2;
       cols.forEach((col, ci) => {
@@ -2758,7 +2690,7 @@
         ? `<div class="state-message">Aucune équipe ne correspond.</div>`
         : `
           <div class="lb-table">
-            <div class="lb-row-full lb-row-duo head"><span>Rang</span><span>Scratch</span><span>Doss.</span><span>Coureurs</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Équipe</span><span></span></div>
+            <div class="lb-row-full lb-row-duo head"><span>Rang</span><span>Scratch</span><span>Doss.</span><span>Coureurs</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Équipe</span></div>
             ${shown.map(t => {
               const catRank = extractCategoryRank(t.classementCategorie);
               return `
@@ -2772,7 +2704,6 @@
                 <span class="lb-time">${t.temps || "—"}</span>
                 <span class="lb-vitesse">${t.vitesse || "—"}</span>
                 <span class="lb-club-cell">${t.club || "—"}</span>
-                <span><button class="lb-share-btn" title="Partager ce résultat d'équipe" onclick="shareResult('${t.coureurs[0].id}')">📤</button></span>
               </div>`;
             }).join("")}
           </div>
