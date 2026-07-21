@@ -2258,20 +2258,8 @@
   // d'autres clubs aléatoires plutôt que d'afficher une section trouée.
   const HOME_CLUBS_COUNT = 4;
   function pickHomeClubs() {
-    const picked = [];
-    const usedIds = new Set();
-
-    const vergeze = allClubs.find(c => normalizeText(c.commune).includes("vergeze") || normalizeText(c.nom).includes("vergeze"));
-    if (vergeze) { picked.push(vergeze); usedIds.add(vergeze.id); }
-
-    const courirVauvert = allClubs.find(c => !usedIds.has(c.id) && normalizeText(c.nom).includes("courir") && normalizeText(c.nom).includes("vauvert"));
-    if (courirVauvert) { picked.push(courirVauvert); usedIds.add(courirVauvert.id); }
-
-    const remaining = allClubs.filter(c => !usedIds.has(c.id));
-    if (picked.length < HOME_CLUBS_COUNT && remaining.length) {
-      const shuffled = [...remaining].sort(() => Math.random() - 0.5);
-      picked.push(...shuffled.slice(0, HOME_CLUBS_COUNT - picked.length));
-    }
+    const shuffled = [...allClubs].sort(() => Math.random() - 0.5);
+    const picked = shuffled.slice(0, HOME_CLUBS_COUNT);
 
     return picked;
   }
