@@ -417,6 +417,10 @@
   .medal-val.empty { color: var(--border); font-weight: 600; }
   @media (max-width: 479px) { .lb-row-medals { grid-template-columns: 30px 1.5fr 34px 34px 34px; } }
   .honneur-value { font-weight: 800; color: var(--accent-deep); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* Variante avec colonne partage (lignes du Tableau d'Honneur) */
+  .lb-row.with-share { grid-template-columns: 36px 2fr 1fr 30px; }
+  .lb-row-medals.with-share { grid-template-columns: 36px 2fr 44px 44px 44px 30px; }
+  @media (max-width: 479px) { .lb-row-medals.with-share { grid-template-columns: 30px 1.5fr 34px 34px 34px 26px; } }
   .honneur-sub { font-size: 10.5px; color: var(--muted); font-weight: 600; }
   .honneur-more { display: block; width: 100%; margin-top: 12px; background: none; border: 1px solid var(--border); border-radius: 10px; padding: 11px; font-size: 12.5px; font-weight: 800; color: var(--muted); cursor: pointer; transition: border-color .15s ease, color .15s ease; }
   .honneur-more:hover { border-color: var(--accent); color: var(--accent-deep); }
@@ -2094,13 +2098,23 @@
     if (m) return { rang: parseInt(m[2], 10), categorie: m[1] };
     return { rang: null, categorie: s };
   }
+  // Distance en km pour le calcul d'allure/vitesse. Gère les formats relais
+  // "2 x 5 km" (→ 10 km au total) ; sans nombre exploitable ("Duathlon S
+  // Relais"…), renvoie Infinity et aucun calcul n'est fait.
+  function distanceKmForPace(str) {
+    const s = String(str || "");
+    const rel = s.match(/(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)/i);
+    if (rel) return parseFloat(rel[1].replace(",", ".")) * parseFloat(rel[2].replace(",", "."));
+    return distanceNumValue(s);
+  }
+
   // Stats calculées d'un résultat, partagées entre la pop-up et l'image de
   // partage en story : catégorie/rang séparés, allure et vitesse calculées.
   function computeRunnerStats(r) {
     const course = allCourses.find(c => c.id === r.courseId);
     const { rang, categorie } = splitClassementCategorie(r.classementCategorie);
     const sec = parseTempsSeconds(r.temps);
-    const km = distanceNumValue(r.distance);
+    const km = distanceKmForPace(r.distance);
     const hasKm = isFinite(km) && km > 0 && sec !== null && sec > 0;
     const allure = hasKm ? formatAllure(sec / km) : null;
     // La vitesse importée contient le plus souvent déjà l'unité ("18.13 km/h") :
@@ -2289,13 +2303,11 @@
     ctx.font = f(800, 28);
     ctx.fillText("TEMPS", inX, y + 50);
 
-    // En duo, l'allure calculée n'a pas de sens (la "distance" du format
-    // "2 x 5 km" ne se parse pas de façon fiable) : on ne l'affiche pas.
     const stats = [
       ["SCRATCH", r.classementGeneral !== null ? r.classementGeneral + (r.classementGeneral === 1 ? "ᵉʳ" : "ᵉ") : "—"],
       ["CATÉGORIE", teamInfo ? teamInfo.__cat : (categorie || "—")],
       ["CLT. CATÉGORIE", teamInfo ? teamInfo.__catRank + (teamInfo.__catRank === 1 ? "ᵉʳ" : "ᵉ") : (rang !== null ? rang + (rang === 1 ? "ᵉʳ" : "ᵉ") : "—")],
-      ["ALLURE", team ? "—" : (allure || "—")],
+      ["ALLURE", allure || "—"],
       ["VITESSE", vitesse || "—"],
       ["DOSSARD", r.dossard || "—"],
     ];
@@ -2562,6 +2574,76 @@
       img.onerror = () => { clearTimeout(timer); resolve(null); };
       img.src = url;
     });
+  }
+
+  // Visuel "Tableau d'Honneur" : top 3 d'un classement de la saison
+  // (courses, kilomètres ou médailles).
+  const HONNEUR_STORY_KINDS = {
+    courses: { titre: "LE PLUS DE COURSES", emoji: "🏁", list: h => h.byRaces, value: r => r.races.length + " course" + (r.races.length > 1 ? "s" : "") },
+    km: { titre: "LE PLUS DE KILOMÈTRES", emoji: "📏", list: h => h.byKm, value: r => formatKm(r.km) + " km" },
+    medailles: { titre: "LE PLUS DE MÉDAILLES", emoji: "🏅", list: h => h.byMedals, value: r => [r.p1 ? r.p1 + "🥇" : "", r.p2 ? r.p2 + "🥈" : "", r.p3 ? r.p3 + "🥉" : ""].filter(Boolean).join(" ") || "—" },
+  };
+  function buildHonneurStoryCanvas(kind) {
+    const spec = HONNEUR_STORY_KINDS[kind];
+    if (!spec || !honneurData) return null;
+    const top3 = spec.list(honneurData).slice(0, 3);
+    if (!top3.length) return null;
+    const { cv, ctx, f, roundRect, fitText, card, footer } = storyBase();
+    const W = STORY_W;
+
+    const MEDALS = ["🥇", "🥈", "🥉"];
+    const rowH = 150;
+    const cardX = 70, cardW = W - 140;
+    const cardH = 230 + top3.length * rowH + 50;
+    const cardY = Math.round((STORY_H - cardH) / 2);
+    ctx.fillStyle = "#fff";
+    ctx.font = f(800, 56);
+    ctx.fillText("🏆 TABLEAU D'HONNEUR", W / 2, cardY - 60);
+    card(cardX, cardY, cardW, cardH);
+    const inX = W / 2;
+
+    ctx.fillStyle = "#A8481A";
+    ctx.font = f(800, 40);
+    ctx.fillText(spec.emoji + " " + spec.titre, inX, cardY + 95);
+    ctx.fillStyle = "#8a7a6d";
+    ctx.font = f(700, 28);
+    ctx.fillText("Saison " + HONNEUR_YEAR, inX, cardY + 145);
+
+    top3.forEach((r, i) => {
+      const ry = cardY + 230 + i * rowH;
+      ctx.textAlign = "left";
+      ctx.font = f(400, 56);
+      ctx.fillText(MEDALS[i], cardX + 60, ry + 42);
+      ctx.fillStyle = "#1c1410";
+      const nm = displayRunnerName(r);
+      const ts = fitText(nm, cardW - 480, 800, 38, 20);
+      ctx.font = f(800, ts);
+      ctx.fillText(nm, cardX + 150, ry + 28);
+      if (r.club) {
+        ctx.fillStyle = "#8a7a6d";
+        const cs = fitText(r.club, cardW - 480, 700, 24, 16);
+        ctx.font = f(700, cs);
+        ctx.fillText(r.club, cardX + 150, ry + 68);
+      }
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#E06A2C";
+      const val = spec.value(r);
+      const vs = fitText(val, 280, 800, 34, 20);
+      ctx.font = f(800, vs);
+      ctx.fillText(val, cardX + cardW - 60, ry + 40);
+      ctx.textAlign = "center";
+    });
+
+    footer("Le Tableau d'Honneur complet sur notre site");
+    return cv;
+  }
+
+  async function shareHonneur(kind) {
+    if (!coursesLoaded || !resultatsLoaded || !clubsLoaded) {
+      await Promise.all([loadCourses(), loadResultatsCountForStats(), loadClubs()]);
+    }
+    if (!honneurData) buildHonneurData();
+    await finishShare(buildHonneurStoryCanvas(kind), shareFileName("tableau-honneur", kind), "Tableau d'Honneur — Trouve ta Course");
   }
 
   // Visuel "fiche course" : annonce de l'épreuve, avec l'affiche si dispo.
@@ -3260,10 +3342,11 @@
     const filterRunners = list => q ? list.filter(r => honneurNorm(r.prenom + " " + r.nom + " " + r.nom + " " + r.prenom + " " + (r.club || "")).includes(q)) : list;
     const filterClubs = list => q ? list.filter(c => honneurNorm(c.nom).includes(q)) : list;
     const runnerRowHtml = (rankProp, valueOf) => r => `
-      <div class="lb-row clickable" onclick="openCoureur('${escJsArg(r.key)}')">
+      <div class="lb-row with-share clickable" onclick="openCoureur('${escJsArg(r.key)}')">
         ${honneurRankBadge(r[rankProp])}
         <span class="lb-name">${displayRunnerName(r)}${r.club ? `<div class="honneur-sub">${r.club}</div>` : ""}</span>
         <span class="honneur-value">${valueOf(r)}</span>
+        <span><button class="lb-share-btn" title="Partager la fiche de ce coureur" onclick="event.stopPropagation(); shareCoureur('${escJsArg(r.key)}')">📤</button></span>
       </div>`;
     const clubRowHtml = (rankProp, valueOf, subOf) => c => `
       <div class="lb-row clickable" onclick="openClubFiche('${escJsArg(c.key)}')">
@@ -3299,12 +3382,13 @@
         rowsSource = filterRunners(byMedals);
         placeholder = "Chercher un(e) coureur(se)...";
         countLabel = `${byMedals.length} coureur·se·s médaillé·e·s`;
-        header = `<div class="lb-row-medals head"><span>#</span><span>Coureur·se</span><span>🥇</span><span>🥈</span><span>🥉</span></div>`;
+        header = `<div class="lb-row-medals with-share head"><span>#</span><span>Coureur·se</span><span>🥇</span><span>🥈</span><span>🥉</span><span></span></div>`;
         rowHtml = r => `
-          <div class="lb-row-medals clickable" onclick="openCoureur('${escJsArg(r.key)}')">
+          <div class="lb-row-medals with-share clickable" onclick="openCoureur('${escJsArg(r.key)}')">
             ${honneurRankBadge(r._rankMedals)}
             <span class="lb-name">${displayRunnerName(r)}${r.club ? `<div class="honneur-sub">${r.club}</div>` : ""}</span>
             ${medalCells(r)}
+            <span><button class="lb-share-btn" title="Partager la fiche de ce coureur" onclick="event.stopPropagation(); shareCoureur('${escJsArg(r.key)}')">📤</button></span>
           </div>`;
       }
     } else if (honneurTab === 'clubs') {
@@ -3326,7 +3410,7 @@
         rowsSource = filterRunners(byKm);
         placeholder = "Chercher un(e) coureur(se)...";
         countLabel = `${byKm.length} coureur·se·s classé·e·s`;
-        header = `<div class="lb-row head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Km</span></div>`;
+        header = `<div class="lb-row with-share head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Km</span><span></span></div>`;
         rowHtml = runnerRowHtml('_rankKm', r => formatKm(r.km) + " km");
       }
     } else {
@@ -3342,7 +3426,7 @@
         rowsSource = filterRunners(byRaces);
         placeholder = "Chercher un(e) coureur(se)...";
         countLabel = `${byRaces.length} coureur·se·s classé·e·s`;
-        header = `<div class="lb-row head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Courses</span></div>`;
+        header = `<div class="lb-row with-share head"><span>#</span><span>Coureur·se</span><span style="text-align:right;">Courses</span><span></span></div>`;
         rowHtml = runnerRowHtml('_rankRaces', r => r.races.length);
       }
     }
@@ -3362,7 +3446,7 @@
       ${tabsHtml}
       ${subTabsHtml}
       <div class="lb-count-row">
-        <div class="lb-count-label">${countLabel}</div>
+        <div class="lb-count-label">${countLabel}${honneurTab !== 'clubs' && !isClubsSub ? ` <button class="lb-share-btn" title="Partager le top 3 de ce classement" onclick="shareHonneur('${honneurTab}')">📤</button>` : ""}</div>
         <div class="lb-search-slot">
           <input class="lb-search" id="honneurSearch" placeholder="${placeholder}" oninput="renderTableauHonneur()" value="${escapeHtmlAttr(rawValue)}" style="width:100%;" />
         </div>
@@ -3597,9 +3681,12 @@
         <span class="val">${c.participations}</span>
       </div>`;
 
-    const card = (title, rowsHtml) => `
+    const card = (title, rowsHtml, shareKind) => `
       <div class="podium-card">
-        <div class="podium-card-head"><div class="podium-card-title">${title}</div></div>
+        <div class="podium-card-head" style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
+          <div class="podium-card-title">${title}</div>
+          ${shareKind ? `<button class="lb-share-btn" style="flex-shrink:0;" title="Partager ce podium" onclick="shareHonneur('${shareKind}')">📤</button>` : ""}
+        </div>
         ${rowsHtml || `<div style="color:var(--muted); font-size:12px;">Pas encore de classement.</div>`}
         <button class="podium-cta" onclick="showPage('challenge')">Voir le classement</button>
       </div>`;
@@ -3609,9 +3696,9 @@
     // pourrait donc paraître désordonné (2e avec 4, 3e avec 5…).
     const medalsDetail = r => [r.p1 ? r.p1 + "🥇" : "", r.p2 ? r.p2 + "🥈" : "", r.p3 ? r.p3 + "🥉" : ""].filter(Boolean).join(" ") || "—";
     grid.innerHTML =
-      card(`🏁 Le plus de courses`, honneurData.byRaces.slice(0, 3).map(r => runnerRow(r, r._rankRaces, r.races.length + " course" + (r.races.length > 1 ? "s" : ""))).join("")) +
-      card(`📏 Le plus de kilomètres`, honneurData.byKm.slice(0, 3).map(r => runnerRow(r, r._rankKm, formatKm(r.km) + " km")).join("")) +
-      card(`🏅 Le plus de médailles`, honneurData.byMedals.slice(0, 3).map(r => runnerRow(r, r._rankMedals, medalsDetail(r))).join("")) +
+      card(`🏁 Le plus de courses`, honneurData.byRaces.slice(0, 3).map(r => runnerRow(r, r._rankRaces, r.races.length + " course" + (r.races.length > 1 ? "s" : ""))).join(""), "courses") +
+      card(`📏 Le plus de kilomètres`, honneurData.byKm.slice(0, 3).map(r => runnerRow(r, r._rankKm, formatKm(r.km) + " km")).join(""), "km") +
+      card(`🏅 Le plus de médailles`, honneurData.byMedals.slice(0, 3).map(r => runnerRow(r, r._rankMedals, medalsDetail(r))).join(""), "medailles") +
       (SHOW_CLUB_STATS ? card(`👥 Clubs les plus représentés`, honneurData.clubs.slice(0, 3).map(clubRow).join("")) : "");
   }
 
