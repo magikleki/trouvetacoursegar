@@ -577,7 +577,7 @@
   </div>
 
   <div class="section">
-    <div style="margin-bottom:1rem;">
+    <div style="text-align:center; margin-bottom:1rem;">
       <button class="date-filter-btn" onclick="openMapModal()">Carte</button>
     </div>
     <div class="home-preview-grid" id="homePreviewGrid"><div class="state-message">Chargement…</div></div>
@@ -1475,8 +1475,9 @@
 
   let mapInstance = null;
 
-  function openMapModal() {
+  async function openMapModal() {
     document.getElementById('mapModalOverlay').classList.add('open');
+    await loadCourses();
     setTimeout(() => {
       if (!mapInstance) {
         mapInstance = L.map('mapContainer', { zoomControl: true }).setView([44.0, 4.2], 9);
