@@ -162,9 +162,14 @@
   .map-modal-close { background: var(--bg); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 14px; color: var(--muted); cursor: pointer; }
   .map-modal-close:hover { background: var(--accent-tint); color: var(--accent-deep); }
   #mapContainer { flex: 1; border-radius: 0 0 22px 22px; }
-  .map-legend { display: flex; gap: 10px; flex-wrap: wrap; padding: 0 1.2rem 0.6rem; }
-  .map-legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--muted); }
-  .map-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .map-filters { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 1.2rem 0.6rem; }
+  .map-filter-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; border: 2px solid var(--border); background: var(--bg); color: var(--muted); cursor: pointer; transition: all .15s; }
+  .map-filter-chip:hover { border-color: var(--accent); color: var(--ink); }
+  .map-filter-chip.active { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-deep); }
+  .map-filter-chip .chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .map-tag { display: flex; align-items:center; gap:2px; padding:2px 7px 2px 5px; border-radius:8px; font-size:13px; line-height:1; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,.22); border:2px solid #fff; cursor:pointer; transition:transform .15s; }
+  .map-tag:hover { transform:scale(1.15); }
+  .map-tag-emoji { font-size:14px; }
 
   .date-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(29,27,22,0.5); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
   .date-modal-overlay.open { display: flex; }
@@ -708,7 +713,7 @@
         <div class="map-modal-title">Carte des courses — Gard</div>
         <button class="map-modal-close" onclick="closeMapModal()">✕</button>
       </div>
-      <div class="map-legend" id="mapLegend"></div>
+      <div class="map-filters" id="mapFilters"></div>
       <div id="mapContainer"></div>
     </div>
   </div>
@@ -1413,24 +1418,34 @@
     setTimeout(() => {
       if (!mapInstance) {
         mapInstance = L.map('mapContainer', { zoomControl: true }).setView([44.0, 4.2], 9);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+
+        // Fond sans labels
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
           attribution: '© OpenStreetMap · © CARTO',
           maxZoom: 19
         }).addTo(mapInstance);
 
-        // Masque extérieur : assombrir tout sauf le Gard
+        // Pane pour les labels (au-dessus de tout)
+        mapInstance.createPane('labelsPane');
+        mapInstance.getPane('labelsPane').style.zIndex = 650;
+        mapInstance.getPane('labelsPane').style.pointerEvents = 'none';
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19, pane: 'labelsPane'
+        }).addTo(mapInstance);
+
+        // Masque extérieur orange
         fetch('/data/gard-contour.json')
           .then(r => r.json())
           .then(geo => {
             const gardCoords = geo.geometry.coordinates[0].map(c => [c[1], c[0]]);
             const worldBounds = [[-90, -180], [-90, 180], [90, 180], [90, -180], [-90, -180]];
             L.polygon([worldBounds, gardCoords], {
-              fillColor: '#1D1B16',
-              fillOpacity: 0.45,
+              fillColor: '#E06A2C',
+              fillOpacity: 0.35,
               stroke: true,
               color: '#E06A2C',
               weight: 2.5,
-              opacity: 0.7
+              opacity: 0.8
             }).addTo(mapInstance);
           })
           .catch(() => {});
@@ -1445,16 +1460,42 @@
     document.getElementById('mapModalOverlay').classList.remove('open');
   }
 
+  const TYPE_EMOJIS = {
+    Trail: '🏔️', Route: '🛣️', Nature: '🌿', 'Urban Trail': '🏙️',
+    Triathlon: '🏊', 'Vétathlon': '🚴', Piste: '🏟️', Cross: '🌾',
+    Ekiden: '🎽', Backyard: '🔄'
+  };
+
+  let mapSelectedTypes = new Set();
+
+  function toggleMapType(t) {
+    if (mapSelectedTypes.has(t)) mapSelectedTypes.delete(t);
+    else mapSelectedTypes.add(t);
+    renderMapFilters();
+    populateMapMarkers();
+  }
+
+  function renderMapFilters() {
+    const el = document.getElementById('mapFilters');
+    if (!el) return;
+    el.innerHTML = AIRTABLE_TYPES.map(t => {
+      const active = mapSelectedTypes.has(t);
+      const color = TYPE_COLORS[t] || '#746F62';
+      const emoji = TYPE_EMOJIS[t] || '🏃';
+      return `<div class="map-filter-chip${active ? ' active' : ''}" onclick="toggleMapType('${t}')"><span class="chip-dot" style="background:${color}"></span>${emoji} ${t}</div>`;
+    }).join('');
+  }
+
   function populateMapMarkers() {
     if (!mapInstance) return;
     // Retirer les anciens marqueurs
-    mapInstance.eachLayer(l => { if (l instanceof L.CircleMarker) mapInstance.removeLayer(l); });
-
-    // Légende : types présents
-    const typesPresent = new Set();
+    mapInstance.eachLayer(l => { if (l instanceof L.Marker) mapInstance.removeLayer(l); });
 
     const upcoming = allCourses.filter(c => isUpcomingCourse(c));
-    const courses = upcoming.length ? upcoming : allCourses;
+    let courses = upcoming.length ? upcoming : allCourses;
+    if (mapSelectedTypes.size > 0) {
+      courses = courses.filter(c => mapSelectedTypes.has(c.type));
+    }
 
     // Regrouper par commune pour décaler légèrement les marqueurs superposés
     const byCommune = {};
@@ -1472,21 +1513,20 @@
       list.forEach((c, i) => {
         const type = c.type || 'Nature';
         const color = TYPE_COLORS[type] || '#746F62';
-        typesPresent.add(type);
         // Petit décalage si plusieurs courses sur la même commune
         const offset = list.length > 1 ? (i - (list.length - 1) / 2) * 0.004 : 0;
         const lat = coords[0] + offset * 0.6;
         const lng = coords[1] + offset;
 
         const dateStr = c.date ? formatPodiumDate(c.date) : 'Date à définir';
-        const marker = L.circleMarker([lat, lng], {
-          radius: 8,
-          fillColor: color,
-          color: '#fff',
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 0.9
-        }).addTo(mapInstance);
+        const emoji = TYPE_EMOJIS[type] || '🏃';
+        const tagIcon = L.divIcon({
+          className: '',
+          html: `<div class="map-tag" style="background:${color};"><span class="map-tag-emoji">${emoji}</span></div>`,
+          iconSize: [36, 24],
+          iconAnchor: [18, 12]
+        });
+        const marker = L.marker([lat, lng], { icon: tagIcon }).addTo(mapInstance);
 
         marker.bindPopup(`
           <div style="font-family:inherit; min-width:180px;">
@@ -1501,11 +1541,7 @@
       });
     });
 
-    // Légende
-    const legendEl = document.getElementById('mapLegend');
-    legendEl.innerHTML = [...typesPresent].sort().map(t =>
-      `<div class="map-legend-item"><span class="map-legend-dot" style="background:${TYPE_COLORS[t] || '#746F62'}"></span>${t}</div>`
-    ).join('');
+    renderMapFilters();
   }
 
   let coursesPromise = null;
