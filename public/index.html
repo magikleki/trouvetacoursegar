@@ -3486,17 +3486,39 @@
 
   // Cache de recherche : évite d'appeler honneurNorm() sur chaque coureur/
   // club à chaque frappe. Le cache est invalidé par buildHonneurData().
+  // Pour le tri par pertinence, on stocke aussi les tokens individuels
+  // (prénom, nom, club) afin de prioriser les matchs exacts / startsWith.
   let _honneurSearchCache = null;
   function getHonneurSearchCache() {
     if (_honneurSearchCache) return _honneurSearchCache;
     _honneurSearchCache = { runners: {}, clubs: {} };
     Object.values(honneurData.runners).forEach(r => {
-      _honneurSearchCache.runners[r.key] = honneurNorm(r.prenom + " " + r.nom + " " + r.nom + " " + r.prenom + " " + (r.club || ""));
+      const prenom = honneurNorm(r.prenom);
+      const nom = honneurNorm(r.nom);
+      const club = honneurNorm(r.club || "");
+      _honneurSearchCache.runners[r.key] = {
+        full: prenom + " " + nom + " " + nom + " " + prenom + " " + club,
+        tokens: [prenom, nom, club].filter(Boolean),
+      };
     });
     honneurData.clubs.forEach(c => {
-      _honneurSearchCache.clubs[c.key] = honneurNorm(c.nom);
+      const nom = honneurNorm(c.nom);
+      _honneurSearchCache.clubs[c.key] = {
+        full: nom,
+        tokens: nom.split(/\s+/).filter(Boolean),
+      };
     });
     return _honneurSearchCache;
+  }
+
+  // Score de pertinence : match exact d'un token > startsWith > includes.
+  function searchRelevance(cached, q) {
+    let best = 0;
+    for (const t of cached.tokens) {
+      if (t === q) return 3;
+      if (t.startsWith(q) && best < 2) best = 2;
+    }
+    return best || 1; // 1 = simple includes (déjà filtré en amont)
   }
 
   // Données partagées entre renderTableauHonneur (structure complète) et
@@ -3532,9 +3554,18 @@
     let rowsSource, header, rowHtml, countLabel, placeholder, fullList;
     let subTabsHtml = "";
 
-    // Filtres de recherche optimisés (utilisent le cache normalisé).
-    const filterRunners = list => q ? list.filter(r => cache.runners[r.key].includes(q)) : list;
-    const filterClubs = list => q ? list.filter(c => cache.clubs[c.key].includes(q)) : list;
+    // Filtres de recherche optimisés (utilisent le cache normalisé)
+    // avec tri par pertinence : match exact > startsWith > includes.
+    const filterRunners = list => {
+      if (!q) return list;
+      return list.filter(r => cache.runners[r.key].full.includes(q))
+        .sort((a, b) => searchRelevance(cache.runners[b.key], q) - searchRelevance(cache.runners[a.key], q));
+    };
+    const filterClubs = list => {
+      if (!q) return list;
+      return list.filter(c => cache.clubs[c.key].full.includes(q))
+        .sort((a, b) => searchRelevance(cache.clubs[b.key], q) - searchRelevance(cache.clubs[a.key], q));
+    };
     const runnerRowHtml = (rankProp, valueOf) => r => `
       <div class="lb-row with-share clickable" onclick="openCoureur('${escJsArg(r.key)}')">
         ${honneurRankBadge(r[rankProp])}
@@ -3661,8 +3692,16 @@
     const { fullList, rowHtml, header, isClubsSub } = _honneurCurrent;
 
     const filterFn = (honneurTab === 'clubs' || isClubsSub)
-      ? (list => q ? list.filter(c => cache.clubs[c.key].includes(q)) : list)
-      : (list => q ? list.filter(r => cache.runners[r.key].includes(q)) : list);
+      ? (list => {
+          if (!q) return list;
+          return list.filter(c => cache.clubs[c.key].full.includes(q))
+            .sort((a, b) => searchRelevance(cache.clubs[b.key], q) - searchRelevance(cache.clubs[a.key], q));
+        })
+      : (list => {
+          if (!q) return list;
+          return list.filter(r => cache.runners[r.key].full.includes(q))
+            .sort((a, b) => searchRelevance(cache.runners[b.key], q) - searchRelevance(cache.runners[a.key], q));
+        });
     const rowsSource = filterFn(fullList);
     const SEARCH_LIMIT = 50;
     const visible = honneurExpanded ? rowsSource : (q ? rowsSource.slice(0, SEARCH_LIMIT) : rowsSource.slice(0, HONNEUR_VISIBLE));
