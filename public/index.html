@@ -3435,9 +3435,11 @@
   let honneurExpanded = false;
   const HONNEUR_VISIBLE = 25;
   let _honneurSearchTimer = null;
+  let _honneurComposing = false;
   function debouncedHonneurSearch() {
+    if (_honneurComposing) return;
     clearTimeout(_honneurSearchTimer);
-    _honneurSearchTimer = setTimeout(updateHonneurBody, 120);
+    _honneurSearchTimer = setTimeout(updateHonneurBody, 180);
   }
 
   // Ouvre la page Tableau d'Honneur directement sur l'onglet demandé
@@ -3624,7 +3626,8 @@
     // Mémorise les fonctions de rendu pour updateHonneurBody (recherche rapide).
     _honneurCurrent = { fullList, rowHtml, header, filterRunners, filterClubs, isClubsSub };
 
-    const visible = (q || honneurExpanded) ? rowsSource : rowsSource.slice(0, HONNEUR_VISIBLE);
+    const SEARCH_LIMIT = 50;
+    const visible = honneurExpanded ? rowsSource : (q ? rowsSource.slice(0, SEARCH_LIMIT) : rowsSource.slice(0, HONNEUR_VISIBLE));
     const moreCount = rowsSource.length - visible.length;
     const bodyHtml = visible.length
       ? visible.map(rowHtml).join("")
@@ -3639,7 +3642,7 @@
       <div class="lb-count-row">
         <div class="lb-count-label">${countLabel}${honneurTab !== 'clubs' && !isClubsSub ? ` <button class="lb-share-btn" title="Partager le top 3 de ce classement" onclick="shareHonneur('${honneurTab}')">📤</button>` : ""}</div>
         <div class="lb-search-slot">
-          <input class="lb-search" id="honneurSearch" placeholder="${placeholder}" oninput="debouncedHonneurSearch()" value="${escapeHtmlAttr(rawValue)}" style="width:100%;" />
+          <input class="lb-search" id="honneurSearch" placeholder="${placeholder}" oninput="debouncedHonneurSearch()" oncompositionstart="_honneurComposing=true" oncompositionend="_honneurComposing=false;debouncedHonneurSearch()" value="${escapeHtmlAttr(rawValue)}" style="width:100%;" />
         </div>
       </div>
       <div class="lb-table" id="honneurTableBody">${header}${bodyHtml}</div>
@@ -3661,7 +3664,8 @@
       ? (list => q ? list.filter(c => cache.clubs[c.key].includes(q)) : list)
       : (list => q ? list.filter(r => cache.runners[r.key].includes(q)) : list);
     const rowsSource = filterFn(fullList);
-    const visible = (q || honneurExpanded) ? rowsSource : rowsSource.slice(0, HONNEUR_VISIBLE);
+    const SEARCH_LIMIT = 50;
+    const visible = honneurExpanded ? rowsSource : (q ? rowsSource.slice(0, SEARCH_LIMIT) : rowsSource.slice(0, HONNEUR_VISIBLE));
     const moreCount = rowsSource.length - visible.length;
 
     const tableEl = document.getElementById('honneurTableBody');
