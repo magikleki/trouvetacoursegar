@@ -2008,19 +2008,12 @@
     if (s === 60) { m++; s = 0; }
     return m + ":" + String(s).padStart(2, "0") + " /km";
   }
-  // Sépare le champ "Classement catégorie" en { rang, categorie }, quel que
-  // soit l'ordre utilisé par le chronométreur :
-  //   "1 SEH" / "1er SEH"  -> rang 1, catégorie SEH   (rang d'abord)
-  //   "SE 1er" / "SEM 2e"  -> rang 1/2, catégorie SE  (catégorie d'abord,
-  //                           format majoritaire dans nos données)
-  //   "SEM"                -> rang null, catégorie SEM (pas de rang)
+  // "1 SEH" -> { rang: 1, categorie: "SEH" } ; renvoie le texte brut en
+  // catégorie si le format ne correspond pas.
   function splitClassementCategorie(cc) {
-    const s = String(cc || "").trim();
-    let m = s.match(/^(\d+)\s*(?:er|ère|e)?\s+(.+)$/i);
+    const m = String(cc || "").trim().match(/^(\d+)\s*(?:er|ère|e)?\s+(.+)$/i);
     if (m) return { rang: parseInt(m[1], 10), categorie: m[2] };
-    m = s.match(/^(.+?)\s+(\d+)\s*(?:er|ère|e)?$/i);
-    if (m) return { rang: parseInt(m[2], 10), categorie: m[1] };
-    return { rang: null, categorie: s };
+    return { rang: null, categorie: String(cc || "").trim() };
   }
   function openRunnerStatModal(resultId) {
     const r = allResultats.find(x => x.id === resultId);
@@ -2031,10 +2024,8 @@
     const km = distanceNumValue(r.distance);
     const hasKm = isFinite(km) && km > 0 && sec !== null && sec > 0;
     const allure = hasKm ? formatAllure(sec / km) : null;
-    // La vitesse importée contient le plus souvent déjà l'unité ("18.13 km/h") :
-    // on ne rajoute " km/h" que si elle manque, sinon on l'affichait en double.
     const vitesse = r.vitesse
-      ? (/km\/?h/i.test(r.vitesse) ? r.vitesse : r.vitesse + " km/h")
+      ? r.vitesse + " km/h"
       : (hasKm ? (Math.round((km / (sec / 3600)) * 10) / 10).toLocaleString("fr-FR") + " km/h" : null);
 
     // Nom cliquable vers la fiche coureur (la pop-up se ferme avant la
