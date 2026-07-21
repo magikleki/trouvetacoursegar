@@ -759,6 +759,13 @@
 </div>
 
 <script>
+  // Interrupteur : statistiques clubs issues des résultats (fiches club,
+  // classements clubs du Tableau d'Honneur, liens vers ces fiches).
+  // Masquées pour l'instant à la demande — remettre à true pour tout
+  // réactiver d'un coup. L'annuaire Clubs (page Clubs) n'est pas concerné,
+  // ni le nom du club affiché à côté de chaque coureur.
+  const SHOW_CLUB_STATS = false;
+
   let allCourses = [];
   let allClubs = [];
   let allResultats = [];
@@ -3118,8 +3125,9 @@
       { id: 'courses', label: '🏁 Nombre de courses' },
       { id: 'km', label: '📏 Nombre de kilomètres' },
       { id: 'medailles', label: '🏅 Médailles' },
-      { id: 'clubs', label: '👥 Clubs' },
+      ...(SHOW_CLUB_STATS ? [{ id: 'clubs', label: '👥 Clubs' }] : []),
     ];
+    if (!SHOW_CLUB_STATS && honneurTab === 'clubs') honneurTab = 'courses';
     const tabsHtml = `<div class="lb-tabs">${tabs.map(t =>
       `<button class="lb-tab ${honneurTab === t.id ? 'active' : ''}" onclick="switchHonneurTab('${t.id}')">${t.label}</button>`
     ).join("")}</div>`;
@@ -3143,8 +3151,9 @@
         <span class="honneur-value">${valueOf(c)}</span>
       </div>`;
     // Sous-onglets Coureur(se)s / Clubs des onglets courses, km et médailles.
-    const isClubsSub = honneurSub[honneurTab] === 'clubs';
-    const buildSubTabs = (runnerCount, clubCount) => `<div class="lb-subtabs">
+    // Sans les stats clubs, on reste toujours côté coureurs, sans sous-onglets.
+    const isClubsSub = SHOW_CLUB_STATS && honneurSub[honneurTab] === 'clubs';
+    const buildSubTabs = (runnerCount, clubCount) => !SHOW_CLUB_STATS ? "" : `<div class="lb-subtabs">
       <button class="lb-subtab ${!isClubsSub ? 'active' : ''}" onclick="switchHonneurSub('coureurs')">Coureur(se)s<span class="count">${runnerCount}</span></button>
       <button class="lb-subtab ${isClubsSub ? 'active' : ''}" onclick="switchHonneurSub('clubs')">Clubs<span class="count">${clubCount}</span></button>
     </div>`;
@@ -3323,7 +3332,7 @@
         <span class="crumb current">${displayRunnerName(runner)}</span>
       </div>
       <h1 style="margin:0 0 0.2rem;">${displayRunnerName(runner)}</h1>
-      <p style="color:var(--muted); font-size:13.5px; margin:0 0 1rem;">${runner.club ? `<a style="color:var(--accent-deep); font-weight:700; cursor:pointer;" onclick="openClubFiche('${escJsArg(honneurNorm(runner.club))}')">${runner.club}</a> · ` : ""}Saison ${HONNEUR_YEAR}</p>
+      <p style="color:var(--muted); font-size:13.5px; margin:0 0 1rem;">${runner.club ? (SHOW_CLUB_STATS ? `<a style="color:var(--accent-deep); font-weight:700; cursor:pointer;" onclick="openClubFiche('${escJsArg(honneurNorm(runner.club))}')">${runner.club}</a> · ` : `<span style="font-weight:700;">${runner.club}</span> · `) : ""}Saison ${HONNEUR_YEAR}</p>
       <button class="share-inline-btn" style="margin:0 0 1.4rem;" onclick="shareCoureur('${escJsArg(key)}')">📤 Partager cette fiche</button>
       <div class="stat-bar">
         <div class="stat-cell"><div class="l">Courses</div><div class="v accent">${races.length}</div></div>
@@ -3348,6 +3357,9 @@
   // -------- Fiche club --------
 
   async function openClubFiche(clubKey) {
+    // Stats clubs masquées : tout lien ou ancienne URL vers une fiche club
+    // renvoie vers le Tableau d'Honneur.
+    if (!SHOW_CLUB_STATS) { showPage('challenge'); return; }
     if (!coursesLoaded || !resultatsLoaded || !clubsLoaded) {
       await Promise.all([loadCourses(), loadResultatsCountForStats(), loadClubs()]);
     }
@@ -3474,7 +3486,7 @@
     grid.innerHTML =
       card(`🏁 Le plus de courses`, honneurData.byRaces.slice(0, 3).map(r => runnerRow(r, r._rankRaces, r.races.length + " course" + (r.races.length > 1 ? "s" : ""))).join("")) +
       card(`📏 Le plus de kilomètres`, honneurData.byKm.slice(0, 3).map(r => runnerRow(r, r._rankKm, formatKm(r.km) + " km")).join("")) +
-      card(`👥 Clubs les plus représentés`, honneurData.clubs.slice(0, 3).map(clubRow).join(""));
+      (SHOW_CLUB_STATS ? card(`👥 Clubs les plus représentés`, honneurData.clubs.slice(0, 3).map(clubRow).join("")) : "");
   }
 
   history.replaceState({ page: 'accueil' }, '', location.pathname + location.search);
