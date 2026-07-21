@@ -3568,20 +3568,18 @@
         <div class="stat-cell"><div class="l">Kilomètres</div><div class="v accent">${runner.km > 0 ? formatKm(runner.km) + " km" : "—"}</div></div>
       </div>
       <div class="block-label" style="font-size:14px; margin:0.9rem 0 0.5rem;"><span class="bar"></span>Résultats scratch</div>
-      <div class="stat-bar" style="grid-template-columns: repeat(5, 1fr);">
-        <div class="stat-cell"><div class="l">Podiums</div><div class="v">${podiums}</div></div>
+      <div class="stat-bar" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="stat-cell"><div class="l">Meilleur classement</div><div class="v">${best !== null ? best + (best === 1 ? "er" : "e") : "—"}</div></div>
         <div class="stat-cell"><div class="l">🥇 1ère place</div><div class="v" style="color:#B8860B;">${p1}</div></div>
         <div class="stat-cell"><div class="l">🥈 2e place</div><div class="v" style="color:#7D7F82;">${p2}</div></div>
         <div class="stat-cell"><div class="l">🥉 3e place</div><div class="v" style="color:#B5651D;">${p3}</div></div>
-        <div class="stat-cell"><div class="l">Meilleur classement</div><div class="v">${best !== null ? best + (best === 1 ? "er" : "e") : "—"}</div></div>
       </div>
       <div class="block-label" style="font-size:14px; margin:0.9rem 0 0.5rem;"><span class="bar"></span>Résultats catégorie</div>
-      <div class="stat-bar" style="grid-template-columns: repeat(5, 1fr);">
-        <div class="stat-cell"><div class="l">Podiums</div><div class="v">${podiumsCat}</div></div>
+      <div class="stat-bar" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="stat-cell"><div class="l">Meilleur clt. catégorie</div><div class="v">${bestCat !== null ? bestCat + (bestCat === 1 ? "er" : "e") : "—"}</div></div>
         <div class="stat-cell"><div class="l">🥇 1ère place</div><div class="v" style="color:#B8860B;">${c1}</div></div>
         <div class="stat-cell"><div class="l">🥈 2e place</div><div class="v" style="color:#7D7F82;">${c2}</div></div>
         <div class="stat-cell"><div class="l">🥉 3e place</div><div class="v" style="color:#B5651D;">${c3}</div></div>
-        <div class="stat-cell"><div class="l">Meilleur clt. catégorie</div><div class="v">${bestCat !== null ? bestCat + (bestCat === 1 ? "er" : "e") : "—"}</div></div>
       </div>
       <div class="block-label" style="font-size:16px; margin-bottom:0.8rem;"><span class="bar"></span>Courses ${HONNEUR_YEAR}</div>
       <div class="lb-table">
