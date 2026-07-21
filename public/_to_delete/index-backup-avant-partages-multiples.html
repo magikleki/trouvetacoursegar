@@ -350,13 +350,7 @@
   .lb-table-clickable { transition: border-color .15s ease, box-shadow .15s ease; }
   .lb-table-clickable:hover { border-color: var(--accent); box-shadow: 0 10px 20px -12px rgba(0,0,0,0.25); }
   .lb-row { display: grid; grid-template-columns: 36px 2fr 1fr; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 6px; }
-  .lb-row-full { display: grid; grid-template-columns: 40px 52px 2fr 46px 1fr 84px 84px 1.2fr 34px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 8px; }
-  .lb-share-btn { background: none; border: none; font-size: 15px; cursor: pointer; padding: 2px 4px; opacity: .5; transition: opacity .12s ease, transform .12s ease; }
-  .lb-share-btn:hover { opacity: 1; transform: scale(1.15); }
-  .share-inline-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-tint); color: var(--accent-deep); border: none; border-radius: 999px; padding: 9px 16px; font-size: 13px; font-weight: 800; cursor: pointer; transition: background .15s ease, color .15s ease; }
-  .share-inline-btn:hover { background: var(--accent); color: #fff; }
-  .share-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 700; z-index: 9999; opacity: 0; transition: opacity .25s ease, transform .25s ease; pointer-events: none; max-width: 90vw; text-align: center; }
-  .share-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .lb-row-full { display: grid; grid-template-columns: 40px 52px 2fr 46px 1fr 84px 84px 1.2fr; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; gap: 8px; }
   .lb-row-full.head { background: var(--bg); font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
   .lb-row-full:last-child { border-bottom: none; }
   .lb-row-tap { cursor: pointer; transition: background .12s ease; }
@@ -367,7 +361,7 @@
   .lb-scratch { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
   .lb-row-full.lb-row-duo { grid-template-columns: 36px 56px 48px 2fr 42px 1fr 78px 78px 1.1fr; }
   @media (max-width: 640px) {
-    .lb-row-full:not(.lb-row-duo) { grid-template-columns: 32px 1.5fr 70px 30px; }
+    .lb-row-full:not(.lb-row-duo) { grid-template-columns: 32px 1.5fr 70px; }
     .lb-row-full:not(.lb-row-duo) span:nth-child(2), .lb-row-full:not(.lb-row-duo) span:nth-child(4), .lb-row-full:not(.lb-row-duo) span:nth-child(5), .lb-row-full:not(.lb-row-duo) span:nth-child(7), .lb-row-full:not(.lb-row-duo) span:nth-child(8) { display: none; }
     .lb-row-full.lb-row-duo { grid-template-columns: 28px 1.5fr 70px; }
     .lb-row-full.lb-row-duo span:nth-child(2), .lb-row-full.lb-row-duo span:nth-child(3), .lb-row-full.lb-row-duo span:nth-child(5), .lb-row-full.lb-row-duo span:nth-child(6), .lb-row-full.lb-row-duo span:nth-child(8), .lb-row-full.lb-row-duo span:nth-child(9) { display: none; }
@@ -746,13 +740,12 @@
     </div>
     <div id="runnerStatContext" style="font-size: 12px; color: var(--muted); font-weight: 700; margin-bottom: 1rem;"></div>
     <div id="runnerStatBody"></div>
-    <!-- Partage : génère une image 1080×1920 (format vertical, prêt pour une
-         story) avec les stats de la carte. Sur mobile, ouvre la feuille de
-         partage native (Instagram, WhatsApp, Messages…) ; sur ordinateur,
-         télécharge l'image. -->
+    <!-- Partage : génère une image 1080×1920 (format story Instagram) avec
+         les stats de la carte. Sur mobile, ouvre la feuille de partage
+         native (Instagram → Story) ; sur ordinateur, télécharge l'image. -->
     <button id="runnerStatShareBtn" onclick="shareRunnerStory()"
       style="width:100%; margin-top:14px; padding:12px; border:0; border-radius:12px; background:var(--accent); color:#fff; font-weight:800; font-size:14.5px; cursor:pointer;">
-      📤 Partager
+      📤 Partager en story
     </button>
     <div id="runnerStatShareHint" style="font-size:12px; color:var(--muted); text-align:center; margin-top:8px;"></div>
   </div>
@@ -1535,7 +1528,7 @@
           <div class="action-row">
             ${c.site ? `<a class="btn-inscription" href="${c.site}" target="_blank" rel="noopener">✓ S'inscrire</a>` : ""}
             ${socialButtonHtml(c.reseaux)}
-            <button class="btn-share" onclick="shareCourse('${c.id}')">📤 Partager</button>
+            <button class="btn-share" onclick="navigator.share ? navigator.share({title:'${c.nom.replace(/'/g,"")}', url:location.href}) : alert('Copie le lien de la page pour partager.')">↗ Partager</button>
           </div>
         </div>
         ${posterHtml}
@@ -1858,10 +1851,7 @@
             <div class="podium-card-meta">📅 ${formatPodiumDate(e.course.date)} · 📍 ${e.course.commune || ""}</div>
           </div>
           ${rows}
-          <div style="margin-top:auto; display:flex; gap:8px;">
-            <button class="podium-cta" style="margin-top:0; flex:1;" onclick="openLeaderboard('${e.courseId}')">Tous les résultats</button>
-            <button class="podium-cta" style="margin-top:0; flex:0 0 auto;" title="Partager les podiums (image)" onclick="sharePodiums('${e.courseId}')">📤</button>
-          </div>
+          <button class="podium-cta" onclick="openLeaderboard('${e.courseId}')">Tous les résultats</button>
         </div>`;
     }).join("");
   }
@@ -2090,25 +2080,28 @@
     document.getElementById("runnerStatModalOverlay").classList.remove("open");
   }
 
-  // ---- Partage de visuels (image verticale 1080×1920, prête pour story) ---
-  // Instagram, WhatsApp & co n'autorisent aucune publication directe depuis
-  // un site web : sur mobile on ouvre la feuille de partage native du
-  // téléphone (l'utilisateur choisit l'appli), sur ordinateur on télécharge
-  // l'image. Tous les visuels partagent la même base graphique (fond orange
-  // de la charte, en-tête de marque, pied de page site + Instagram).
-  const STORY_W = 1080, STORY_H = 1920;
-  function storyBase() {
+  // ---- Partage en story Instagram -------------------------------------
+  // Dessine une image 1080×1920 (format story) avec les stats du résultat,
+  // aux couleurs du site, puis :
+  //  - sur mobile : ouvre la feuille de partage native (l'utilisateur touche
+  //    Instagram → "Ajouter à ta story") — Instagram n'autorise aucun envoi
+  //    direct depuis un site web, c'est le maximum possible ;
+  //  - sur ordinateur (pas de partage de fichiers) : télécharge le PNG.
+  function buildStoryCanvas(r) {
+    const { course, rang, categorie, allure, vitesse } = computeRunnerStats(r);
+    const W = 1080, H = 1920;
     const cv = document.createElement("canvas");
-    cv.width = STORY_W; cv.height = STORY_H;
+    cv.width = W; cv.height = H;
     const ctx = cv.getContext("2d");
     const FONT = '-apple-system, "Helvetica Neue", Arial, sans-serif';
     const f = (weight, size) => `${weight} ${size}px ${FONT}`;
 
-    const bg = ctx.createLinearGradient(0, 0, 0, STORY_H);
+    // Fond dégradé orange de la charte + cercles décoratifs.
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
     bg.addColorStop(0, "#E06A2C");
     bg.addColorStop(1, "#A8481A");
     ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, STORY_W, STORY_H);
+    ctx.fillRect(0, 0, W, H);
     ctx.globalAlpha = 0.08;
     ctx.fillStyle = "#fff";
     [[140, 260, 190], [980, 480, 240], [80, 1660, 220], [1010, 1740, 160]].forEach(([x, y, rad]) => {
@@ -2131,53 +2124,29 @@
       while (ctx.measureText(text).width > maxW && s > minSize) { s -= 2; ctx.font = f(weight, s); }
       return s;
     };
-    const card = (x, y, w, h) => {
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.25)";
-      ctx.shadowBlur = 60;
-      ctx.shadowOffsetY = 20;
-      ctx.fillStyle = "#FFFDFA";
-      roundRect(x, y, w, h, 48);
-      ctx.fill();
-      ctx.restore();
-    };
 
-    // En-tête de marque.
+    // En-tête : marque.
     ctx.textAlign = "center";
     ctx.fillStyle = "#fff";
     ctx.font = f(800, 44);
-    ctx.fillText("TROUVE TA COURSE", STORY_W / 2, 150);
+    ctx.fillText("TROUVE TA COURSE", W / 2, 150);
     ctx.globalAlpha = 0.85;
     ctx.font = f(700, 30);
-    ctx.fillText("• GARD •", STORY_W / 2, 200);
+    ctx.fillText("• GARD •", W / 2, 200);
     ctx.globalAlpha = 1;
 
-    const footer = (tagline) => {
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#fff";
-      ctx.font = f(800, 38);
-      ctx.fillText("@trouvetacourse_gard", STORY_W / 2, STORY_H - 240);
-      ctx.globalAlpha = 0.85;
-      ctx.font = f(700, 30);
-      ctx.fillText(location.host || "trouvetacourse", STORY_W / 2, STORY_H - 180);
-      ctx.globalAlpha = 0.7;
-      ctx.font = f(700, 26);
-      ctx.fillText(tagline || "Tous les résultats du Gard sur notre site", STORY_W / 2, STORY_H - 120);
-      ctx.globalAlpha = 1;
-    };
-
-    return { cv, ctx, f, roundRect, fitText, card, footer };
-  }
-
-  // Visuel d'un résultat individuel (identique à la version validée).
-  function buildStoryCanvas(r) {
-    const { course, rang, categorie, allure, vitesse } = computeRunnerStats(r);
-    const { cv, ctx, f, roundRect, fitText, card, footer } = storyBase();
-    const W = STORY_W;
-
+    // Carte blanche centrale.
     const cardX = 70, cardY = 300, cardW = W - 140, cardH = 1250;
-    card(cardX, cardY, cardW, cardH);
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.25)";
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetY = 20;
+    ctx.fillStyle = "#FFFDFA";
+    roundRect(cardX, cardY, cardW, cardH, 48);
+    ctx.fill();
+    ctx.restore();
 
+    // Course + date + distance.
     const inX = W / 2, maxW = cardW - 120;
     ctx.fillStyle = "#A8481A";
     let y = cardY + 110;
@@ -2189,6 +2158,7 @@
     const dateTxt = course && course.date ? new Date(course.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
     ctx.fillText([dateTxt, r.distance].filter(Boolean).join("  •  "), inX, y + 55);
 
+    // Médaille éventuelle (sur sa propre ligne, sous la date), puis nom.
     const medal = r.classementGeneral === 1 ? "🥇" : r.classementGeneral === 2 ? "🥈" : r.classementGeneral === 3 ? "🥉" : null;
     if (medal) { ctx.font = f(400, 90); ctx.fillText(medal, inX, cardY + 285); }
     y = cardY + 385;
@@ -2202,6 +2172,7 @@
       ctx.fillText(r.club, inX, y + 52);
     }
 
+    // Temps en très grand.
     y = cardY + 585;
     ctx.fillStyle = "#E06A2C";
     ctx.font = f(800, 130);
@@ -2210,6 +2181,7 @@
     ctx.font = f(800, 28);
     ctx.fillText("TEMPS", inX, y + 50);
 
+    // Grille de stats 2 × 2 + allure/vitesse.
     const stats = [
       ["SCRATCH", r.classementGeneral !== null ? r.classementGeneral + (r.classementGeneral === 1 ? "ᵉʳ" : "ᵉ") : "—"],
       ["CATÉGORIE", categorie || "—"],
@@ -2234,311 +2206,21 @@
       ctx.fillText(String(value), gx + gw / 2, gy + 112);
     });
 
-    footer();
-    return cv;
-  }
-
-  // Visuel "podiums" d'une course : top 3 hommes + top 3 femmes par distance
-  // (3 distances max par image, les suivantes sont signalées en bas de carte).
-  function buildPodiumStoryCanvas(courseId) {
-    const course = allCourses.find(c => c.id === courseId);
-    const results = allResultats.filter(r => r.courseId === courseId);
-    if (!results.length) return null;
-    const distancesAll = sortDistanceLabels([...new Set(results.map(r => r.distance).filter(Boolean))]);
-    const distances = distancesAll.slice(0, 3);
-    const { cv, ctx, f, roundRect, fitText, card, footer } = storyBase();
-    const W = STORY_W;
-
-    const cardX = 60, cardW = W - 120;
-    // Hauteur de chaque bloc distance adaptée au nombre réel de lignes du
-    // podium (1 à 3), pour éviter les grands vides quand il y a peu de
-    // classés sur une distance.
-    const MEDALS = ["🥇", "🥈", "🥉"];
-    const blocks = distances.map(dist => {
-      const distRes = results.filter(r => r.distance === dist);
-      const top = (fltr) => distRes.filter(fltr).sort((a, b) => (a.classementGeneral ?? 9999) - (b.classementGeneral ?? 9999)).slice(0, 3);
-      const cols = [
-        { label: "HOMMES", color: "#2E6FCE", list: top(isMaleResult) },
-        { label: "FEMMES", color: "#D6417A", list: top(isFemaleResult) },
-      ];
-      const rows = Math.max(cols[0].list.length, cols[1].list.length, 1);
-      return { dist, cols, height: 118 + rows * 48 + 34 };
-    });
-    const headH = 160;
-    const extra = distancesAll.length > distances.length ? 60 : 20;
-    const cardH = headH + blocks.reduce((s, b) => s + b.height, 0) + extra;
-    // Carte centrée verticalement (sans dépasser sur l'en-tête ni le pied).
-    const cardY = Math.min(Math.max(370, Math.round((STORY_H - cardH) / 2)), STORY_H - 340 - cardH);
+    // Pied de page : site + Instagram.
     ctx.fillStyle = "#fff";
-    ctx.font = f(800, 60);
-    ctx.fillText("🏆 PODIUMS", W / 2, cardY - 55);
-    card(cardX, cardY, cardW, cardH);
-
-    ctx.fillStyle = "#A8481A";
-    const courseName = (course ? course.nom : "").toUpperCase();
-    fitText(courseName, cardW - 100, 800, 40, 22);
-    ctx.fillText(courseName, W / 2, cardY + 80);
-    ctx.fillStyle = "#8a7a6d";
-    ctx.font = f(700, 28);
-    ctx.fillText(course && course.date ? new Date(course.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "", W / 2, cardY + 126);
-
-    let by = cardY + headH;
-    blocks.forEach(({ dist, cols, height }) => {
-      // Pastille distance.
-      ctx.fillStyle = "#1c1410";
-      const pillW = 280, pillH = 52;
-      roundRect(W / 2 - pillW / 2, by, pillW, pillH, 26);
-      ctx.fill();
-      ctx.fillStyle = "#fff";
-      fitText(dist, pillW - 40, 800, 27, 17);
-      ctx.fillText(dist, W / 2, by + 35);
-
-      const colW = (cardW - 140) / 2;
-      cols.forEach((col, ci) => {
-        const lx = cardX + 60 + ci * (colW + 20);
-        const cx = lx + colW / 2;
-        ctx.textAlign = "center";
-        ctx.fillStyle = col.color;
-        ctx.font = f(800, 24);
-        ctx.fillText(col.label, cx, by + 98);
-        if (!col.list.length) {
-          ctx.fillStyle = "#8a7a6d"; ctx.font = f(700, 24);
-          ctx.fillText("—", cx, by + 150);
-        }
-        col.list.forEach((r, i) => {
-          const ly = by + 150 + i * 48;
-          ctx.textAlign = "left";
-          ctx.font = f(400, 30);
-          ctx.fillText(MEDALS[i], lx, ly);
-          ctx.fillStyle = "#1c1410";
-          const nm = displayRunnerName(r);
-          const ts = fitText(nm, colW - 168, 700, 27, 16);
-          ctx.font = f(700, ts);
-          ctx.fillText(nm, lx + 46, ly);
-          ctx.textAlign = "right";
-          ctx.fillStyle = "#8a7a6d";
-          ctx.font = f(700, 22);
-          ctx.fillText(r.temps || "", lx + colW, ly);
-        });
-        ctx.textAlign = "center";
-      });
-      by += height;
-    });
-    if (distancesAll.length > distances.length) {
-      const n = distancesAll.length - distances.length;
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#8a7a6d";
-      ctx.font = f(700, 24);
-      ctx.fillText(`+ ${n} autre${n > 1 ? "s" : ""} distance${n > 1 ? "s" : ""} sur le site`, W / 2, cardY + cardH - 34);
-    }
-    footer("Tous les classements complets sur notre site");
-    return cv;
-  }
-
-  // Visuel "fiche coureur" : stats de la saison.
-  function buildCoureurStoryCanvas(key) {
-    const runner = honneurData && honneurData.runners[key];
-    if (!runner) return null;
-    const races = runner.races;
-    const podiums = races.filter(r => r.classementGeneral !== null && r.classementGeneral <= 3).length;
-    const p1 = races.filter(r => r.classementGeneral === 1).length;
-    const p2 = races.filter(r => r.classementGeneral === 2).length;
-    const p3 = races.filter(r => r.classementGeneral === 3).length;
-    const best = races.reduce((acc, r) => (r.classementGeneral !== null && (acc === null || r.classementGeneral < acc)) ? r.classementGeneral : acc, null);
-    const rankRaces = honneurData.rankByRaces[key];
-    const rankKm = honneurData.rankByKm[key];
-    const { cv, ctx, f, roundRect, fitText, card, footer } = storyBase();
-    const W = STORY_W;
-
-    const cardX = 70, cardY = 320, cardW = W - 140, cardH = 1210;
-    card(cardX, cardY, cardW, cardH);
-    const inX = W / 2, maxW = cardW - 120;
-
-    ctx.fillStyle = "#8a7a6d";
-    ctx.font = f(800, 28);
-    ctx.fillText("SAISON " + HONNEUR_YEAR, inX, cardY + 90);
-    ctx.fillStyle = "#1c1410";
-    const name = displayRunnerName(runner);
-    fitText(name, maxW, 800, 64, 32);
-    ctx.fillText(name, inX, cardY + 180);
-    if (runner.club) {
-      ctx.fillStyle = "#8a7a6d";
-      fitText(runner.club, maxW, 700, 30, 20);
-      ctx.fillText(runner.club, inX, cardY + 232);
-    }
-    // Ligne médailles (seulement s'il y a au moins un podium).
-    if (podiums > 0) {
-      ctx.fillStyle = "#1c1410";
-      ctx.font = f(800, 40);
-      ctx.fillText([p1 ? `🥇 ×${p1}` : "", p2 ? `🥈 ×${p2}` : "", p3 ? `🥉 ×${p3}` : ""].filter(Boolean).join("    "), inX, cardY + 330);
-    }
-
-    const tiles = [
-      ["COURSES", String(races.length)],
-      ["KILOMÈTRES", runner.km > 0 ? formatKm(runner.km) : "—"],
-      ["PODIUMS SCRATCH", String(podiums)],
-      ["MEILLEUR CLT.", best !== null ? best + (best === 1 ? "ᵉʳ" : "ᵉ") : "—"],
-      ["CLT. COURSES", rankRaces ? rankRaces + (rankRaces === 1 ? "ᵉʳ" : "ᵉ") + " / " + honneurData.byRaces.length : "—"],
-      ["CLT. KILOMÈTRES", rankKm ? rankKm + (rankKm === 1 ? "ᵉʳ" : "ᵉ") + " / " + honneurData.byKm.length : "—"],
-    ];
-    const gw = (cardW - 180) / 2, gh = 190, gx0 = cardX + 60, gy0 = cardY + 420;
-    tiles.forEach(([label, value], i) => {
-      const gx = gx0 + (i % 2) * (gw + 60);
-      const gy = gy0 + Math.floor(i / 2) * (gh + 24);
-      ctx.fillStyle = "#FBEBE0";
-      roundRect(gx, gy, gw, gh, 24);
-      ctx.fill();
-      ctx.fillStyle = "#A8481A";
-      ctx.font = f(800, 24);
-      ctx.fillText(label, gx + gw / 2, gy + 58);
-      ctx.fillStyle = "#1c1410";
-      const vs = fitText(String(value), gw - 50, 800, 56, 24);
-      ctx.font = f(800, vs);
-      ctx.fillText(String(value), gx + gw / 2, gy + 138);
-    });
-
-    footer("Le Tableau d'Honneur complet sur notre site");
-    return cv;
-  }
-
-  // Visuel "fiche course" : annonce de l'épreuve.
-  function buildCourseStoryCanvas(courseId) {
-    const c = allCourses.find(x => x.id === courseId);
-    if (!c) return null;
-    const { cv, ctx, f, roundRect, fitText, card, footer } = storyBase();
-    const W = STORY_W;
-
-    const cardX = 70, cardY = 360, cardW = W - 140, cardH = 1000;
-    card(cardX, cardY, cardW, cardH);
-    const inX = W / 2, maxW = cardW - 120;
-
-    // Pastille type (Route, Trail, Nature…).
-    if (c.type) {
-      ctx.font = f(800, 26);
-      const tw = ctx.measureText(c.type.toUpperCase()).width + 60;
-      ctx.fillStyle = "#1c1410";
-      roundRect(inX - tw / 2, cardY + 60, tw, 52, 26);
-      ctx.fill();
-      ctx.fillStyle = "#fff";
-      ctx.fillText(c.type.toUpperCase(), inX, cardY + 95);
-    }
-
-    ctx.fillStyle = "#1c1410";
-    fitText(c.nom, maxW, 800, 58, 30);
-    ctx.fillText(c.nom, inX, cardY + 210);
-    ctx.fillStyle = "#8a7a6d";
+    ctx.font = f(800, 38);
+    ctx.fillText("@trouvetacourse_gard", W / 2, H - 240);
+    ctx.globalAlpha = 0.85;
     ctx.font = f(700, 30);
-    ctx.fillText([c.commune, "Gard"].filter(Boolean).join(" · "), inX, cardY + 262);
-
-    // Date + heure de départ.
-    ctx.fillStyle = "#E06A2C";
-    const dateTxt = c.date ? new Date(c.date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).toUpperCase() : "DATE À VENIR";
-    fitText(dateTxt, maxW, 800, 44, 26);
-    ctx.fillText(dateTxt, inX, cardY + 390);
-    if (c.heure) {
-      ctx.fillStyle = "#8a7a6d";
-      ctx.font = f(700, 30);
-      ctx.fillText("Départ " + c.heure, inX, cardY + 442);
-    }
-
-    // Distances.
-    ctx.fillStyle = "#A8481A";
-    ctx.font = f(800, 26);
-    ctx.fillText("DISTANCES", inX, cardY + 560);
-    ctx.fillStyle = "#1c1410";
-    const distancesTxt = getDistancesDisplayText(c, splitDistances(c.distances)).replace(/<br>/g, " · ").replace(/\s*[;,]\s*/g, " · ");
-    fitText(distancesTxt, maxW, 800, 40, 20);
-    ctx.fillText(distancesTxt, inX, cardY + 620);
-    if (c.challenge) {
-      ctx.fillStyle = "#8a7a6d";
-      fitText("🏆 " + c.challenge, maxW, 700, 28, 18);
-      ctx.fillText("🏆 " + c.challenge, inX, cardY + 690);
-    }
-
-    // Bandeau d'appel à l'action.
-    ctx.fillStyle = "#E06A2C";
-    roundRect(cardX + 90, cardY + 790, cardW - 180, 90, 45);
-    ctx.fill();
-    ctx.fillStyle = "#fff";
-    ctx.font = f(800, 30);
-    ctx.fillText("Infos & inscription sur notre site", inX, cardY + 848);
-
-    footer("Le calendrier running complet du Gard");
+    ctx.fillText(location.host || "trouvetacourse", W / 2, H - 180);
+    ctx.globalAlpha = 1;
+    ctx.font = f(700, 26);
+    ctx.globalAlpha = 0.7;
+    ctx.fillText("Tous les résultats du Gard sur notre site", W / 2, H - 120);
+    ctx.globalAlpha = 1;
     return cv;
   }
 
-  // Partage générique d'un canvas : feuille de partage native quand le
-  // navigateur sait partager des fichiers (mobile), téléchargement sinon.
-  async function shareCanvas(cv, fileName, title) {
-    const blob = await new Promise(res => cv.toBlob(res, "image/png"));
-    const file = new File([blob], fileName, { type: "image/png" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: title });
-        return "shared";
-      } catch (e) {
-        return "cancelled"; // partage annulé par l'utilisateur
-      }
-    }
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-    return "downloaded";
-  }
-
-  function showShareToast(msg) {
-    let t = document.getElementById("shareToast");
-    if (!t) {
-      t = document.createElement("div");
-      t.id = "shareToast";
-      t.className = "share-toast";
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.classList.add("show");
-    clearTimeout(window.__shareToastTimer);
-    window.__shareToastTimer = setTimeout(() => t.classList.remove("show"), 3500);
-  }
-
-  function shareFileName(prefix, s) {
-    return (prefix + "-" + String(s || "").toLowerCase().replace(/[^a-z0-9]+/gi, "-") + ".png").replace(/-+/g, "-");
-  }
-
-  async function finishShare(cv, fileName, title) {
-    if (!cv) return;
-    const status = await shareCanvas(cv, fileName, title);
-    if (status === "downloaded") showShareToast("Image téléchargée ✅ — format vertical prêt pour une story");
-  }
-
-  async function shareResult(resultId) {
-    const r = allResultats.find(x => x.id === resultId);
-    if (!r) return;
-    await finishShare(buildStoryCanvas(r), shareFileName("resultat", r.prenom + "-" + r.nom), "Résultat — Trouve ta Course");
-  }
-
-  async function sharePodiums(courseId) {
-    const course = allCourses.find(c => c.id === courseId);
-    await finishShare(buildPodiumStoryCanvas(courseId), shareFileName("podiums", course ? course.nom : courseId), "Podiums — Trouve ta Course");
-  }
-
-  async function shareCoureur(key) {
-    if (!honneurData) buildHonneurData();
-    const runner = honneurData && honneurData.runners[key];
-    if (!runner) return;
-    await finishShare(buildCoureurStoryCanvas(key), shareFileName("coureur", displayRunnerName(runner)), "Fiche coureur — Trouve ta Course");
-  }
-
-  async function shareCourse(courseId) {
-    const c = allCourses.find(x => x.id === courseId);
-    if (!c) return;
-    await finishShare(buildCourseStoryCanvas(courseId), shareFileName("course", c.nom), c.nom + " — Trouve ta Course");
-  }
-
-  // Bouton de la pop-up résultat : même partage, avec le message d'aide
-  // affiché dans la pop-up plutôt qu'en toast.
   async function shareRunnerStory() {
     const r = allResultats.find(x => x.id === window.__runnerStatCurrentId);
     if (!r) return;
@@ -2546,9 +2228,24 @@
     const btn = document.getElementById("runnerStatShareBtn");
     btn.disabled = true;
     try {
-      const fileName = shareFileName("resultat", r.prenom + "-" + r.nom);
-      const status = await shareCanvas(buildStoryCanvas(r), fileName, "Résultat — Trouve ta Course");
-      if (hint && status === "downloaded") hint.textContent = "Image téléchargée ✅ — depuis un téléphone, ce bouton ouvre directement la feuille de partage.";
+      const cv = buildStoryCanvas(r);
+      const blob = await new Promise(res => cv.toBlob(res, "image/png"));
+      const fileName = ("resultat-" + (r.prenom + "-" + r.nom).toLowerCase().replace(/[^a-z0-9]+/gi, "-") + ".png").replace(/-+/g, "-");
+      const file = new File([blob], fileName, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: "Mon résultat — Trouve ta Course" });
+          if (hint) hint.textContent = "Dans la feuille de partage : Instagram → « Ajouter à ta story » 📸";
+        } catch (e) { /* partage annulé par l'utilisateur : ne rien afficher */ }
+      } else {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+        if (hint) hint.textContent = "Image story téléchargée ✅ — depuis un téléphone, le bouton ouvre directement le partage Instagram.";
+      }
     } finally {
       btn.disabled = false;
     }
@@ -2624,7 +2321,7 @@
         ? `<div class="state-message">Aucun coureur ne correspond.</div>`
         : `
           <div class="lb-table">
-            <div class="lb-row-full head"><span>Rang</span><span>Doss.</span><span>Coureur</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Club</span><span></span></div>
+            <div class="lb-row-full head"><span>Rang</span><span>Doss.</span><span>Coureur</span><span>Sexe</span><span>Cat.</span><span>Temps</span><span>Vitesse</span><span>Club</span></div>
             ${shown.map(r => `
               <div class="lb-row-full lb-row-tap" onclick="openRunnerStatModal('${r.id}')">
                 <span class="${lbRankClass(activeGender === 'scratch' ? r.classementGeneral : r.__rang)}">${activeGender === 'scratch' ? (r.classementGeneral ?? "—") : r.__rang}</span>
@@ -2635,7 +2332,6 @@
                 <span class="lb-time">${r.temps || "—"}</span>
                 <span class="lb-vitesse">${r.vitesse || "—"}</span>
                 <span class="lb-club-cell">${r.club || "—"}</span>
-                <span><button class="lb-share-btn" title="Partager ce résultat" onclick="event.stopPropagation(); shareResult('${r.id}')">📤</button></span>
               </div>`).join("")}
           </div>
           ${remaining > 0 ? `<button class="lb-expand-link" onclick="toggleLeaderboardExpand('${expandKey}')">Voir les ${remaining} coureur${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""} ↓</button>` : ""}
@@ -3254,8 +2950,7 @@
         <span class="crumb current">${displayRunnerName(runner)}</span>
       </div>
       <h1 style="margin:0 0 0.2rem;">${displayRunnerName(runner)}</h1>
-      <p style="color:var(--muted); font-size:13.5px; margin:0 0 1rem;">${runner.club ? `<a style="color:var(--accent-deep); font-weight:700; cursor:pointer;" onclick="openClubFiche('${escJsArg(honneurNorm(runner.club))}')">${runner.club}</a> · ` : ""}Saison ${HONNEUR_YEAR}</p>
-      <button class="share-inline-btn" style="margin:0 0 1.4rem;" onclick="shareCoureur('${escJsArg(key)}')">📤 Partager cette fiche</button>
+      <p style="color:var(--muted); font-size:13.5px; margin:0 0 1.4rem;">${runner.club ? `<a style="color:var(--accent-deep); font-weight:700; cursor:pointer;" onclick="openClubFiche('${escJsArg(honneurNorm(runner.club))}')">${runner.club}</a> · ` : ""}Saison ${HONNEUR_YEAR}</p>
       <div class="stat-bar">
         <div class="stat-cell"><div class="l">Courses</div><div class="v accent">${races.length}</div></div>
         <div class="stat-cell"><div class="l">Kilomètres</div><div class="v accent">${runner.km > 0 ? formatKm(runner.km) + " km" : "—"}</div></div>
