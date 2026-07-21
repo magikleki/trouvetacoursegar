@@ -705,81 +705,6 @@
     </div>
   </div>
 
-  <!-- Carte interactive -->
-  <div class="map-modal-overlay" id="mapModalOverlay" onclick="if(event.target===this) closeMapModal()">
-    <div class="map-modal">
-      <div class="map-modal-header">
-        <div class="map-modal-title">Carte des courses — Gard</div>
-        <button class="map-modal-close" onclick="closeMapModal()">✕</button>
-      </div>
-      <div class="map-filters" id="mapFilters">
-        <button class="date-filter-btn" id="mapDateBtn" onclick="openMapDateModal()"><span id="mapDateLabel">Date</span></button>
-        <button class="date-filter-btn" id="mapDistBtn" onclick="openMapDistModal()"><span id="mapDistLabel">Distance</span></button>
-        <button class="date-filter-btn" id="mapChalBtn" onclick="openMapChalModal()"><span id="mapChalLabel">Challenge</span></button>
-        <button class="date-filter-btn" id="mapTypeBtn" onclick="openMapTypeModal()"><span id="mapTypeLabel">Type de course</span></button>
-        <button class="date-reset-btn" onclick="resetMapFilters()">↺ Effacer</button>
-      </div>
-      <div id="mapContainer"></div>
-    </div>
-  </div>
-
-  <!-- Modales filtres carte -->
-  <div class="date-modal-overlay" id="mapDateModalOverlay" onclick="if(event.target===this) closeMapDateModal()" style="z-index:110;">
-    <div class="date-modal">
-      <div class="date-modal-header">
-        <div class="date-modal-title">Date</div>
-        <button class="date-modal-close" onclick="closeMapDateModal()">✕</button>
-      </div>
-      <div class="challenge-options" id="mapDateOptionsList"></div>
-      <div class="date-modal-footer">
-        <button class="date-apply-btn" onclick="applyMapDateFilter()" id="mapDateApplyBtn">Afficher</button>
-        <div class="date-clear-link" onclick="clearMapDateFilter()">Tout effacer</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="date-modal-overlay" id="mapDistModalOverlay" onclick="if(event.target===this) closeMapDistModal()" style="z-index:110;">
-    <div class="date-modal">
-      <div class="date-modal-header">
-        <div class="date-modal-title">Distance</div>
-        <button class="date-modal-close" onclick="closeMapDistModal()">✕</button>
-      </div>
-      <div class="challenge-options" id="mapDistOptionsList"></div>
-      <div class="date-modal-footer">
-        <button class="date-apply-btn" onclick="applyMapDistFilter()" id="mapDistApplyBtn">Afficher</button>
-        <div class="date-clear-link" onclick="clearMapDistFilter()">Tout effacer</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="date-modal-overlay" id="mapChalModalOverlay" onclick="if(event.target===this) closeMapChalModal()" style="z-index:110;">
-    <div class="date-modal">
-      <div class="date-modal-header">
-        <div class="date-modal-title">Challenge</div>
-        <button class="date-modal-close" onclick="closeMapChalModal()">✕</button>
-      </div>
-      <div class="challenge-options" id="mapChalOptionsList"></div>
-      <div class="date-modal-footer">
-        <button class="date-apply-btn" onclick="applyMapChalFilter()" id="mapChalApplyBtn">Afficher</button>
-        <div class="date-clear-link" onclick="clearMapChalFilter()">Tout effacer</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="date-modal-overlay" id="mapTypeModalOverlay" onclick="if(event.target===this) closeMapTypeModal()" style="z-index:110;">
-    <div class="date-modal">
-      <div class="date-modal-header">
-        <div class="date-modal-title">Type de course</div>
-        <button class="date-modal-close" onclick="closeMapTypeModal()">✕</button>
-      </div>
-      <div class="challenge-options" id="mapTypeOptionsList"></div>
-      <div class="date-modal-footer">
-        <button class="date-apply-btn" onclick="applyMapTypeFilter()" id="mapTypeApplyBtn">Afficher</button>
-        <div class="date-clear-link" onclick="clearMapTypeFilter()">Tout effacer</div>
-      </div>
-    </div>
-  </div>
-
   <div class="section">
     <div id="calendrierContent"><div class="state-message">Chargement…</div></div>
   </div>
@@ -890,6 +815,80 @@
   </div>
 </div>
 
+<!-- Carte interactive (niveau racine, accessible depuis toutes les pages) -->
+<div class="map-modal-overlay" id="mapModalOverlay" onclick="if(event.target===this) closeMapModal()">
+  <div class="map-modal">
+    <div class="map-modal-header">
+      <div class="map-modal-title">Carte des courses — Gard</div>
+      <button class="map-modal-close" onclick="closeMapModal()">✕</button>
+    </div>
+    <div class="map-filters" id="mapFilters">
+      <button class="date-filter-btn" id="mapDateBtn" onclick="openMapDateModal()"><span id="mapDateLabel">Date</span></button>
+      <button class="date-filter-btn" id="mapDistBtn" onclick="openMapDistModal()"><span id="mapDistLabel">Distance</span></button>
+      <button class="date-filter-btn" id="mapChalBtn" onclick="openMapChalModal()"><span id="mapChalLabel">Challenge</span></button>
+      <button class="date-filter-btn" id="mapTypeBtn" onclick="openMapTypeModal()"><span id="mapTypeLabel">Type de course</span></button>
+      <button class="date-reset-btn" onclick="resetMapFilters()">↺ Effacer</button>
+    </div>
+    <div id="mapContainer"></div>
+  </div>
+</div>
+
+<div class="date-modal-overlay" id="mapDateModalOverlay" onclick="if(event.target===this) closeMapDateModal()" style="z-index:110;">
+  <div class="date-modal">
+    <div class="date-modal-header">
+      <div class="date-modal-title">Date</div>
+      <button class="date-modal-close" onclick="closeMapDateModal()">✕</button>
+    </div>
+    <div class="challenge-options" id="mapDateOptionsList"></div>
+    <div class="date-modal-footer">
+      <button class="date-apply-btn" onclick="applyMapDateFilter()" id="mapDateApplyBtn">Afficher</button>
+      <div class="date-clear-link" onclick="clearMapDateFilter()">Tout effacer</div>
+    </div>
+  </div>
+</div>
+
+<div class="date-modal-overlay" id="mapDistModalOverlay" onclick="if(event.target===this) closeMapDistModal()" style="z-index:110;">
+  <div class="date-modal">
+    <div class="date-modal-header">
+      <div class="date-modal-title">Distance</div>
+      <button class="date-modal-close" onclick="closeMapDistModal()">✕</button>
+    </div>
+    <div class="challenge-options" id="mapDistOptionsList"></div>
+    <div class="date-modal-footer">
+      <button class="date-apply-btn" onclick="applyMapDistFilter()" id="mapDistApplyBtn">Afficher</button>
+      <div class="date-clear-link" onclick="clearMapDistFilter()">Tout effacer</div>
+    </div>
+  </div>
+</div>
+
+<div class="date-modal-overlay" id="mapChalModalOverlay" onclick="if(event.target===this) closeMapChalModal()" style="z-index:110;">
+  <div class="date-modal">
+    <div class="date-modal-header">
+      <div class="date-modal-title">Challenge</div>
+      <button class="date-modal-close" onclick="closeMapChalModal()">✕</button>
+    </div>
+    <div class="challenge-options" id="mapChalOptionsList"></div>
+    <div class="date-modal-footer">
+      <button class="date-apply-btn" onclick="applyMapChalFilter()" id="mapChalApplyBtn">Afficher</button>
+      <div class="date-clear-link" onclick="clearMapChalFilter()">Tout effacer</div>
+    </div>
+  </div>
+</div>
+
+<div class="date-modal-overlay" id="mapTypeModalOverlay" onclick="if(event.target===this) closeMapTypeModal()" style="z-index:110;">
+  <div class="date-modal">
+    <div class="date-modal-header">
+      <div class="date-modal-title">Type de course</div>
+      <button class="date-modal-close" onclick="closeMapTypeModal()">✕</button>
+    </div>
+    <div class="challenge-options" id="mapTypeOptionsList"></div>
+    <div class="date-modal-footer">
+      <button class="date-apply-btn" onclick="applyMapTypeFilter()" id="mapTypeApplyBtn">Afficher</button>
+      <div class="date-clear-link" onclick="clearMapTypeFilter()">Tout effacer</div>
+    </div>
+  </div>
+</div>
+
 <script>
   // Interrupteur : statistiques clubs issues des résultats (fiches club,
   // classements clubs du Tableau d'Honneur, liens vers ces fiches).
@@ -920,6 +919,7 @@
       if (el) el.style.display = (id === p) ? 'block' : 'none';
     });
     window.scrollTo(0, 0);
+    closeMapModal();
     if (p === 'club') loadClubs();
     if (p === 'resultats') loadResultatsList();
     if (p === 'challenge') loadTableauHonneur();
