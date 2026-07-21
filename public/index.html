@@ -1478,21 +1478,15 @@
       if (!mapInstance) {
         mapInstance = L.map('mapContainer', { zoomControl: true }).setView([44.0, 4.2], 9);
 
-        // Fond sans labels
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+        // Fond avec labels
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
           attribution: '© OpenStreetMap · © CARTO',
           maxZoom: 19
         }).addTo(mapInstance);
 
-        // Pane pour les labels (au-dessus de tout)
-        mapInstance.createPane('labelsPane');
-        mapInstance.getPane('labelsPane').style.zIndex = 650;
-        mapInstance.getPane('labelsPane').style.pointerEvents = 'none';
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
-          maxZoom: 19, pane: 'labelsPane'
-        }).addTo(mapInstance);
-
-        // Masque extérieur orange
+        // Masque extérieur orange (couvre les labels hors Gard)
+        mapInstance.createPane('maskPane');
+        mapInstance.getPane('maskPane').style.zIndex = 450;
         fetch('/data/gard-contour.json')
           .then(r => r.json())
           .then(geo => {
@@ -1500,11 +1494,12 @@
             const worldBounds = [[-90, -180], [-90, 180], [90, 180], [90, -180], [-90, -180]];
             L.polygon([worldBounds, gardCoords], {
               fillColor: '#E06A2C',
-              fillOpacity: 0.35,
+              fillOpacity: 0.4,
               stroke: true,
               color: '#E06A2C',
               weight: 2.5,
-              opacity: 0.8
+              opacity: 0.8,
+              pane: 'maskPane'
             }).addTo(mapInstance);
           })
           .catch(() => {});
